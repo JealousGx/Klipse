@@ -102,7 +102,6 @@ export function BrandLogo({
 			to={to}
 			className={cn(
 				"inline-flex items-center font-heading font-bold tracking-tight text-foreground",
-				config.gap,
 				className,
 			)}
 		>
