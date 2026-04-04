@@ -9,7 +9,7 @@ import { getDb } from "@/db";
 import * as schema from "@/db/schema";
 
 import { env } from "@/env";
-// import { polarBillingPlugins } from "@/features/auth/polar-plugins";
+import { createPolarBillingPlugin } from "@/features/billing/polar-plugin.server";
 import { additionalUserFields } from "@/lib/auth/additional-user-fields";
 import { sendAuthOTPEmail } from "@/lib/email/auth-otp";
 import { accountId, sessionId, userId, verificationId } from "@/lib/id";
@@ -60,7 +60,7 @@ export const auth = betterAuth({
 				process.env.NODE_ENV === "development" ? () => "123456" : undefined,
 			overrideDefaultEmailVerification: true,
 		}),
-		// ...polarBillingPlugins(),
+		createPolarBillingPlugin(),
 		tanstackStartCookies(),
 	],
 
