@@ -139,7 +139,7 @@ const pricingTiers = [
 		emphasis: false,
 	},
 	{
-		name: "Pro",
+		name: "Creator",
 		price: "$99",
 		period: "/mo",
 		highlight: "Serious volume",
@@ -153,7 +153,7 @@ const pricingTiers = [
 		emphasis: true,
 	},
 	{
-		name: "Scale",
+		name: "Empire",
 		price: "Custom",
 		period: "",
 		highlight: "Teams & networks",
@@ -476,7 +476,7 @@ function LandingPage() {
 									</ul>
 								</CardContent>
 								<CardFooter className="border-t-0 pt-2">
-									{tier.name === "Scale" ? (
+									{tier.name === "Empire" ? (
 										<Button
 											variant="outline"
 											className="w-full font-semibold"
@@ -527,12 +527,7 @@ function LandingPage() {
 					<div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap sm:gap-5">
 						<GetStartedButton variant="hero" />
 						<Separator className="sm:hidden" />
-						<Link
-							variant="outline"
-							to="/"
-							size="lg"
-							search={{ auth: "login" }}
-						>
+						<Link variant="outline" to="/" size="lg" search={{ auth: "login" }}>
 							I already have an account
 						</Link>
 					</div>
