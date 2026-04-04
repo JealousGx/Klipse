@@ -249,7 +249,7 @@ function LandingPage() {
 							return (
 								<li key={item.title} className="h-full">
 									<Card className="group flex h-full flex-col border-border/70 bg-card/80 shadow-sm ring-1 ring-border/40 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-card/60">
-										<CardContent className="grid grid-cols-[auto_1fr] items-start gap-4 pt-6">
+										<CardContent className="grid grid-cols-[auto_1fr] items-start gap-4">
 											<span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-linear-to-br from-background to-muted/40 text-primary shadow-sm">
 												<Icon className="size-5" aria-hidden />
 											</span>
