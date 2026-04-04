@@ -1,7 +1,9 @@
-import { useNavigate, useRouteContext } from "@tanstack/react-router";
+import { useNavigate } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Link } from "@/components/ui/link";
+
+import { useRootRouteContext } from "@/context/useRootRouteContext";
 
 import { cn } from "@/lib/utils";
 
@@ -25,7 +27,7 @@ export function GetStartedButton({
 	className,
 }: GetStartedButtonProps) {
 	const navigate = useNavigate();
-	const { session } = useRouteContext({ from: "/" });
+	const { session } = useRootRouteContext();
 
 	const size = sizeMap[variant];
 
