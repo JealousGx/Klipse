@@ -7,36 +7,37 @@ import { cn } from "@/lib/utils";
 import { OptimizedImage } from "./OptimizedImage";
 
 export interface BrandLogoProps {
-	size?: "sm" | "md" | "lg";
+	size?: "sm" | "md" | "lg" | "xl";
 	withText?: boolean;
 	className?: string;
 	to?: "/" | "/dashboard" | (string & {});
 	wordmarkClassName?: string;
-	/** Marketing / LCP: high fetch priority. App chrome: omit. */
 	priority?: boolean;
 }
 
-/** Display size for the mark (keeps layout consistent even with large source PNGs). */
 const sizeConfig = {
 	sm: {
 		icon: 18,
 		imgClass: "h-[18px] w-[18px] min-h-[18px] min-w-[18px]",
 		text: "text-xs",
-		gap: "gap-1.5",
 		rounded: "rounded-md",
 	},
 	md: {
 		icon: 24,
 		imgClass: "h-6 w-6 min-h-6 min-w-6",
 		text: "text-base",
-		gap: "gap-2",
 		rounded: "rounded-lg",
 	},
 	lg: {
 		icon: 30,
 		imgClass: "h-[30px] w-[30px] min-h-[30px] min-w-[30px]",
 		text: "text-xl",
-		gap: "gap-2.5",
+		rounded: "rounded-xl",
+	},
+	xl: {
+		icon: 40,
+		imgClass: "h-10 w-10 min-h-10 min-w-10",
+		text: "text-2xl sm:text-[1.75rem]",
 		rounded: "rounded-xl",
 	},
 } as const;
