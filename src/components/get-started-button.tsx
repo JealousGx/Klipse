@@ -1,9 +1,8 @@
-import { useNavigate } from "@tanstack/react-router";
+import { useNavigate, useRouteContext } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Link } from "@/components/ui/link";
 
-import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
 type Variant = "header" | "hero";
@@ -26,30 +25,13 @@ export function GetStartedButton({
 	className,
 }: GetStartedButtonProps) {
 	const navigate = useNavigate();
-	const { data: session, isPending } = authClient.useSession();
-	const size = sizeMap[variant];
+	const { session } = useRouteContext({ from: "/" });
 
-	if (isPending) {
-		return (
-			<Button
-				disabled
-				variant="ghost"
-				size={size}
-				className={cn(variant === "hero" && "min-w-42", className)}
-				aria-busy
-			>
-				…
-			</Button>
-		);
-	}
+	const size = sizeMap[variant];
 
 	if (session?.user) {
 		return (
-			<Link
-				to="/dashboard"
-				size={size}
-				className={className}
-			>
+			<Link to="/dashboard" size={size} className={className}>
 				Dashboard
 			</Link>
 		);
@@ -58,10 +40,7 @@ export function GetStartedButton({
 	return (
 		<Button
 			size={size}
-			className={cn(
-				variant === "hero" && "min-w-42 font-semibold",
-				className,
-			)}
+			className={cn(variant === "hero" && "min-w-42 font-semibold", className)}
 			onClick={() => {
 				void navigate({ to: "/", search: { auth: "signup" } });
 			}}
