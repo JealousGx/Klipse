@@ -3,8 +3,12 @@
   "private": true,
   "type": "module",
   "imports": {
-    "#/*": "./src/*"
+    "@/*": "./src/*"
   },
+    "engines": {
+    "node": ">=23.0.0"
+  },
+  "packageManager": "pnpm@10.31.0",
   "scripts": {
     "dev": "vite dev --port 3000",
     "build": "vite build",
