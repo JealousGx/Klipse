@@ -19,6 +19,7 @@ export const creditTransactions = mysqlTable(
 			.notNull()
 			.references(() => users.id, { onDelete: "cascade" }),
 		type: mysqlEnum("type", ["usage", "purchase", "refund"]).notNull(),
+		/** Usage: negative (credits removed). Purchase / typical refund: positive (credits added). */
 		amount: int("amount").notNull(),
 		metadata: json("metadata"),
 		createdAt: timestamp("created_at", { fsp: 3 })
