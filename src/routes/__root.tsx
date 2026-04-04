@@ -1,8 +1,3 @@
-import { siteConfig } from "@/config/site";
-import { AuthModalBridge } from "@/features/auth/AuthModalBridge";
-import { AuthModalProvider } from "@/features/auth/AuthModalContext";
-import { AuthQuerySync } from "@/features/auth/components/auth-query-sync";
-import { rootSearchSchema } from "@/lib/routes/root-search";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import {
@@ -11,12 +6,24 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+
+import { siteConfig } from "@/config/site";
+
+import { AuthModalBridge } from "@/features/auth/AuthModalBridge";
+import { AuthModalProvider } from "@/features/auth/AuthModalContext";
+import { AuthQuerySync } from "@/features/auth/components/auth-query-sync";
+import { getServerSession } from "@/features/auth/session.server";
+
+import { rootSearchSchema } from "@/lib/routes/root-search";
+
 import { RootChrome } from "../components/root-chrome";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+
 import appCss from "../styles.css?url";
 
 interface MyRouterContext {
 	queryClient: QueryClient;
+	session: Awaited<ReturnType<typeof getServerSession>>;
 }
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`;
@@ -25,6 +32,11 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 	validateSearch: (raw: Record<string, unknown>) => {
 		const parsed = rootSearchSchema.safeParse(raw);
 		return parsed.success ? parsed.data : {};
+	},
+	beforeLoad: async () => {
+		const session = await getServerSession();
+
+		return { session };
 	},
 	head: () => ({
 		meta: [
