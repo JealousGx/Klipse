@@ -50,6 +50,7 @@ const ID_PREFIXES = {
 	generatedVideo: "gvi",
 	/** `generated_uploads` PK. */
 	generatedUpload: "gup",
+	creditTransaction: "ctx",
 } as const;
 
 export function userId() {
@@ -136,4 +137,8 @@ export function generatedVideoRowId() {
 
 export function generatedUploadRowId() {
 	return prefixedId(ID_PREFIXES.generatedUpload);
+}
+
+export function creditTransactionId() {
+	return prefixedId(ID_PREFIXES.creditTransaction);
 }
