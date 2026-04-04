@@ -196,6 +196,89 @@
   .font-heading {
     font-family: var(--font-heading);
   }
+
+  /** Centers content and caps width for marketing + app shells (pair with horizontal padding). */
+  .page-wrap {
+    @apply mx-auto w-full max-w-7xl;
+  }
+
+  /**
+   * Marketing surfaces: soft mesh + fine grid (works in light/dark via theme tokens).
+   */
+  .landing-mesh {
+    pointer-events: none;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .landing-mesh-blob-a {
+    position: absolute;
+    left: -18%;
+    top: -35%;
+    width: 65%;
+    height: min(75vh, 560px);
+    border-radius: 9999px;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklch, var(--primary) 22%, transparent),
+      transparent 72%
+    );
+    filter: blur(72px);
+  }
+
+  .landing-mesh-blob-b {
+    position: absolute;
+    right: -22%;
+    top: 5%;
+    width: 58%;
+    height: min(65vh, 480px);
+    border-radius: 9999px;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklch, var(--chart-2) 18%, transparent),
+      transparent 70%
+    );
+    filter: blur(68px);
+  }
+
+  .landing-mesh-blob-c {
+    position: absolute;
+    bottom: -20%;
+    left: 22%;
+    width: 55%;
+    height: min(45vh, 360px);
+    border-radius: 9999px;
+    background: radial-gradient(
+      closest-side,
+      color-mix(in oklch, var(--chart-1) 14%, transparent),
+      transparent 75%
+    );
+    filter: blur(80px);
+  }
+
+  .landing-grid {
+    position: absolute;
+    inset: 0;
+    opacity: 0.45;
+    background-image:
+      linear-gradient(
+        to right,
+        color-mix(in oklch, var(--border) 55%, transparent) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--border) 55%, transparent) 1px,
+        transparent 1px
+      );
+    background-size: 52px 52px;
+    mask-image: radial-gradient(ellipse 85% 65% at 50% 18%, black 18%, transparent 72%);
+  }
+
+  .dark .landing-grid {
+    opacity: 0.35;
+  }
 }
 
 @layer base {

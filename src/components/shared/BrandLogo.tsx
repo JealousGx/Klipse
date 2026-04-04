@@ -1,6 +1,6 @@
-import { Link } from "@tanstack/react-router";
 import { useState } from "react";
 
+import { Link } from "@/components/ui/link";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
@@ -10,7 +10,7 @@ export interface BrandLogoProps {
 	size?: "sm" | "md" | "lg" | "xl";
 	withText?: boolean;
 	className?: string;
-	to?: "/" | "/dashboard" | (string & {});
+	to?: "/" | "/dashboard";
 	wordmarkClassName?: string;
 	priority?: boolean;
 }
@@ -85,11 +85,20 @@ export function BrandLogo({
 		/>
 	);
 
+	const logoLinkClass = cn(
+		"inline-flex !h-auto min-h-0 !justify-start gap-0 !rounded-none !bg-transparent !p-0 !shadow-none hover:!bg-transparent dark:hover:!bg-transparent",
+		!withText && "shrink-0",
+		withText &&
+			"items-center font-heading font-bold tracking-tight text-foreground",
+		className,
+	);
+
 	if (!withText) {
 		return (
 			<Link
 				to={to}
-				className={cn("inline-flex shrink-0", className)}
+				variant="ghost"
+				className={logoLinkClass}
 				aria-label={`${siteConfig.name} home`}
 			>
 				{mark}
@@ -98,13 +107,7 @@ export function BrandLogo({
 	}
 
 	return (
-		<Link
-			to={to}
-			className={cn(
-				"inline-flex items-center font-heading font-bold tracking-tight text-foreground",
-				className,
-			)}
-		>
+		<Link to={to} variant="ghost" className={logoLinkClass}>
 			{mark}
 			<span className={cn("font-semibold tracking-tight", config.text)}>
 				<span className={cn("text-primary", wordmarkClassName)}>

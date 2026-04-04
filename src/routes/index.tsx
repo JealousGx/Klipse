@@ -1,15 +1,36 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import {
+	CalendarClock,
 	Check,
 	Coins,
+	Eye,
 	Layers,
 	MonitorPlay,
 	RefreshCw,
 	Server,
+	Share2,
 	Sparkles,
 	Target,
+	Video,
 } from "lucide-react";
 
+import { GetStartedButton } from "@/components/get-started-button";
+import {
+	PipelineObservabilityPanel,
+	ProductStoryMock,
+} from "@/components/landing";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+	Card,
+	CardContent,
+	CardDescription,
+	CardFooter,
+	CardHeader,
+	CardTitle,
+} from "@/components/ui/card";
+import { Link } from "@/components/ui/link";
+import { Separator } from "@/components/ui/separator";
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
@@ -19,18 +40,22 @@ const outcomes = [
 	{
 		title: "Publish-ready videos",
 		body: "Finished cuts—not loose drafts you still have to fix in an editor.",
+		icon: Video,
 	},
 	{
 		title: "Platform-optimized hooks",
 		body: "Outputs tuned for Shorts, Reels, and TikTok—not one generic aspect ratio.",
+		icon: Share2,
 	},
 	{
 		title: "Scheduled distribution",
 		body: "Systemized publish steps so releases land when your audience is watching.",
+		icon: CalendarClock,
 	},
 	{
 		title: "Full pipeline visibility",
 		body: "See every stage, every run, every failure—then retry without starting over.",
+		icon: Eye,
 	},
 ] as const;
 
@@ -91,7 +116,7 @@ const pricingTiers = [
 		period: "",
 		highlight: "Try the system",
 		features: [
-			"1 video / month",
+			"1 video for lifetime",
 			"Watermark",
 			"Queue + job visibility",
 			"Single channel",
@@ -143,246 +168,127 @@ const pricingTiers = [
 	},
 ] as const;
 
-function ProductStoryMock() {
-	return (
-		<section
-			className="overflow-hidden rounded-xl border border-border bg-card text-left shadow-sm"
-			aria-label="Product interface preview"
-		>
-			<div className="flex items-center justify-between border-b border-border bg-muted/40 px-4 py-3">
-				<div className="flex items-center gap-2">
-					<span className="font-heading text-sm font-semibold text-foreground">
-						Render queue
-					</span>
-					<span className="rounded border border-border bg-background px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
-						4 jobs
-					</span>
-				</div>
-				<button
-					type="button"
-					className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-xs font-semibold text-foreground"
-					tabIndex={-1}
-					aria-hidden
-				>
-					<RefreshCw className="h-3.5 w-3.5" aria-hidden />
-					Sync
-				</button>
-			</div>
-
-			<div className="grid gap-0 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.15fr)]">
-				<div className="border-b border-border lg:border-b-0 lg:border-r">
-					<div className="border-b border-border px-3 py-2 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-						Status
-					</div>
-					<ul className="divide-y divide-border">
-						<li className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-3 py-2.5 text-sm">
-							<span className="rounded border border-border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-								Queued
-							</span>
-							<span className="min-w-0 truncate font-medium text-foreground">
-								#1042 · Short hook v3
-							</span>
-						</li>
-						<li className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 bg-primary/5 px-3 py-2.5 text-sm">
-							<span className="rounded border border-primary/40 bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
-								Processing
-							</span>
-							<span className="min-w-0 truncate font-medium text-foreground">
-								#1041 · Weekly recap
-							</span>
-						</li>
-						<li className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 px-3 py-2.5 text-sm">
-							<span className="rounded border border-destructive/40 bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-destructive">
-								Failed
-							</span>
-							<span className="min-w-0 truncate text-foreground">
-								#1040 · Product demo
-							</span>
-							<button
-								type="button"
-								className="rounded-md border border-border bg-background px-2 py-1 text-[10px] font-semibold text-foreground"
-								tabIndex={-1}
-								aria-hidden
-							>
-								Retry
-							</button>
-						</li>
-						<li className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 px-3 py-2.5 text-sm">
-							<span className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-foreground">
-								Done
-							</span>
-							<span className="min-w-0 truncate text-muted-foreground">
-								#1039 · Channel intro
-							</span>
-						</li>
-					</ul>
-				</div>
-
-				<div className="flex flex-col">
-					<div className="relative aspect-video w-full border-b border-border bg-muted">
-						<div className="absolute inset-0 flex items-center justify-center bg-foreground/5">
-							<div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-foreground/20 bg-background shadow-sm">
-								<div className="ml-0.5 h-0 w-0 border-y-[10px] border-l-[14px] border-y-transparent border-l-foreground" />
-							</div>
-						</div>
-						<div className="absolute bottom-2 left-2 rounded border border-border/80 bg-background px-2 py-1 font-mono text-[10px] font-medium text-foreground">
-							1080×1920 · 0:42
-						</div>
-					</div>
-					<div className="space-y-3 p-4">
-						<div>
-							<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-								Title
-							</p>
-							<p className="mt-0.5 font-medium text-foreground">
-								Weekly recap — Q4 growth (Shorts cut)
-							</p>
-						</div>
-						<div>
-							<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-								Tags
-							</p>
-							<div className="mt-1.5 flex flex-wrap gap-1.5">
-								{["shorts", "finance", "hook", "Q4"].map((tag) => (
-									<span
-										key={tag}
-										className="rounded-md border border-border bg-muted/50 px-2 py-0.5 text-xs font-medium text-foreground"
-									>
-										{tag}
-									</span>
-								))}
-							</div>
-						</div>
-						<div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3">
-							<div>
-								<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-									Platform
-								</p>
-								<p className="mt-0.5 text-sm font-semibold text-foreground">
-									YouTube Shorts
-								</p>
-							</div>
-							<button
-								type="button"
-								className="inline-flex items-center gap-2 rounded-lg border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground shadow-sm"
-								tabIndex={-1}
-								aria-hidden
-							>
-								<RefreshCw className="h-3.5 w-3.5" aria-hidden />
-								Retry publish
-							</button>
-						</div>
-					</div>
-				</div>
-			</div>
-		</section>
-	);
-}
-
 function LandingPage() {
 	return (
-		<main>
+		<main className="bg-background">
 			{/* Hook: pain → solution */}
-			<section className="border-b border-border">
-				<div className="page-wrap px-4 py-24 sm:px-6 lg:px-8">
-					<div className="max-w-3xl">
-						<p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">
-							Content infrastructure for operators
-						</p>
-						<h1 className="font-heading mt-4 text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-[3.25rem] lg:leading-[1.08]">
-							Build and run AI video channels—end to end.
-						</h1>
-						<p className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground sm:text-xl">
-							Script → generate → schedule → publish. Queue-driven pipelines
-							that don&apos;t break at scale—so you replace the whole content
-							machine, not just the generator.
-						</p>
-						<p className="mt-6 text-sm font-medium text-foreground">
-							Built for operators running multi-platform content systems.
-						</p>
-						<div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
-							<Link
-								to="/dashboard/generate"
-								className={cn(
-									"inline-flex min-h-11 items-center justify-center rounded-lg px-7 text-sm font-semibold no-underline transition",
-									"bg-primary text-primary-foreground shadow-sm hover:opacity-95 active:opacity-90",
-								)}
-							>
-								Start generating
-							</Link>
-							<a
-								href="#product"
-								className={cn(
-									"inline-flex min-h-11 items-center justify-center rounded-lg border-2 border-foreground bg-background px-7 text-sm font-semibold text-foreground no-underline transition",
-									"hover:bg-muted",
-								)}
-							>
-								View demo
-							</a>
-							<Link
-								to="/"
-								search={{ auth: "login" }}
-								className="text-center text-sm font-medium text-muted-foreground no-underline underline-offset-4 hover:text-foreground sm:ml-2 sm:text-left"
-							>
-								Sign in
-							</Link>
+			<section className="relative overflow-hidden border-b border-border/80">
+				<div className="landing-mesh" aria-hidden>
+					<div className="landing-mesh-blob-a" />
+					<div className="landing-mesh-blob-b" />
+					<div className="landing-mesh-blob-c" />
+					<div className="landing-grid" />
+				</div>
+				<div className="page-wrap relative z-10 px-4 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-32">
+					<div className="grid items-center gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:gap-16 xl:gap-20">
+						<Card className="min-w-0 max-w-3xl border-0 bg-transparent p-0 shadow-none">
+							<CardHeader className="p-0">
+								<Badge
+									variant="outline"
+									className="w-fit border-primary/30 bg-primary/[0.06] text-xs font-semibold uppercase tracking-[0.18em] text-primary shadow-sm shadow-primary/5"
+								>
+									Content infrastructure for operators
+								</Badge>
+								<CardTitle className="font-heading mt-5 text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-[3.35rem] lg:leading-[1.06]">
+									Build and run{" "}
+									<span className="bg-gradient-to-r from-primary via-primary to-chart-2 bg-clip-text text-transparent">
+										AI video channels
+									</span>
+									—end to end.
+								</CardTitle>
+								<CardDescription className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground sm:text-xl">
+									Script → generate → schedule → publish. Queue-driven pipelines
+									that don&apos;t break at scale—so you replace the whole
+									content machine, not just the generator.
+								</CardDescription>
+							</CardHeader>
+							<CardContent className="p-0 pt-7">
+								<p className="text-sm font-medium text-foreground/90">
+									Built for operators running multi-platform content systems.
+								</p>
+								<div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+									<GetStartedButton variant="hero" />
+								</div>
+							</CardContent>
+						</Card>
+						<div
+							id="product"
+							className="min-w-0 scroll-mt-28 lg:justify-self-end"
+						>
+							<div className="relative">
+								<div
+									className="pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-br from-primary/20 via-transparent to-chart-2/15 opacity-90 blur-xl dark:from-primary/25 dark:to-chart-2/10"
+									aria-hidden
+								/>
+								<div className="relative rounded-2xl shadow-2xl shadow-black/[0.06] ring-1 ring-border/60 dark:shadow-black/40">
+									<ProductStoryMock />
+								</div>
+							</div>
 						</div>
 					</div>
 				</div>
 			</section>
 
 			{/* Outcome: what they get */}
-			<section className="border-b border-border bg-muted/30">
-				<div className="page-wrap px-4 py-24 sm:px-6 lg:px-8">
-					<div className="max-w-2xl">
-						<h2 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-							What you get
-						</h2>
-						<p className="mt-3 text-lg text-muted-foreground">
-							One system that covers the outcome—not a pile of disconnected AI
-							tools.
-						</p>
-					</div>
-					<ul className="mt-12 grid gap-6 sm:grid-cols-2 lg:gap-8">
-						{outcomes.map((item) => (
-							<li
-								key={item.title}
-								className="flex gap-4 rounded-xl border border-border bg-card p-5 shadow-sm"
-							>
-								<span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-primary">
-									<Check className="h-4 w-4 stroke-[2.5]" aria-hidden />
-								</span>
-								<div>
-									<h3 className="font-heading font-semibold text-foreground">
-										{item.title}
-									</h3>
-									<p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
-										{item.body}
-									</p>
-								</div>
-							</li>
-						))}
+			<section className="relative border-b border-border/80 bg-gradient-to-b from-muted/35 via-background to-background dark:from-muted/20">
+				<div className="page-wrap px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+					<Card className="mb-12 max-w-2xl border-0 bg-transparent p-0 shadow-none sm:mb-16">
+						<CardHeader className="p-0">
+							<CardTitle className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+								What you get
+							</CardTitle>
+							<CardDescription className="text-lg text-muted-foreground">
+								One system that covers the outcome—not a pile of disconnected AI
+								tools.
+							</CardDescription>
+						</CardHeader>
+					</Card>
+					<ul className="grid list-none gap-6 p-0 sm:grid-cols-2 lg:gap-8">
+						{outcomes.map((item) => {
+							const Icon = item.icon;
+							return (
+								<li key={item.title} className="h-full">
+									<Card className="group flex h-full flex-col border-border/70 bg-card/80 shadow-sm ring-1 ring-border/40 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-card/60">
+										<CardContent className="grid grid-cols-[auto_1fr] items-start gap-4 pt-6">
+											<span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-gradient-to-br from-background to-muted/40 text-primary shadow-sm">
+												<Icon className="size-5" aria-hidden />
+											</span>
+											<div className="min-w-0 space-y-1.5">
+												<CardTitle className="font-heading text-base font-semibold leading-snug text-foreground">
+													{item.title}
+												</CardTitle>
+												<p className="text-sm leading-relaxed text-muted-foreground">
+													{item.body}
+												</p>
+											</div>
+										</CardContent>
+									</Card>
+								</li>
+							);
+						})}
 					</ul>
 				</div>
 			</section>
 
-			{/* Proof: real product story */}
-			<section id="product" className="scroll-mt-20 border-b border-border">
-				<div className="page-wrap px-4 py-24 sm:px-6 lg:px-8">
-					<div className="grid items-start gap-12 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-16">
-						<div>
-							<h2 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-								Your whole pipeline, visible
-							</h2>
-							<p className="mt-4 text-pretty text-lg text-muted-foreground">
-								Queue states, failures, and retries are first-class—not buried
-								in logs. When something breaks, you fix the run, not your
-								afternoon.
-							</p>
-							<ul className="mt-8 space-y-4 text-sm text-foreground">
+			{/* Proof: narrative + observability (demo mock lives in hero / #product) */}
+			<section className="border-b border-border/80 bg-background">
+				<div className="page-wrap px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+					<div className="grid gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start lg:gap-14">
+						<div className="min-w-0 max-w-3xl space-y-8">
+							<div className="space-y-4">
+								<h2 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+									Your whole pipeline, visible
+								</h2>
+								<p className="text-pretty text-lg leading-relaxed text-muted-foreground">
+									Queue states, failures, and retries are first-class—not buried
+									in logs. When something breaks, you fix the run, not your
+									afternoon.
+								</p>
+							</div>
+							<ul className="space-y-4 text-sm leading-relaxed text-foreground">
 								<li className="flex gap-3">
 									<Target
-										className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+										className="mt-0.5 size-5 shrink-0 text-primary"
 										aria-hidden
 									/>
 									<span>
@@ -394,7 +300,7 @@ function LandingPage() {
 								</li>
 								<li className="flex gap-3">
 									<Sparkles
-										className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+										className="mt-0.5 size-5 shrink-0 text-primary"
 										aria-hidden
 									/>
 									<span>
@@ -406,7 +312,7 @@ function LandingPage() {
 								</li>
 								<li className="flex gap-3">
 									<RefreshCw
-										className="mt-0.5 h-5 w-5 shrink-0 text-primary"
+										className="mt-0.5 size-5 shrink-0 text-primary"
 										aria-hidden
 									/>
 									<span>
@@ -418,41 +324,47 @@ function LandingPage() {
 								</li>
 							</ul>
 						</div>
-						<ProductStoryMock />
+						<div className="min-w-0 lg:sticky lg:top-24">
+							<PipelineObservabilityPanel />
+						</div>
 					</div>
 				</div>
 			</section>
 
 			{/* Differentiation */}
-			<section className="border-b border-border bg-muted/30">
-				<div className="page-wrap px-4 py-24 sm:px-6 lg:px-8">
-					<div className="max-w-2xl">
-						<h2 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-							Why Klipse is different
-						</h2>
-						<p className="mt-3 text-lg text-muted-foreground">
-							Designed for creators running serious volume—not weekend
-							experiments.
-						</p>
-					</div>
+			<section className="border-b border-border/80 bg-gradient-to-b from-muted/30 to-muted/15 dark:from-muted/15 dark:to-background/80">
+				<div className="page-wrap px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+					<Card className="mb-12 max-w-2xl border-0 bg-transparent p-0 shadow-none sm:mb-16">
+						<CardHeader className="p-0">
+							<CardTitle className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+								Why Klipse is different
+							</CardTitle>
+							<CardDescription className="text-lg text-muted-foreground">
+								Designed for creators running serious volume—not weekend
+								experiments.
+							</CardDescription>
+						</CardHeader>
+					</Card>
 					<div className="mt-12 grid gap-6 md:grid-cols-2 lg:gap-8">
 						{differentiation.map((item) => {
 							const Icon = item.icon;
 							return (
-								<article
+								<Card
 									key={item.title}
-									className="rounded-xl border border-border bg-card p-6 shadow-sm"
+									className="border-border/70 bg-card/85 shadow-sm ring-1 ring-border/35 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-card/55"
 								>
-									<div className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-background text-primary">
-										<Icon className="h-5 w-5" aria-hidden />
-									</div>
-									<h3 className="font-heading mt-4 text-lg font-semibold text-foreground">
-										{item.title}
-									</h3>
-									<p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-										{item.body}
-									</p>
-								</article>
+									<CardHeader>
+										<div className="flex size-10 items-center justify-center rounded-xl border border-border/80 bg-gradient-to-br from-background to-muted/35 text-primary shadow-sm">
+											<Icon className="size-5" aria-hidden />
+										</div>
+										<CardTitle className="font-heading text-lg">
+											{item.title}
+										</CardTitle>
+										<CardDescription className="text-sm leading-relaxed">
+											{item.body}
+										</CardDescription>
+									</CardHeader>
+								</Card>
 							);
 						})}
 					</div>
@@ -460,38 +372,46 @@ function LandingPage() {
 			</section>
 
 			{/* System: pipeline */}
-			<section className="border-b border-border">
-				<div className="page-wrap px-4 py-24 sm:px-6 lg:px-8">
-					<div className="max-w-2xl">
-						<h2 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-							Built to handle real content volume
-						</h2>
-						<p className="mt-3 text-lg text-muted-foreground">
-							Four stages from idea to platform—with explicit status and retry
-							at each handoff.
-						</p>
-					</div>
-					<ol className="mt-12 grid gap-6 lg:grid-cols-4 lg:gap-8">
+			<section className="border-b border-border/80 bg-background">
+				<div className="page-wrap px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+					<Card className="mb-12 max-w-2xl border-0 bg-transparent p-0 shadow-none sm:mb-16">
+						<CardHeader className="p-0">
+							<CardTitle className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+								Built to handle real content volume
+							</CardTitle>
+							<CardDescription className="text-lg text-muted-foreground">
+								Four stages from idea to platform—with explicit status and retry
+								at each handoff.
+							</CardDescription>
+						</CardHeader>
+					</Card>
+					<ol className="mt-12 grid list-none items-stretch gap-6 p-0 lg:grid-cols-4 lg:gap-8">
 						{pipeline.map((step, i) => (
-							<li
-								key={step.phase}
-								className="relative rounded-xl border border-border bg-card p-5 shadow-sm"
-							>
-								<span className="font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-									{String(i + 1).padStart(2, "0")}
-								</span>
-								<p className="mt-1 text-xs font-semibold uppercase tracking-wide text-primary">
-									{step.phase}
-								</p>
-								<h3 className="font-heading mt-2 text-lg font-semibold text-foreground">
-									{step.title}
-								</h3>
-								<p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-									{step.body}
-								</p>
-								<p className="mt-4 border-t border-border pt-3 font-mono text-[10px] leading-snug text-foreground">
-									{step.status}
-								</p>
+							<li key={step.phase} className="h-full">
+								<Card className="flex h-full flex-col gap-0 border-border/70 bg-card/90 py-5 shadow-sm ring-1 ring-border/30 backdrop-blur-[2px] transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-card/65">
+									<CardHeader className="px-5 pb-2 pt-0">
+										<Badge
+											variant="outline"
+											className="w-fit font-mono text-[10px] uppercase"
+										>
+											{String(i + 1).padStart(2, "0")}
+										</Badge>
+										<p className="text-xs font-semibold uppercase tracking-wide text-primary">
+											{step.phase}
+										</p>
+										<CardTitle className="font-heading text-lg leading-snug">
+											{step.title}
+										</CardTitle>
+									</CardHeader>
+									<CardContent className="flex flex-1 flex-col px-5 pb-0 pt-0">
+										<p className="flex-1 text-sm leading-relaxed text-muted-foreground">
+											{step.body}
+										</p>
+										<p className="mt-auto border-t border-border pt-3 font-mono text-[10px] leading-snug text-foreground">
+											{step.status}
+										</p>
+									</CardContent>
+								</Card>
 							</li>
 						))}
 					</ol>
@@ -499,109 +419,122 @@ function LandingPage() {
 			</section>
 
 			{/* Pricing */}
-			<section className="border-b border-border bg-muted/30">
-				<div className="page-wrap px-4 py-24 sm:px-6 lg:px-8">
-					<div className="max-w-2xl">
-						<h2 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-							Pricing that matches how you operate
-						</h2>
-						<p className="mt-3 text-lg text-muted-foreground">
-							Start free, graduate when volume justifies it. Final numbers may
-							adjust at launch—tiers and limits stay aligned with this
-							structure.
-						</p>
-					</div>
+			<section className="border-b border-border/80 bg-gradient-to-b from-muted/25 via-muted/10 to-background dark:from-muted/12">
+				<div className="page-wrap px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
+					<Card className="mb-12 max-w-2xl border-0 bg-transparent p-0 shadow-none sm:mb-16">
+						<CardHeader className="p-0">
+							<CardTitle className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+								Pricing that matches how you operate
+							</CardTitle>
+							<CardDescription className="text-lg text-muted-foreground">
+								Start free, graduate when volume justifies it. Final numbers may
+								adjust at launch—tiers and limits stay aligned with this
+								structure.
+							</CardDescription>
+						</CardHeader>
+					</Card>
 					<div className="mt-12 grid gap-6 sm:grid-cols-2 lg:grid-cols-4 lg:gap-5">
 						{pricingTiers.map((tier) => (
-							<div
+							<Card
 								key={tier.name}
 								className={cn(
-									"flex flex-col rounded-xl border bg-card p-6 shadow-sm",
+									"flex flex-col gap-0 border-border/70 bg-card/90 py-6 shadow-sm ring-1 ring-border/35 backdrop-blur-sm transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 dark:bg-card/60",
 									tier.emphasis
-										? "border-foreground/25 ring-2 ring-foreground/10"
-										: "border-border",
+										? "border-primary/35 shadow-lg shadow-primary/10 ring-2 ring-primary/20 dark:shadow-primary/5"
+										: "hover:shadow-md",
 								)}
 							>
-								<p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-									{tier.highlight}
-								</p>
-								<h3 className="font-heading mt-2 text-xl font-bold text-foreground">
-									{tier.name}
-								</h3>
-								<p className="mt-3 flex items-baseline gap-0.5">
-									<span className="text-3xl font-bold tracking-tight text-foreground">
-										{tier.price}
-									</span>
-									{tier.period ? (
-										<span className="text-sm text-muted-foreground">
-											{tier.period}
+								<CardHeader className="pb-2">
+									<p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+										{tier.highlight}
+									</p>
+									<CardTitle className="font-heading text-xl">
+										{tier.name}
+									</CardTitle>
+									<p className="flex items-baseline gap-0.5 pt-1">
+										<span className="text-3xl font-bold tracking-tight text-foreground">
+											{tier.price}
 										</span>
-									) : null}
-								</p>
-								<ul className="mt-6 flex flex-1 flex-col gap-2.5 text-sm text-muted-foreground">
-									{tier.features.map((f) => (
-										<li key={f} className="flex gap-2">
-											<Check
-												className="mt-0.5 h-4 w-4 shrink-0 text-foreground"
-												aria-hidden
-											/>
-											<span>{f}</span>
-										</li>
-									))}
-								</ul>
-								{tier.name === "Scale" ? (
-									<a
-										href={`mailto:${siteConfig.supportEmail}?subject=Klipse%20Scale`}
-										className="mt-8 inline-flex min-h-10 items-center justify-center rounded-lg border border-border bg-background px-4 text-center text-sm font-semibold text-foreground no-underline transition hover:bg-muted"
-									>
-										{tier.cta}
-									</a>
-								) : (
-									<Link
-										to="/"
-										search={{ auth: "signup" }}
-										className={cn(
-											"mt-8 inline-flex min-h-10 items-center justify-center rounded-lg px-4 text-center text-sm font-semibold no-underline transition",
-											tier.emphasis
-												? "bg-primary text-primary-foreground hover:opacity-95"
-												: "border border-border bg-background font-semibold text-foreground hover:bg-muted",
-										)}
-									>
-										{tier.cta}
-									</Link>
-								)}
-							</div>
+										{tier.period ? (
+											<span className="text-sm text-muted-foreground">
+												{tier.period}
+											</span>
+										) : null}
+									</p>
+								</CardHeader>
+								<CardContent className="flex flex-1 flex-col pb-2 pt-0">
+									<ul className="flex flex-1 flex-col gap-2.5 text-sm text-muted-foreground">
+										{tier.features.map((f) => (
+											<li key={f} className="flex gap-2">
+												<Check
+													className="mt-0.5 size-4 shrink-0 text-foreground"
+													aria-hidden
+												/>
+												<span>{f}</span>
+											</li>
+										))}
+									</ul>
+								</CardContent>
+								<CardFooter className="border-t-0 pt-2">
+									{tier.name === "Scale" ? (
+										<Button
+											variant="outline"
+											className="w-full font-semibold"
+											asChild
+										>
+											<a
+												href={`mailto:${siteConfig.supportEmail}?subject=Klipse%20Scale`}
+											>
+												{tier.cta}
+											</a>
+										</Button>
+									) : (
+										<Link
+											to="/"
+											search={{ auth: "signup" }}
+											variant={tier.emphasis ? "default" : "outline"}
+											size="lg"
+											className="w-full font-semibold"
+										>
+											{tier.cta}
+										</Link>
+									)}
+								</CardFooter>
+							</Card>
 						))}
 					</div>
 				</div>
 			</section>
 
-			{/* Final CTA */}
-			<section className="bg-primary px-4 py-24 text-primary-foreground sm:px-6 lg:px-8">
-				<div className="page-wrap">
-					<div className="mx-auto max-w-2xl text-center">
-						<h2 className="font-heading text-3xl font-bold tracking-tight sm:text-4xl">
-							Start your first video pipeline
-						</h2>
-						<p className="mt-4 text-pretty text-lg text-primary-foreground/90">
-							No setup. No manual editing. Sign in and run a job through the
-							same queue your production account will use.
-						</p>
-						<div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-4">
-							<Link
-								to="/dashboard/generate"
-								className="inline-flex min-h-11 min-w-48 items-center justify-center rounded-lg border border-primary-foreground/30 bg-primary-foreground px-8 text-sm font-semibold text-primary no-underline shadow-sm transition hover:bg-primary-foreground/95"
-							>
-								Start generating
-							</Link>
-							<Link
-								to="/"
-								search={{ auth: "login" }}
-								className="text-sm font-semibold text-primary-foreground/95 underline-offset-4 hover:text-primary-foreground"
-							>
-								I already have an account
-							</Link>
-						</div>
+			<section className="relative overflow-hidden border-t border-border/80 bg-background px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
+				<div
+					className="pointer-events-none absolute inset-0 overflow-hidden"
+					aria-hidden
+				>
+					<div className="absolute -left-1/4 top-0 h-[min(70vh,520px)] w-[70%] rounded-full bg-primary/22 blur-[100px] dark:bg-primary/14" />
+					<div className="absolute -right-1/4 top-1/4 h-[min(60vh,480px)] w-[60%] rounded-full bg-chart-2/28 blur-[90px] dark:bg-chart-2/12" />
+					<div className="absolute bottom-0 left-1/3 h-40 w-2/3 rounded-full bg-chart-1/18 blur-[80px] dark:bg-chart-1/10" />
+					<div className="landing-grid opacity-30 dark:opacity-25" />
+				</div>
+				<div className="page-wrap relative z-10 mx-auto max-w-2xl text-center">
+					<h2 className="font-heading text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+						Start your first video pipeline
+					</h2>
+					<p className="mt-4 text-pretty text-lg leading-relaxed text-muted-foreground">
+						No setup. No manual editing. Sign in and run a job through the same
+						queue your production account will use.
+					</p>
+					<div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row sm:flex-wrap sm:gap-5">
+						<GetStartedButton variant="hero" />
+						<Separator className="sm:hidden" />
+						<Link
+							variant="outline"
+							to="/"
+							size="lg"
+							search={{ auth: "login" }}
+						>
+							I already have an account
+						</Link>
 					</div>
 				</div>
 			</section>
