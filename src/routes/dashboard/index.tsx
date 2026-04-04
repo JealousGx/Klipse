@@ -31,17 +31,17 @@ function DashboardPage() {
 	const items = [
 		{
 			label: "Credits remaining",
-			value: String(user.creditsRemaining),
+			value: String(user.creditsRemaining || 0),
 			hint: "Ready to spend",
 		},
 		{
 			label: "Plan",
-			value: planLabel[user.plan as MeResponse["plan"]],
+			value: user.plan ? planLabel[user.plan as MeResponse["plan"]] : "—",
 			hint: "Current tier",
 		},
 		{
 			label: "Credits used",
-			value: String(user.creditsUsed),
+			value: String(user.creditsUsed || 0),
 			hint: "All-time",
 		},
 		{
