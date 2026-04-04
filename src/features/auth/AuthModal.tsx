@@ -3,8 +3,10 @@ import { ArrowLeft, KeyRound, Loader2, Lock, Mail } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 import { GoogleIcon } from "@/components/icons/google";
+
 import { siteConfig } from "@/config/site";
-import { authClient, signIn, signUp } from "@/features/auth/client";
+
+import { authClient, signIn, signUp } from "@/lib/auth/client";
 import { readBetterAuthActionError } from "@/lib/client-errors";
 import { cn } from "@/lib/utils";
 
@@ -351,7 +353,7 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 
 	return (
 		<div
-			className="fixed inset-0 z-[100] flex items-center justify-center bg-black/40 p-4"
+			className="fixed inset-0 z-100 flex items-center justify-center bg-black/40 p-4"
 			role="dialog"
 			aria-modal="true"
 			onMouseDown={(e) => {
@@ -390,7 +392,7 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 				</div>
 
 				<div className="mb-6 text-center">
-					<div className="mx-auto mb-3 flex size-11 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70">
+					<div className="mx-auto mb-3 flex size-11 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-primary/70">
 						<span className="text-base font-bold text-primary-foreground">
 							K
 						</span>

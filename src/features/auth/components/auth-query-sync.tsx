@@ -1,8 +1,9 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
-import { authClient } from "@/features/auth/client";
 import { meQueryKey } from "@/features/user/hooks/use-me";
+
+import { authClient } from "@/lib/auth/client";
 
 /**
  * Keeps TanStack Query in sync with Better Auth: refetch `/api/me` on sign-in / account

@@ -2,7 +2,8 @@ import { useNavigate } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 import { Link } from "@/components/ui/link";
-import { authClient } from "@/features/auth/client";
+
+import { authClient } from "@/lib/auth/client";
 import { cn } from "@/lib/utils";
 
 type Variant = "header" | "hero";
