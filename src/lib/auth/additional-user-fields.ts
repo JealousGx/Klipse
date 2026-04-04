@@ -10,21 +10,21 @@ export const additionalUserFields = {
 	plan: {
 		type: "string",
 		input: false,
-		required: true,
+		required: false,
 	},
 	creditsRemaining: {
 		type: "number",
 		input: false,
-		required: true,
+		required: false,
 	},
 	creditsUsed: {
 		type: "number",
 		input: false,
-		required: true,
+		required: false,
 	},
 	freeVideoConsumed: {
 		type: "boolean",
 		input: false,
-		required: true,
+		required: false,
 	},
 } satisfies Record<string, DBFieldAttribute>;
