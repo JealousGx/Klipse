@@ -20,7 +20,6 @@ import {
 	ProductStoryMock,
 } from "@/components/landing";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
@@ -31,7 +30,6 @@ import {
 } from "@/components/ui/card";
 import { Link } from "@/components/ui/link";
 import { Separator } from "@/components/ui/separator";
-import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: LandingPage });
@@ -117,53 +115,67 @@ const pricingTiers = [
 		highlight: "Try the system",
 		features: [
 			"1 video for lifetime",
-			"Watermark",
-			"Queue + job visibility",
-			"Single channel",
+			"Max 30 sec",
+			"No auto-post",
+			"No download (preview only or low-res)",
+			"Expires after 24h",
+			"Queue priority: lowest",
+			"Models: cheapest only",
 		],
 		cta: "Start free",
 		emphasis: false,
 	},
 	{
 		name: "Starter",
-		price: "$29",
+		price: "$19",
 		period: "/mo",
 		highlight: "Solo operators",
 		features: [
+			"~1,000 credits (~40 shorts)",
+			"1 channel",
+			"Max 30 sec videos",
+			"Auto-post (YouTube only)",
+			"Basic analytics",
+			"Standard queue priority",
 			"No watermark",
-			"Multi-step pipelines",
-			"Credits bundle included",
 			"Email support",
+			"Ability to buy more credits",
 		],
 		cta: "Get started",
 		emphasis: false,
 	},
 	{
 		name: "Creator",
-		price: "$99",
+		price: "$49",
 		period: "/mo",
 		highlight: "Serious volume",
 		features: [
-			"Higher credit caps",
-			"Multiple channels",
-			"Priority queue",
-			"Exports & webhooks (roadmap)",
+			"~5,000 credits (~200 shorts or mixed)",
+			"3 channels",
+			"Max 60 sec videos",
+			"Auto-post + scheduling",
+			"Manual approval toggle",
+			"Better TTS + visuals",
+			"Medium queue priority",
 		],
 		cta: "Get started",
 		emphasis: true,
 	},
 	{
 		name: "Empire",
-		price: "Custom",
-		period: "",
+		price: "$99",
+		period: "/mo",
 		highlight: "Teams & networks",
 		features: [
-			"Volume pricing",
-			"SLA options",
-			"Dedicated support",
-			"Custom integrations",
+			"~15,000 credits (~600 shorts or mixed)",
+			"10 channels",
+			"Long-form support",
+			"Priority rendering",
+			"Premium models (Kling, Google TTS priority)",
+			"Advanced analytics (future-ready)",
+			"Highest queue priority",
 		],
-		cta: "Talk to us",
+		cta: "Get Started",
 		emphasis: false,
 	},
 ] as const;
@@ -476,29 +488,15 @@ function LandingPage() {
 									</ul>
 								</CardContent>
 								<CardFooter className="border-t-0 pt-2">
-									{tier.name === "Empire" ? (
-										<Button
-											variant="outline"
-											className="w-full font-semibold"
-											asChild
-										>
-											<a
-												href={`mailto:${siteConfig.supportEmail}?subject=Klipse%20Scale`}
-											>
-												{tier.cta}
-											</a>
-										</Button>
-									) : (
-										<Link
-											to="/"
-											search={{ auth: "signup" }}
-											variant={tier.emphasis ? "default" : "outline"}
-											size="lg"
-											className="w-full font-semibold"
-										>
-											{tier.cta}
-										</Link>
-									)}
+									<Link
+										to="/"
+										search={{ auth: "signup" }}
+										variant={tier.emphasis ? "default" : "outline"}
+										size="lg"
+										className="w-full font-semibold"
+									>
+										{tier.cta}
+									</Link>
 								</CardFooter>
 							</Card>
 						))}
