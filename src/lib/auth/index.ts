@@ -97,6 +97,13 @@ async function sendVerificationOTP(
 	},
 	_ctx?: GenericEndpointContext | undefined,
 ) {
-	const { email, otp } = data;
+	const { email, otp, type } = data;
+
+	if (process.env.NODE_ENV === "development") {
+		// In dev, just log - don't actually send email
+		console.log(`[dev OTP] ${otp} for ${email} (${type})`);
+		return;
+	}
+
 	await sendAuthOTPEmail({ email, otp });
 }
