@@ -3,7 +3,27 @@ import { z } from 'zod'
 
 export const env = createEnv({
   server: {
-    SERVER_URL: z.string().url().optional(),
+    SERVER_URL: z.url().optional(),
+    DATABASE_URL: z.string(),
+
+    GOOGLE_CLIENT_ID: z.string(),
+    GOOGLE_CLIENT_SECRET: z.string(),
+
+    WORKER_API_URL: z.url(),
+    WORKER_SECRET: z.string(),
+
+    R2_ACCOUNT_ID: z.string(),
+    R2_ACCESS_KEY_ID: z.string(),
+    R2_SECRET_ACCESS_KEY: z.string(),
+    R2_BUCKET_NAME: z.string(),
+    R2_PUBLIC_BASE_URL: z.url(),
+
+    RESEND_API_KEY: z.string(),
+    EMAIL_FROM: z.email(),
+
+    POLAR_WEBHOOK_SECRET: z.string(),
+    POLAR_ACCESS_TOKEN: z.string(),
+    POLAR_SERVER: z.enum(["sandbox", "production"]).default("sandbox"),
   },
 
   /**
@@ -14,6 +34,9 @@ export const env = createEnv({
 
   client: {
     VITE_APP_TITLE: z.string().min(1).optional(),
+    VITE_APP_URL: z.url(),
+    VITE_APP_R2_PUBLIC_BASE_URL: z.url(),
+    VITE_APP_SUPPORT_EMAIL: z.email(),
   },
 
   /**
