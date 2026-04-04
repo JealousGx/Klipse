@@ -21,6 +21,8 @@ export const POLAR_USAGE_STAGES = {
 	tts: "tts",
 	videoAssembly: "assembly",
 	aiVideoSecond: "ai_video",
+	/** Dashboard stub until real video pipeline metering exists. */
+	stubGenerate: "stub",
 } as const;
 
 /**
