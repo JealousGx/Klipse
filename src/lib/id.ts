@@ -51,6 +51,9 @@ const ID_PREFIXES = {
 	/** `generated_uploads` PK. */
 	generatedUpload: "gup",
 	creditTransaction: "ctx",
+	/** `polar_usage_sync` PK — outbox for Polar `klipse.usage` ingest. */
+	polarUsageSync: "pus",
+	usageIdempotency: "uim",
 } as const;
 
 export function userId() {
@@ -141,4 +144,12 @@ export function generatedUploadRowId() {
 
 export function creditTransactionId() {
 	return prefixedId(ID_PREFIXES.creditTransaction);
+}
+
+export function polarUsageSyncRowId() {
+	return prefixedId(ID_PREFIXES.polarUsageSync);
+}
+
+export function usageIdempotencyRowId() {
+	return prefixedId(ID_PREFIXES.usageIdempotency);
 }
