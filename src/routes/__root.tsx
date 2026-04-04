@@ -11,7 +11,6 @@ import { siteConfig } from "@/config/site";
 
 import { AuthModalBridge } from "@/features/auth/AuthModalBridge";
 import { AuthModalProvider } from "@/features/auth/AuthModalContext";
-import { AuthQuerySync } from "@/features/auth/components/auth-query-sync";
 import { getServerSession } from "@/features/auth/session.server";
 
 import { rootSearchSchema } from "@/lib/routes/root-search";
@@ -76,7 +75,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</head>
 			<body className="font-sans antialiased wrap-anywhere selection:bg-[rgba(79,184,178,0.24)]">
 				<AuthModalProvider>
-					<AuthQuerySync />
 					<RootChrome>{children}</RootChrome>
 					<AuthModalBridge />
 				</AuthModalProvider>
