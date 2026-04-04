@@ -21,7 +21,6 @@ import { Route as DashboardGenerateRouteImport } from './routes/dashboard/genera
 import { Route as DashboardChannelsRouteImport } from './routes/dashboard/channels'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
-import { Route as ApiMeRouteImport } from './routes/api/me'
 import { Route as DashboardChannelsChannelIdRouteImport } from './routes/dashboard/channels.$channelId'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
@@ -85,11 +84,6 @@ const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const ApiMeRoute = ApiMeRouteImport.update({
-  id: '/api/me',
-  path: '/api/me',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const DashboardChannelsChannelIdRoute =
   DashboardChannelsChannelIdRouteImport.update({
     id: '/$channelId',
@@ -108,7 +102,6 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
-  '/api/me': typeof ApiMeRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/channels': typeof DashboardChannelsRouteWithChildren
@@ -124,7 +117,6 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
-  '/api/me': typeof ApiMeRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/channels': typeof DashboardChannelsRouteWithChildren
@@ -142,7 +134,6 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
-  '/api/me': typeof ApiMeRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/channels': typeof DashboardChannelsRouteWithChildren
@@ -161,7 +152,6 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refund'
     | '/terms'
-    | '/api/me'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/channels'
@@ -177,7 +167,6 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refund'
     | '/terms'
-    | '/api/me'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/channels'
@@ -194,7 +183,6 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refund'
     | '/terms'
-    | '/api/me'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/channels'
@@ -212,7 +200,6 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   RefundRoute: typeof RefundRoute
   TermsRoute: typeof TermsRoute
-  ApiMeRoute: typeof ApiMeRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
 }
 
@@ -302,13 +289,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAnalyticsRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
-    '/api/me': {
-      id: '/api/me'
-      path: '/api/me'
-      fullPath: '/api/me'
-      preLoaderRoute: typeof ApiMeRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/dashboard/channels/$channelId': {
       id: '/dashboard/channels/$channelId'
       path: '/$channelId'
@@ -367,7 +347,6 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   RefundRoute: RefundRoute,
   TermsRoute: TermsRoute,
-  ApiMeRoute: ApiMeRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
 }
 export const routeTree = rootRouteImport
