@@ -22,9 +22,12 @@
     "db:studio": "drizzle-kit studio",
     "format": "biome format",
     "lint": "biome lint",
-    "check": "biome check"
+    "check": "biome check",
+    "worker:dev": "pnpm --filter @klipse/worker dev",
+    "worker:typecheck": "pnpm --filter @klipse/worker typecheck"
   },
   "dependencies": {
+    "@klipse/worker-contracts": "workspace:*",
     "@polar-sh/better-auth": "^1.8.3",
     "@polar-sh/sdk": "^0.47.0",
     "@t3-oss/env-core": "^0.13.10",
