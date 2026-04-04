@@ -11,7 +11,7 @@ import { siteConfig } from "@/config/site";
 
 import { AuthModalBridge } from "@/features/auth/AuthModalBridge";
 import { AuthModalProvider } from "@/features/auth/AuthModalContext";
-import { getServerSession } from "@/features/auth/session.server";
+import { getRootSession } from "@/features/auth/get-root-session";
 
 import { rootSearchSchema } from "@/lib/routes/root-search";
 
@@ -22,7 +22,8 @@ import appCss from "../styles.css?url";
 
 interface MyRouterContext {
 	queryClient: QueryClient;
-	session: Awaited<ReturnType<typeof getServerSession>>;
+	/** Set in root `beforeLoad` (`getRootSession`); omitted in initial `getContext()` until navigation runs. */
+	session?: Awaited<ReturnType<typeof getRootSession>> | null;
 }
 
 const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`;
@@ -33,7 +34,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 		return parsed.success ? parsed.data : {};
 	},
 	beforeLoad: async () => {
-		const session = await getServerSession();
+		const session = await getRootSession();
 
 		return { session };
 	},
