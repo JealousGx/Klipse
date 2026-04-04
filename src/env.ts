@@ -1,62 +1,65 @@
-import { createEnv } from '@t3-oss/env-core'
-import { z } from 'zod'
+import { createEnv } from "@t3-oss/env-core";
+import { z } from "zod";
 
 export const env = createEnv({
-  server: {
-    SERVER_URL: z.url().optional(),
-    DATABASE_URL: z.string(),
+	server: {
+		SERVER_URL: z.url().optional(),
+		DATABASE_URL: z.string(),
 
-    GOOGLE_CLIENT_ID: z.string(),
-    GOOGLE_CLIENT_SECRET: z.string(),
+		GOOGLE_CLIENT_ID: z.string(),
+		GOOGLE_CLIENT_SECRET: z.string(),
 
-    WORKER_API_URL: z.url(),
-    WORKER_SECRET: z.string(),
+		WORKER_API_URL: z.url(),
+		WORKER_SECRET: z.string(),
 
-    R2_ACCOUNT_ID: z.string(),
-    R2_ACCESS_KEY_ID: z.string(),
-    R2_SECRET_ACCESS_KEY: z.string(),
-    R2_BUCKET_NAME: z.string(),
-    R2_PUBLIC_BASE_URL: z.url(),
+		R2_ACCOUNT_ID: z.string(),
+		R2_ACCESS_KEY_ID: z.string(),
+		R2_SECRET_ACCESS_KEY: z.string(),
+		R2_BUCKET_NAME: z.string(),
+		R2_PUBLIC_BASE_URL: z.url(),
 
-    RESEND_API_KEY: z.string(),
-    EMAIL_FROM: z.email(),
+		RESEND_API_KEY: z.string(),
+		EMAIL_FROM: z.email(),
 
-    POLAR_WEBHOOK_SECRET: z.string(),
-    POLAR_ACCESS_TOKEN: z.string(),
-    POLAR_SERVER: z.enum(["sandbox", "production"]).default("sandbox"),
-  },
+		POLAR_WEBHOOK_SECRET: z.string(),
+		POLAR_ACCESS_TOKEN: z.string(),
+		POLAR_SERVER: z.enum(["sandbox", "production"]).default("sandbox"),
+	},
 
-  /**
-   * The prefix that client-side variables must have. This is enforced both at
-   * a type-level and at runtime.
-   */
-  clientPrefix: 'VITE_',
+	/**
+	 * The prefix that client-side variables must have. This is enforced both at
+	 * a type-level and at runtime.
+	 */
+	clientPrefix: "VITE_",
 
-  client: {
-    VITE_APP_TITLE: z.string().min(1).optional(),
-    VITE_APP_URL: z.url(),
-    VITE_APP_R2_PUBLIC_BASE_URL: z.url(),
-    VITE_APP_SUPPORT_EMAIL: z.email(),
-  },
+	client: {
+		VITE_APP_TITLE: z.string().min(1).optional(),
+		VITE_APP_URL: z.url(),
+		VITE_APP_R2_PUBLIC_BASE_URL: z.url(),
+		VITE_APP_SUPPORT_EMAIL: z.email(),
+	},
 
-  /**
-   * What object holds the environment variables at runtime. This is usually
-   * `process.env` or `import.meta.env`.
-   */
-  runtimeEnv: import.meta.env,
+	/**
+	 * What object holds the environment variables at runtime. This is usually
+	 * `process.env` or `import.meta.env`.
+	 */
+		runtimeEnv: {
+		...import.meta.env,
+		...process.env,
+	},
 
-  /**
-   * By default, this library will feed the environment variables directly to
-   * the Zod validator.
-   *
-   * This means that if you have an empty string for a value that is supposed
-   * to be a number (e.g. `PORT=` in a ".env" file), Zod will incorrectly flag
-   * it as a type mismatch violation. Additionally, if you have an empty string
-   * for a value that is supposed to be a string with a default value (e.g.
-   * `DOMAIN=` in an ".env" file), the default value will never be applied.
-   *
-   * In order to solve these issues, we recommend that all new projects
-   * explicitly specify this option as true.
-   */
-  emptyStringAsUndefined: true,
-})
+	/**
+	 * By default, this library will feed the environment variables directly to
+	 * the Zod validator.
+	 *
+	 * This means that if you have an empty string for a value that is supposed
+	 * to be a number (e.g. `PORT=` in a ".env" file), Zod will incorrectly flag
+	 * it as a type mismatch violation. Additionally, if you have an empty string
+	 * for a value that is supposed to be a string with a default value (e.g.
+	 * `DOMAIN=` in an ".env" file), the default value will never be applied.
+	 *
+	 * In order to solve these issues, we recommend that all new projects
+	 * explicitly specify this option as true.
+	 */
+	emptyStringAsUndefined: true,
+});
