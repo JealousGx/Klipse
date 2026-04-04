@@ -1,0 +1,29 @@
+{
+  "projectName": "klipse",
+  "mode": "file-router",
+  "typescript": true,
+  "tailwind": true,
+  "packageManager": "npm",
+  "git": true,
+  "install": true,
+  "addOnOptions": {
+    "drizzle": {
+      "database": "postgresql"
+    }
+  },
+  "includeExamples": true,
+  "envVarValues": {},
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "shadcn",
+    "drizzle",
+    "better-auth",
+    "t3env",
+    "biome",
+    "compiler",
+    "store",
+    "tanstack-query"
+  ]
+}
