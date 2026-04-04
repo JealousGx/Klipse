@@ -10,6 +10,7 @@ import * as schema from "@/db/schema";
 
 import { env } from "@/env";
 // import { polarBillingPlugins } from "@/features/auth/polar-plugins";
+import { additionalUserFields } from "@/lib/auth/additional-user-fields";
 import { sendAuthOTPEmail } from "@/lib/email/auth-otp";
 import { accountId, sessionId, userId, verificationId } from "@/lib/id";
 
@@ -30,6 +31,10 @@ export const auth = betterAuth({
 			enabled: true,
 			maxAge: 7 * 60 * 60 * 24,
 		},
+	},
+
+	user: {
+		additionalFields: additionalUserFields,
 	},
 
 	emailAndPassword: {
