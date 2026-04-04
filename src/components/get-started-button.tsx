@@ -34,7 +34,7 @@ export function GetStartedButton({
 				disabled
 				variant="ghost"
 				size={size}
-				className={cn(variant === "hero" && "min-w-[10.5rem]", className)}
+				className={cn(variant === "hero" && "min-w-42", className)}
 				aria-busy
 			>
 				…
@@ -58,7 +58,7 @@ export function GetStartedButton({
 		<Button
 			size={size}
 			className={cn(
-				variant === "hero" && "min-w-[10.5rem] font-semibold",
+				variant === "hero" && "min-w-42 font-semibold",
 				className,
 			)}
 			onClick={() => {

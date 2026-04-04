@@ -185,13 +185,13 @@ function LandingPage() {
 							<CardHeader className="p-0">
 								<Badge
 									variant="outline"
-									className="w-fit border-primary/30 bg-primary/[0.06] text-xs font-semibold uppercase tracking-[0.18em] text-primary shadow-sm shadow-primary/5"
+									className="w-fit border-primary/30 bg-primary/6 text-xs font-semibold uppercase tracking-[0.18em] text-primary shadow-sm shadow-primary/5"
 								>
 									Content infrastructure for operators
 								</Badge>
 								<CardTitle className="font-heading mt-5 text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-[3.35rem] lg:leading-[1.06]">
 									Build and run{" "}
-									<span className="bg-gradient-to-r from-primary via-primary to-chart-2 bg-clip-text text-transparent">
+									<span className="bg-linear-to-r from-primary via-primary to-chart-2 bg-clip-text text-transparent">
 										AI video channels
 									</span>
 									—end to end.
@@ -217,10 +217,10 @@ function LandingPage() {
 						>
 							<div className="relative">
 								<div
-									className="pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-br from-primary/20 via-transparent to-chart-2/15 opacity-90 blur-xl dark:from-primary/25 dark:to-chart-2/10"
+									className="pointer-events-none absolute -inset-1 rounded-2xl bg-linear-to-br from-primary/20 via-transparent to-chart-2/15 opacity-90 blur-xl dark:from-primary/25 dark:to-chart-2/10"
 									aria-hidden
 								/>
-								<div className="relative rounded-2xl shadow-2xl shadow-black/[0.06] ring-1 ring-border/60 dark:shadow-black/40">
+								<div className="relative rounded-2xl shadow-2xl shadow-black/6 ring-1 ring-border/60 dark:shadow-black/40">
 									<ProductStoryMock />
 								</div>
 							</div>
@@ -230,7 +230,7 @@ function LandingPage() {
 			</section>
 
 			{/* Outcome: what they get */}
-			<section className="relative border-b border-border/80 bg-gradient-to-b from-muted/35 via-background to-background dark:from-muted/20">
+			<section className="relative border-b border-border/80 bg-linear-to-b from-muted/35 via-background to-background dark:from-muted/20">
 				<div className="page-wrap px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
 					<Card className="mb-12 max-w-2xl border-0 bg-transparent p-0 shadow-none sm:mb-16">
 						<CardHeader className="p-0">
@@ -250,7 +250,7 @@ function LandingPage() {
 								<li key={item.title} className="h-full">
 									<Card className="group flex h-full flex-col border-border/70 bg-card/80 shadow-sm ring-1 ring-border/40 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-card/60">
 										<CardContent className="grid grid-cols-[auto_1fr] items-start gap-4 pt-6">
-											<span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-gradient-to-br from-background to-muted/40 text-primary shadow-sm">
+											<span className="flex size-10 shrink-0 items-center justify-center rounded-xl border border-border/80 bg-linear-to-br from-background to-muted/40 text-primary shadow-sm">
 												<Icon className="size-5" aria-hidden />
 											</span>
 											<div className="min-w-0 space-y-1.5">
@@ -332,7 +332,7 @@ function LandingPage() {
 			</section>
 
 			{/* Differentiation */}
-			<section className="border-b border-border/80 bg-gradient-to-b from-muted/30 to-muted/15 dark:from-muted/15 dark:to-background/80">
+			<section className="border-b border-border/80 bg-linear-to-b from-muted/30 to-muted/15 dark:from-muted/15 dark:to-background/80">
 				<div className="page-wrap px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
 					<Card className="mb-12 max-w-2xl border-0 bg-transparent p-0 shadow-none sm:mb-16">
 						<CardHeader className="p-0">
@@ -354,7 +354,7 @@ function LandingPage() {
 									className="border-border/70 bg-card/85 shadow-sm ring-1 ring-border/35 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-card/55"
 								>
 									<CardHeader>
-										<div className="flex size-10 items-center justify-center rounded-xl border border-border/80 bg-gradient-to-br from-background to-muted/35 text-primary shadow-sm">
+										<div className="flex size-10 items-center justify-center rounded-xl border border-border/80 bg-linear-to-br from-background to-muted/35 text-primary shadow-sm">
 											<Icon className="size-5" aria-hidden />
 										</div>
 										<CardTitle className="font-heading text-lg">
@@ -419,7 +419,7 @@ function LandingPage() {
 			</section>
 
 			{/* Pricing */}
-			<section className="border-b border-border/80 bg-gradient-to-b from-muted/25 via-muted/10 to-background dark:from-muted/12">
+			<section className="border-b border-border/80 bg-linear-to-b from-muted/25 via-muted/10 to-background dark:from-muted/12">
 				<div className="page-wrap px-4 py-20 sm:px-6 sm:py-24 lg:px-8">
 					<Card className="mb-12 max-w-2xl border-0 bg-transparent p-0 shadow-none sm:mb-16">
 						<CardHeader className="p-0">

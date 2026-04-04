@@ -4,10 +4,6 @@ import { cn } from "@/lib/utils";
 
 const tags = ["shorts", "finance", "hook", "Q4"] as const;
 
-/**
- * Queue + preview mock for the hero (`#product` anchor). Styled as a dense
- * “product chrome” panel—sharp borders, square status chips, not pill badges.
- */
 export function ProductStoryMock() {
 	return (
 		<section
@@ -88,7 +84,7 @@ export function ProductStoryMock() {
 						<div className="absolute inset-0 flex items-center justify-center bg-foreground/5">
 							<div className="flex size-14 items-center justify-center rounded-full border-2 border-foreground/20 bg-background shadow-sm">
 								<div
-									className="ml-0.5 h-0 w-0 border-y-[10px] border-l-[14px] border-y-transparent border-l-foreground"
+									className="ml-0.5 h-0 w-0 border-y-10 border-l-14 border-y-transparent border-l-foreground"
 									aria-hidden
 								/>
 							</div>
