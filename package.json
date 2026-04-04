@@ -5,7 +5,7 @@
   "imports": {
     "@/*": "./src/*"
   },
-    "engines": {
+  "engines": {
     "node": ">=23.0.0"
   },
   "packageManager": "pnpm@10.31.0",
@@ -14,6 +14,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run",
+    "db:setup": "docker-compose down -v && docker-compose up -d && pnpm db:push",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
@@ -24,6 +25,8 @@
     "check": "biome check"
   },
   "dependencies": {
+    "@polar-sh/better-auth": "^1.8.3",
+    "@polar-sh/sdk": "^0.47.0",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",
@@ -36,18 +39,21 @@
     "@tanstack/react-store": "latest",
     "@tanstack/router-plugin": "^1.132.0",
     "@tanstack/store": "latest",
+    "@tidbcloud/serverless": "^0.3.0",
     "better-auth": "^1.5.3",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "drizzle-kit": "^0.31.9",
     "drizzle-orm": "^0.45.1",
     "lucide-react": "^0.577.0",
+    "mysql2": "^3.20.0",
     "pg": "^8.16.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "resend": "^6.10.0",
     "tailwind-merge": "^3.0.2",
     "tailwindcss": "^4.1.18",
     "tw-animate-css": "^1.3.6",
+    "uuidv7": "^1.2.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -64,6 +70,7 @@
     "@vitejs/plugin-react": "^5.1.4",
     "babel-plugin-react-compiler": "^1.0.0",
     "dotenv": "^17.3.1",
+    "drizzle-kit": "^0.31.9",
     "jsdom": "^28.1.0",
     "tsx": "^4.21.0",
     "typescript": "^5.7.2",
