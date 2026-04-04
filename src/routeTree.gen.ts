@@ -22,7 +22,9 @@ import { Route as DashboardChannelsRouteImport } from './routes/dashboard/channe
 import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
 import { Route as DashboardChannelsChannelIdRouteImport } from './routes/dashboard/channels.$channelId'
+import { Route as ApiCronPolarUsageSyncRouteImport } from './routes/api/cron/polar-usage-sync'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiInternalWorkerPolarUsageSyncDrainRouteImport } from './routes/api/internal/worker/polar-usage-sync/drain'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -90,11 +92,22 @@ const DashboardChannelsChannelIdRoute =
     path: '/$channelId',
     getParentRoute: () => DashboardChannelsRoute,
   } as any)
+const ApiCronPolarUsageSyncRoute = ApiCronPolarUsageSyncRouteImport.update({
+  id: '/api/cron/polar-usage-sync',
+  path: '/api/cron/polar-usage-sync',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiInternalWorkerPolarUsageSyncDrainRoute =
+  ApiInternalWorkerPolarUsageSyncDrainRouteImport.update({
+    id: '/api/internal/worker/polar-usage-sync/drain',
+    path: '/api/internal/worker/polar-usage-sync/drain',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -110,7 +123,9 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
   '/dashboard/channels/$channelId': typeof DashboardChannelsChannelIdRoute
+  '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -125,7 +140,9 @@ export interface FileRoutesByTo {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
   '/dashboard/channels/$channelId': typeof DashboardChannelsChannelIdRoute
+  '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -142,7 +159,9 @@ export interface FileRoutesById {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
   '/dashboard/channels/$channelId': typeof DashboardChannelsChannelIdRoute
+  '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -160,7 +179,9 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/'
     | '/api/auth/$'
+    | '/api/cron/polar-usage-sync'
     | '/dashboard/channels/$channelId'
+    | '/api/internal/worker/polar-usage-sync/drain'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -175,7 +196,9 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard'
     | '/api/auth/$'
+    | '/api/cron/polar-usage-sync'
     | '/dashboard/channels/$channelId'
+    | '/api/internal/worker/polar-usage-sync/drain'
   id:
     | '__root__'
     | '/'
@@ -191,7 +214,9 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/'
     | '/api/auth/$'
+    | '/api/cron/polar-usage-sync'
     | '/dashboard/channels/$channelId'
+    | '/api/internal/worker/polar-usage-sync/drain'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -201,6 +226,8 @@ export interface RootRouteChildren {
   RefundRoute: typeof RefundRoute
   TermsRoute: typeof TermsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiCronPolarUsageSyncRoute: typeof ApiCronPolarUsageSyncRoute
+  ApiInternalWorkerPolarUsageSyncDrainRoute: typeof ApiInternalWorkerPolarUsageSyncDrainRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -296,11 +323,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardChannelsChannelIdRouteImport
       parentRoute: typeof DashboardChannelsRoute
     }
+    '/api/cron/polar-usage-sync': {
+      id: '/api/cron/polar-usage-sync'
+      path: '/api/cron/polar-usage-sync'
+      fullPath: '/api/cron/polar-usage-sync'
+      preLoaderRoute: typeof ApiCronPolarUsageSyncRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/internal/worker/polar-usage-sync/drain': {
+      id: '/api/internal/worker/polar-usage-sync/drain'
+      path: '/api/internal/worker/polar-usage-sync/drain'
+      fullPath: '/api/internal/worker/polar-usage-sync/drain'
+      preLoaderRoute: typeof ApiInternalWorkerPolarUsageSyncDrainRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -348,6 +389,9 @@ const rootRouteChildren: RootRouteChildren = {
   RefundRoute: RefundRoute,
   TermsRoute: TermsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiCronPolarUsageSyncRoute: ApiCronPolarUsageSyncRoute,
+  ApiInternalWorkerPolarUsageSyncDrainRoute:
+    ApiInternalWorkerPolarUsageSyncDrainRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
