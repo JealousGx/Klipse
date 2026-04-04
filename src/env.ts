@@ -24,6 +24,11 @@ export const env = createEnv({
 		POLAR_WEBHOOK_SECRET: z.string(),
 		POLAR_ACCESS_TOKEN: z.string(),
 		POLAR_SERVER: z.enum(["sandbox", "production"]).default("sandbox"),
+		POLAR_PRODUCT_STARTER: z.string(),
+		POLAR_PRODUCT_CREATOR: z.string(),
+		POLAR_PRODUCT_EMPIRE: z.string(),
+		POLAR_PRODUCT_CREDITS: z.string(),
+		POLAR_PRODUCT_CREDITS_LARGE: z.string(),
 	},
 
 	/**
@@ -43,7 +48,7 @@ export const env = createEnv({
 	 * What object holds the environment variables at runtime. This is usually
 	 * `process.env` or `import.meta.env`.
 	 */
-		runtimeEnv: {
+	runtimeEnv: {
 		...import.meta.env,
 		...process.env,
 	},
