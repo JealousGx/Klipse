@@ -1,7 +1,7 @@
-import { connect, type Connection } from "@tidbcloud/serverless";
+import { type Connection, connect } from "@tidbcloud/serverless";
 import {
-    drizzle,
-    type TiDBServerlessDatabase,
+	drizzle,
+	type TiDBServerlessDatabase,
 } from "drizzle-orm/tidb-serverless";
 
 import { env } from "@/env";
