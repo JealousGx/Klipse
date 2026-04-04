@@ -36,7 +36,7 @@ function DashboardPage() {
 		},
 		{
 			label: "Plan",
-			value: user.plan ? planLabel[user.plan as MeResponse["plan"]] : "—",
+			value: user.plan ? planLabel[user.plan as MeResponse["plan"]] : "Free",
 			hint: "Current tier",
 		},
 		{

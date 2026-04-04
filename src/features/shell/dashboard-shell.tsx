@@ -148,7 +148,7 @@ export function DashboardShell() {
 							{email || "…"}
 						</p>
 						<p className="mt-0.5 text-[10px] text-muted-foreground">
-							{`${planLabel[user.plan as MeResponse["plan"]]} · ${user.creditsRemaining} credits`}
+							{`${user.plan ? planLabel[user.plan as MeResponse["plan"]] : "Free"} · ${user.creditsRemaining || 0} credits remaining`}
 						</p>
 					</div>
 					<div className="mt-3 flex items-center gap-2">
