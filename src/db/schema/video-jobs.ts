@@ -22,6 +22,13 @@ export const videoJobs = mysqlTable(
 		channelId: varchar("channel_id", { length: 64 })
 			.notNull()
 			.references(() => channels.id, { onDelete: "cascade" }),
+		/**
+		 * Which pipeline implementation owns this row (stub, full render, publish-only, …).
+		 * Not a publishing platform — use `channels.platform` for YouTube/TikTok/…
+		 */
+		pipelineKind: varchar("pipeline_kind", { length: 32 })
+			.notNull()
+			.default("stub_pipeline"),
 		status: mysqlEnum("status", ["queued", "processing", "completed", "failed"])
 			.notNull()
 			.default("queued"),
