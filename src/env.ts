@@ -32,6 +32,19 @@ export const env = createEnv({
 
 		/** Bearer token for `POST /api/cron/polar-usage-sync` (Polar usage outbox retries). */
 		INTERNAL_CRON_SECRET: z.string().min(1).optional(),
+
+		/**
+		 * Better Auth `session.cookieCache.maxAge` (seconds). After Polar checkout we
+		 * bypass cache once via `?checkout=success` on billing; keep this high to avoid
+		 * extra DB reads on routine `get-session` calls.
+		 * @default 604800 (7d)
+		 */
+		SESSION_COOKIE_CACHE_MAX_AGE_SECONDS: z.coerce
+			.number()
+			.int()
+			.min(60)
+			.max(604800)
+			.default(604800),
 	},
 
 	/**
