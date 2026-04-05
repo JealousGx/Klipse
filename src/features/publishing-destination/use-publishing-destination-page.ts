@@ -3,11 +3,14 @@ import { useNavigate, useRouterState } from "@tanstack/react-router";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
+import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
+import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config";
 import {
 	deleteChannelFn,
 	reconcileYoutubeOAuthFn,
 	updateChannelFn,
 } from "@/features/channels/channels.functions";
+import type { MeResponse } from "@/features/user/types/me";
 import { channelQueryOptions } from "@/lib/queries/dashboard-queries";
 
 import {
@@ -27,6 +30,9 @@ export function usePublishingDestinationPage(
 ): PublishingDestinationPageState {
 	const navigate = useNavigate();
 	const queryClient = useQueryClient();
+	const { session } = useDashboardRouteContext();
+	const userPlan = (session.user.plan ?? "free") as MeResponse["plan"];
+	const canConnectPublishing = planAllowsPaidPublishingConnections(userPlan);
 
 	const channelQuery = useQuery(channelQueryOptions(destinationId));
 	const locationHash = useRouterState({
@@ -227,6 +233,7 @@ export function usePublishingDestinationPage(
 		isSavingProfile: updateProfileMutation.isPending,
 		onDisconnect: handleDisconnect,
 		isDisconnectPending: updateLinkMutation.isPending,
+		canConnectPublishing,
 		onCopyChannelId: handleCopyChannelId,
 		onRemoveClick: handleRemoveClick,
 		isRemovePending: deleteMutation.isPending,
