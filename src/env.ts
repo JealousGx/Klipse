@@ -9,6 +9,9 @@ export const env = createEnv({
 		GOOGLE_CLIENT_ID: z.string(),
 		GOOGLE_CLIENT_SECRET: z.string(),
 
+		/** HMAC secret for signed `state` in `/api/youtube/oauth/*` (min 32 chars). */
+		YOUTUBE_OAUTH_STATE_SECRET: z.string().min(32),
+
 		WORKER_API_URL: z.url(),
 		WORKER_SECRET: z.string(),
 
