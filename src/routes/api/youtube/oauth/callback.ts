@@ -1,16 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
+
 import { env } from "@/env";
+
+import { ChannelNotFoundError } from "@/features/channels/channel-errors";
 import {
 	getChannelForUser,
-	setChannelYoutubeConnection,
 	userHasAnotherDestinationWithYoutubeChannelId,
 } from "@/features/channels/channels.service.server";
+import { applyYoutubeOAuthConnectionWithQuota } from "@/features/channels/destination-replacement-quota.server";
 import {
 	exchangeYoutubeAuthorizationCode,
 	fetchYoutubeMineChannel,
 	resolveYoutubeOAuthGrantedScopes,
 	youtubeOAuthGrantsAllRequiredScopes,
 } from "@/features/youtube/youtube-oauth-tokens.server";
+
 import { auth } from "@/lib/auth";
 import { verifyYoutubeOAuthState } from "@/lib/youtube-oauth-state.server";
 
@@ -103,8 +107,7 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 					}
 
 					const lockedChannelId =
-						destination.boundYoutubeChannelId ??
-						destination.externalChannelId;
+						destination.boundYoutubeChannelId ?? destination.externalChannelId;
 					if (lockedChannelId && lockedChannelId !== yt.id) {
 						return redirectBack(
 							`/dashboard/publishing/${payload.c}?youtube=error&reason=${encodeURIComponent("wrong_youtube_channel")}`,
@@ -123,7 +126,7 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 						);
 					}
 
-					await setChannelYoutubeConnection({
+					const applied = await applyYoutubeOAuthConnectionWithQuota({
 						userId: payload.u,
 						channelId: payload.c,
 						refreshToken: tokens.refresh_token,
@@ -131,11 +134,25 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 						externalChannelTitle: yt.title || null,
 						externalChannelHandle: formatHandle(yt.customUrl),
 					});
+					if (!applied.ok) {
+						const reason =
+							applied.code === "free_plan_blocked"
+								? "youtube_requires_paid_plan"
+								: "destination_replacements_exhausted";
+						return redirectBack(
+							`/dashboard/publishing/${payload.c}?youtube=error&reason=${encodeURIComponent(reason)}`,
+						);
+					}
 
 					return redirectBack(
 						`/dashboard/publishing/${payload.c}?youtube=connected`,
 					);
 				} catch (e) {
+					if (e instanceof ChannelNotFoundError) {
+						return redirectBack(
+							`/dashboard/publishing/${payload.c}?youtube=error&reason=not_found`,
+						);
+					}
 					console.error("[youtube-oauth]", e);
 					return redirectBack(
 						`/dashboard/publishing/${payload.c}?youtube=error&reason=exchange`,
