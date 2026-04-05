@@ -25,9 +25,13 @@ function JobsPage() {
 					Video jobs
 				</h2>
 				<p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-					Async pipeline runs appear here with status, credits, and errors. Stub
-					generation completes immediately; future stages will show
-					queued/processing longer.
+					Pipeline runs for each destination: status, pipeline kind, credits,
+					and errors. The current stub advances in one request; heavier renders
+					will stay queued longer once workers consume{" "}
+					<code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
+						video_job_dispatch
+					</code>{" "}
+					messages.
 				</p>
 			</div>
 
