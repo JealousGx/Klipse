@@ -3,9 +3,8 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { InsufficientCreditsError } from "@/features/billing/credit-usage.server";
-import { auth } from "@/lib/auth";
-
 import { ChannelNotFoundError } from "@/features/channels/channel-errors";
+import { auth } from "@/lib/auth";
 
 import { executeStubGenerateWithIdempotency } from "./stub-generate-execute.server";
 
@@ -23,6 +22,8 @@ export type RunStubGenerateResult =
 			ref: string;
 			creditsCharged: number;
 			replayed: boolean;
+			/** True when this request ran a new deduction (`fresh`); false on idempotent replay. */
+			creditsConsumed: boolean;
 	  }
 	| {
 			ok: false;
@@ -53,6 +54,7 @@ export const runStubGenerate = createServerFn({ method: "POST" })
 			});
 
 			const replayed = outcome.kind === "replay";
+			const creditsConsumed = outcome.kind === "fresh";
 
 			return {
 				ok: true,
@@ -60,6 +62,7 @@ export const runStubGenerate = createServerFn({ method: "POST" })
 				ref: outcome.payload.ref,
 				creditsCharged: outcome.payload.creditsCharged,
 				replayed,
+				creditsConsumed,
 			};
 		} catch (e) {
 			if (e instanceof InsufficientCreditsError) {
