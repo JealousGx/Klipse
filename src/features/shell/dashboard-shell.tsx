@@ -86,7 +86,7 @@ export function DashboardShell() {
 
 			<aside
 				className={cn(
-					"fixed inset-y-0 left-0 z-50 flex w-[min(100vw-3rem,17.5rem)] flex-col border-r border-border/80 bg-sidebar text-sidebar-foreground shadow-2xl backdrop-blur-xl transition-transform duration-200 ease-out dark:bg-sidebar/95 lg:static lg:z-auto lg:w-60 lg:translate-x-0 lg:shadow-none",
+					"fixed inset-y-0 left-0 z-50 flex h-dvh max-h-dvh w-[min(100vw-3rem,17.5rem)] flex-col overflow-hidden border-r border-border/80 bg-sidebar text-sidebar-foreground shadow-2xl backdrop-blur-xl transition-transform duration-200 ease-out dark:bg-sidebar/95 lg:w-60 lg:translate-x-0 lg:shadow-none",
 					mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
 				)}
 			>
@@ -110,7 +110,7 @@ export function DashboardShell() {
 				</div>
 
 				<nav
-					className="flex flex-1 flex-col gap-0.5 overflow-y-auto p-3"
+					className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto p-3"
 					aria-label="Workspace"
 				>
 					<p className="mb-2 px-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
@@ -166,7 +166,7 @@ export function DashboardShell() {
 				</div>
 			</aside>
 
-			<div className="flex min-w-0 flex-1 flex-col">
+			<div className="flex min-w-0 flex-1 flex-col lg:pl-60">
 				<header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border/80 bg-background/85 px-4 backdrop-blur-xl lg:hidden">
 					<Button
 						type="button"
