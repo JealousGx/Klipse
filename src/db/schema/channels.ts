@@ -4,6 +4,7 @@ import {
 	json,
 	mysqlEnum,
 	mysqlTable,
+	text,
 	timestamp,
 	varchar,
 } from "drizzle-orm/mysql-core";
@@ -39,6 +40,13 @@ export const channels = mysqlTable(
 		externalChannelTitle: varchar("external_channel_title", { length: 512 }),
 		/** Handle / @username when the platform exposes it (optional). */
 		externalChannelHandle: varchar("external_channel_handle", { length: 255 }),
+		/** YouTube OAuth refresh token (server-only; never exposed to the client). */
+		youtubeRefreshToken: text("youtube_refresh_token"),
+		/**
+		 * YouTube channel id (`UC…`) bound to this publishing destination on first
+		 * successful OAuth. Never cleared on disconnect — reconnect must use the same channel.
+		 */
+		boundYoutubeChannelId: varchar("bound_youtube_channel_id", { length: 64 }),
 		createdAt: timestamp("created_at", { fsp: 3 })
 			.default(sql`CURRENT_TIMESTAMP(3)`)
 			.notNull(),
