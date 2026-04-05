@@ -7,6 +7,8 @@ export type PublishingDestinationChannel = {
 	externalChannelId: string | null;
 	externalChannelTitle: string | null;
 	externalChannelHandle: string | null;
+	/** Channel image from the platform API when available. */
+	externalChannelThumbnailUrl: string | null;
 	youtubeConnected: boolean;
 	/** Set on first OAuth; reconnect must return this YouTube channel id. */
 	boundYoutubeChannelId: string | null;
