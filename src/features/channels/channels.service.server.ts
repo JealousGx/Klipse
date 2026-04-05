@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 
-import { and, count, desc, eq } from "drizzle-orm";
+import { and, count, desc, eq, ne, or } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { channels } from "@/db/schema/channels";
@@ -120,6 +120,37 @@ export async function getChannelForUser(
 		return null;
 	}
 	return toChannelRow(r);
+}
+
+/**
+ * True if another publishing destination for this user already uses this YouTube
+ * `UC…` id (bound and/or external column), excluding `excludeChannelId`.
+ */
+export async function userHasAnotherDestinationWithYoutubeChannelId(input: {
+	userId: string;
+	excludeChannelId: string;
+	youtubeChannelId: string;
+}): Promise<boolean> {
+	const db = getDb();
+	const yt = input.youtubeChannelId.trim();
+	if (!yt) {
+		return false;
+	}
+	const rows = await db
+		.select({ id: channels.id })
+		.from(channels)
+		.where(
+			and(
+				eq(channels.userId, input.userId),
+				ne(channels.id, input.excludeChannelId),
+				or(
+					eq(channels.boundYoutubeChannelId, yt),
+					eq(channels.externalChannelId, yt),
+				),
+			),
+		)
+		.limit(1);
+	return rows.length > 0;
 }
 
 export async function createChannel(input: {

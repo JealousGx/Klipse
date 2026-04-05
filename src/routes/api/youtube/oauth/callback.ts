@@ -3,6 +3,7 @@ import { env } from "@/env";
 import {
 	getChannelForUser,
 	setChannelYoutubeConnection,
+	userHasAnotherDestinationWithYoutubeChannelId,
 } from "@/features/channels/channels.service.server";
 import {
 	exchangeYoutubeAuthorizationCode,
@@ -95,6 +96,18 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 					if (lockedChannelId && lockedChannelId !== yt.id) {
 						return redirectBack(
 							`/dashboard/publishing/${payload.c}?youtube=error&reason=${encodeURIComponent("wrong_youtube_channel")}`,
+						);
+					}
+
+					const duplicateElsewhere =
+						await userHasAnotherDestinationWithYoutubeChannelId({
+							userId: session.user.id,
+							excludeChannelId: payload.c,
+							youtubeChannelId: yt.id,
+						});
+					if (duplicateElsewhere) {
+						return redirectBack(
+							`/dashboard/publishing/${payload.c}?youtube=error&reason=${encodeURIComponent("youtube_channel_in_use")}`,
 						);
 					}
 
