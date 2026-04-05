@@ -7,7 +7,6 @@ import {
 	Loader2,
 	Pencil,
 	Plus,
-	Share2,
 	Trash2,
 } from "lucide-react";
 import { useEffect } from "react";
@@ -35,6 +34,7 @@ import {
 	deleteChannelFn,
 	reconcileYoutubeOAuthFn,
 } from "@/features/channels/channels.functions";
+import { PublishingChannelThumbnail } from "@/features/publishing-destination/publishing-channel-thumbnail";
 import {
 	messageForYoutubeOAuthErrorReason,
 	publishingDestinationSearchSchema,
@@ -64,6 +64,7 @@ type PublishingListChannel = {
 	platform: "unlinked" | "youtube" | "tiktok" | "instagram";
 	externalChannelId: string | null;
 	externalChannelTitle: string | null;
+	externalChannelThumbnailUrl: string | null;
 };
 
 type DestinationCardProps = {
@@ -101,16 +102,18 @@ function DestinationCard({
 
 			<CardHeader className="space-y-3 pb-2">
 				<div className="flex items-start gap-3">
-					<div
+					<PublishingChannelThumbnail
+						src={ch.externalChannelThumbnailUrl}
+						alt={
+							ch.externalChannelTitle
+								? `${ch.externalChannelTitle} channel image`
+								: "Publishing destination"
+						}
+						size="sm"
 						className={cn(
-							"flex size-10 shrink-0 items-center justify-center rounded-xl",
-							ytLinked
-								? "bg-primary/12 text-primary dark:bg-primary/18"
-								: "bg-muted/60 text-muted-foreground",
+							ytLinked && "ring-1 ring-primary/25 dark:ring-primary/30",
 						)}
-					>
-						<Share2 className="size-4.5" aria-hidden />
-					</div>
+					/>
 					<div className="min-w-0 flex-1 space-y-1.5">
 						<div className="flex items-start justify-between gap-2">
 							<CardTitle className="font-heading text-base font-semibold leading-snug">
