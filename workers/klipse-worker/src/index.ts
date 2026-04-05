@@ -39,7 +39,7 @@ export default {
 				return new Response("invalid body", { status: 400 });
 			}
 
-			await env.JOBS_QUEUE.send(raw);
+			await env.klipse_jobs.send(raw);
 			return Response.json({ ok: true as const });
 		}
 
