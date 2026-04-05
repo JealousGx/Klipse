@@ -8,6 +8,8 @@ import {
 import {
 	exchangeYoutubeAuthorizationCode,
 	fetchYoutubeMineChannel,
+	resolveYoutubeOAuthGrantedScopes,
+	youtubeOAuthGrantsAllRequiredScopes,
 } from "@/features/youtube/youtube-oauth-tokens.server";
 import { auth } from "@/lib/auth";
 import { verifyYoutubeOAuthState } from "@/lib/youtube-oauth-state.server";
@@ -75,6 +77,16 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 					if (!tokens.refresh_token) {
 						return redirectBack(
 							`/dashboard/publishing/${payload.c}?youtube=error&reason=no_refresh`,
+						);
+					}
+
+					const grantedScope = await resolveYoutubeOAuthGrantedScopes({
+						accessToken: tokens.access_token,
+						scopeFromTokenResponse: tokens.scope,
+					});
+					if (!youtubeOAuthGrantsAllRequiredScopes(grantedScope)) {
+						return redirectBack(
+							`/dashboard/publishing/${payload.c}?youtube=error&reason=${encodeURIComponent("youtube_scopes_incomplete")}`,
 						);
 					}
 
