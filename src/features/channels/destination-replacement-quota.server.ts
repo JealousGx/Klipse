@@ -127,6 +127,7 @@ export async function applyYoutubeOAuthConnectionWithQuota(input: {
 	externalChannelId: string;
 	externalChannelTitle: string | null;
 	externalChannelHandle: string | null;
+	externalChannelThumbnailUrl: string | null;
 }): Promise<ApplyDestinationConnectionResult> {
 	return runDestinationReplacementQuotaTransaction({
 		userId: input.userId,
@@ -140,6 +141,7 @@ export async function applyYoutubeOAuthConnectionWithQuota(input: {
 				externalChannelId: input.externalChannelId,
 				externalChannelTitle: input.externalChannelTitle,
 				externalChannelHandle: input.externalChannelHandle,
+				externalChannelThumbnailUrl: input.externalChannelThumbnailUrl,
 			});
 		},
 	});
