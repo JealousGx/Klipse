@@ -22,6 +22,8 @@ export type PublishingDestinationViewProps = {
 	isSavingProfile: boolean;
 	onDisconnect: () => void;
 	isDisconnectPending: boolean;
+	/** Paid plan allows OAuth for publishing integrations (YouTube today; others later). */
+	canConnectPublishing: boolean;
 	onCopyChannelId: () => void;
 	onRemoveClick: () => void;
 	isRemovePending: boolean;
@@ -38,6 +40,7 @@ export function PublishingDestinationView({
 	isSavingProfile,
 	onDisconnect,
 	isDisconnectPending,
+	canConnectPublishing,
 	onCopyChannelId,
 	onRemoveClick,
 	isRemovePending,
@@ -97,6 +100,7 @@ export function PublishingDestinationView({
 							<DestinationConnectionFields
 								destinationId={destinationId}
 								channel={channel}
+								canConnectPublishing={canConnectPublishing}
 								onDisconnect={onDisconnect}
 								isDisconnectPending={isDisconnectPending}
 							/>
