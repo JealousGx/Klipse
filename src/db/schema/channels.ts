@@ -40,6 +40,10 @@ export const channels = mysqlTable(
 		externalChannelTitle: varchar("external_channel_title", { length: 512 }),
 		/** Handle / @username when the platform exposes it (optional). */
 		externalChannelHandle: varchar("external_channel_handle", { length: 255 }),
+		/** Profile / channel image URL from the platform API (e.g. YouTube thumbnails). */
+		externalChannelThumbnailUrl: varchar("external_channel_thumbnail_url", {
+			length: 512,
+		}),
 		/** YouTube OAuth refresh token (server-only; never exposed to the client). */
 		youtubeRefreshToken: text("youtube_refresh_token"),
 		/**
