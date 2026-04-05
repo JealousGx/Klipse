@@ -1,0 +1,22 @@
+name = "klipse-worker"
+main = "src/index.ts"
+compatibility_date = "2025-04-01"
+
+# Public URL the Worker uses to call the TanStack app (DB + billing). Override per env.
+[vars]
+MAIN_APP_URL = "http://127.0.0.1:3000"
+
+# Create once: `wrangler queues create klipse-jobs`
+[[queues.producers]]
+binding = "klipse_jobs"
+queue = "klipse-jobs"
+
+[[queues.consumers]]
+queue = "klipse-jobs"
+max_batch_size = 16
+max_batch_timeout = 2
+max_retries = 15
+
+# Backup drain if queue is backed up or producer missed a signal.
+[triggers]
+crons = ["*/2 * * * *"]
