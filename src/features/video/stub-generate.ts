@@ -5,11 +5,14 @@ import { z } from "zod";
 import { InsufficientCreditsError } from "@/features/billing/credit-usage.server";
 import { auth } from "@/lib/auth";
 
+import { ChannelNotFoundError } from "@/features/channels/channel-errors";
+
 import { executeStubGenerateWithIdempotency } from "./stub-generate-execute.server";
 
 export { estimateStubGenerateCredits } from "./stub-generate-cost";
 
 const runStubGenerateInputSchema = z.object({
+	channelId: z.string().trim().min(1).max(64),
 	idempotencyKey: z.string().trim().min(8).max(128),
 });
 
@@ -30,7 +33,8 @@ export type RunStubGenerateResult =
 			code: "insufficient_credits";
 			required: number;
 			remaining: number;
-	  };
+	  }
+	| { ok: false; code: "channel_not_found" };
 
 export const runStubGenerate = createServerFn({ method: "POST" })
 	.inputValidator((raw: unknown) => runStubGenerateInputSchema.parse(raw))
@@ -44,6 +48,7 @@ export const runStubGenerate = createServerFn({ method: "POST" })
 		try {
 			const outcome = await executeStubGenerateWithIdempotency({
 				userId: session.user.id,
+				channelId: data.channelId,
 				idempotencyKey: data.idempotencyKey,
 			});
 
@@ -64,6 +69,9 @@ export const runStubGenerate = createServerFn({ method: "POST" })
 					required: e.required,
 					remaining: e.remaining,
 				};
+			}
+			if (e instanceof ChannelNotFoundError) {
+				return { ok: false, code: "channel_not_found" };
 			}
 			throw e;
 		}

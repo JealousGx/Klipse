@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { usageIdempotency } from "@/db/schema";
+import { videoJobs } from "@/db/schema/video-jobs";
 import type { StubGenerateIdempotencyResult } from "@/db/schema/usage-idempotency";
 import {
 	applyUsageDeduction,
@@ -12,6 +13,9 @@ import {
 import { POLAR_USAGE_STAGES } from "@/features/billing/meter-events";
 import { schedulePolarUsageSyncProcessing } from "@/features/billing/polar-usage-sync-schedule.server";
 import { jobRowId, usageIdempotencyRowId } from "@/lib/id";
+
+import { ChannelNotFoundError } from "@/features/channels/channel-errors";
+import { getChannelForUser } from "@/features/channels/channels.service.server";
 
 import { estimateStubGenerateCredits } from "./stub-generate-cost";
 
@@ -34,11 +38,17 @@ export type ExecuteStubGenerateOutcome =
  */
 export async function executeStubGenerateWithIdempotency(input: {
 	userId: string;
+	channelId: string;
 	idempotencyKey: string;
 }): Promise<ExecuteStubGenerateOutcome> {
 	const credits = estimateStubGenerateCredits();
 	const clientKey = input.idempotencyKey.trim();
+	const channelId = input.channelId.trim();
 	const db = getDb();
+
+	if (!(await getChannelForUser(input.userId, channelId))) {
+		throw new ChannelNotFoundError();
+	}
 
 	const outcome = await db.transaction(async (tx) => {
 		const maxIterations = 12;
@@ -114,6 +124,21 @@ export async function executeStubGenerateWithIdempotency(input: {
 					credits,
 					stage: POLAR_USAGE_STAGES.stubGenerate,
 					ref,
+				});
+
+				const now = new Date();
+				await tx.insert(videoJobs).values({
+					id: ref,
+					userId: input.userId,
+					channelId,
+					status: "completed",
+					progress: 100,
+					currentStage: "stub",
+					costCredits: credits,
+					outputUrl: null,
+					errorMessage: null,
+					createdAt: now,
+					updatedAt: now,
 				});
 
 				const payload: StubGenerateIdempotencyResult = {
