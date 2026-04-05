@@ -21,9 +21,12 @@ import { Route as DashboardJobsRouteImport } from './routes/dashboard/jobs'
 import { Route as DashboardGenerateRouteImport } from './routes/dashboard/generate'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
+import { Route as DashboardPublishingIndexRouteImport } from './routes/dashboard/publishing.index'
 import { Route as DashboardPublishingDestinationIdRouteImport } from './routes/dashboard/publishing.$destinationId'
 import { Route as ApiCronPolarUsageSyncRouteImport } from './routes/api/cron/polar-usage-sync'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiYoutubeOauthStartRouteImport } from './routes/api/youtube/oauth/start'
+import { Route as ApiYoutubeOauthCallbackRouteImport } from './routes/api/youtube/oauth/callback'
 import { Route as ApiInternalWorkerPolarUsageSyncDrainRouteImport } from './routes/api/internal/worker/polar-usage-sync/drain'
 
 const TermsRoute = TermsRouteImport.update({
@@ -86,6 +89,12 @@ const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardPublishingIndexRoute =
+  DashboardPublishingIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => DashboardPublishingRoute,
+  } as any)
 const DashboardPublishingDestinationIdRoute =
   DashboardPublishingDestinationIdRouteImport.update({
     id: '/$destinationId',
@@ -100,6 +109,16 @@ const ApiCronPolarUsageSyncRoute = ApiCronPolarUsageSyncRouteImport.update({
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiYoutubeOauthStartRoute = ApiYoutubeOauthStartRouteImport.update({
+  id: '/api/youtube/oauth/start',
+  path: '/api/youtube/oauth/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiYoutubeOauthCallbackRoute = ApiYoutubeOauthCallbackRouteImport.update({
+  id: '/api/youtube/oauth/callback',
+  path: '/api/youtube/oauth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiInternalWorkerPolarUsageSyncDrainRoute =
@@ -125,6 +144,9 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
+  '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
+  '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
+  '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
 }
 export interface FileRoutesByTo {
@@ -136,12 +158,14 @@ export interface FileRoutesByTo {
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/generate': typeof DashboardGenerateRoute
   '/dashboard/jobs': typeof DashboardJobsRoute
-  '/dashboard/publishing': typeof DashboardPublishingRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
+  '/dashboard/publishing': typeof DashboardPublishingIndexRoute
+  '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
+  '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
 }
 export interface FileRoutesById {
@@ -161,6 +185,9 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
+  '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
+  '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
+  '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
 }
 export interface FileRouteTypes {
@@ -181,6 +208,9 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/cron/polar-usage-sync'
     | '/dashboard/publishing/$destinationId'
+    | '/dashboard/publishing/'
+    | '/api/youtube/oauth/callback'
+    | '/api/youtube/oauth/start'
     | '/api/internal/worker/polar-usage-sync/drain'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -192,12 +222,14 @@ export interface FileRouteTypes {
     | '/dashboard/billing'
     | '/dashboard/generate'
     | '/dashboard/jobs'
-    | '/dashboard/publishing'
     | '/dashboard/settings'
     | '/dashboard'
     | '/api/auth/$'
     | '/api/cron/polar-usage-sync'
     | '/dashboard/publishing/$destinationId'
+    | '/dashboard/publishing'
+    | '/api/youtube/oauth/callback'
+    | '/api/youtube/oauth/start'
     | '/api/internal/worker/polar-usage-sync/drain'
   id:
     | '__root__'
@@ -216,6 +248,9 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/cron/polar-usage-sync'
     | '/dashboard/publishing/$destinationId'
+    | '/dashboard/publishing/'
+    | '/api/youtube/oauth/callback'
+    | '/api/youtube/oauth/start'
     | '/api/internal/worker/polar-usage-sync/drain'
   fileRoutesById: FileRoutesById
 }
@@ -227,6 +262,8 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronPolarUsageSyncRoute: typeof ApiCronPolarUsageSyncRoute
+  ApiYoutubeOauthCallbackRoute: typeof ApiYoutubeOauthCallbackRoute
+  ApiYoutubeOauthStartRoute: typeof ApiYoutubeOauthStartRoute
   ApiInternalWorkerPolarUsageSyncDrainRoute: typeof ApiInternalWorkerPolarUsageSyncDrainRoute
 }
 
@@ -316,6 +353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAnalyticsRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/publishing/': {
+      id: '/dashboard/publishing/'
+      path: '/'
+      fullPath: '/dashboard/publishing/'
+      preLoaderRoute: typeof DashboardPublishingIndexRouteImport
+      parentRoute: typeof DashboardPublishingRoute
+    }
     '/dashboard/publishing/$destinationId': {
       id: '/dashboard/publishing/$destinationId'
       path: '/$destinationId'
@@ -337,6 +381,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/youtube/oauth/start': {
+      id: '/api/youtube/oauth/start'
+      path: '/api/youtube/oauth/start'
+      fullPath: '/api/youtube/oauth/start'
+      preLoaderRoute: typeof ApiYoutubeOauthStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/youtube/oauth/callback': {
+      id: '/api/youtube/oauth/callback'
+      path: '/api/youtube/oauth/callback'
+      fullPath: '/api/youtube/oauth/callback'
+      preLoaderRoute: typeof ApiYoutubeOauthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/internal/worker/polar-usage-sync/drain': {
       id: '/api/internal/worker/polar-usage-sync/drain'
       path: '/api/internal/worker/polar-usage-sync/drain'
@@ -349,10 +407,12 @@ declare module '@tanstack/react-router' {
 
 interface DashboardPublishingRouteChildren {
   DashboardPublishingDestinationIdRoute: typeof DashboardPublishingDestinationIdRoute
+  DashboardPublishingIndexRoute: typeof DashboardPublishingIndexRoute
 }
 
 const DashboardPublishingRouteChildren: DashboardPublishingRouteChildren = {
   DashboardPublishingDestinationIdRoute: DashboardPublishingDestinationIdRoute,
+  DashboardPublishingIndexRoute: DashboardPublishingIndexRoute,
 }
 
 const DashboardPublishingRouteWithChildren =
@@ -390,6 +450,8 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronPolarUsageSyncRoute: ApiCronPolarUsageSyncRoute,
+  ApiYoutubeOauthCallbackRoute: ApiYoutubeOauthCallbackRoute,
+  ApiYoutubeOauthStartRoute: ApiYoutubeOauthStartRoute,
   ApiInternalWorkerPolarUsageSyncDrainRoute:
     ApiInternalWorkerPolarUsageSyncDrainRoute,
 }
