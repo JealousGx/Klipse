@@ -9,7 +9,7 @@ import {
 } from "@/lib/queries/dashboard-queries";
 
 export const Route = createFileRoute("/dashboard")({
-	beforeLoad: ({ context }) => {
+	beforeLoad: async ({ context }) => {
 		const { session } = context;
 		if (!session?.user) {
 			throw redirect({
@@ -18,8 +18,9 @@ export const Route = createFileRoute("/dashboard")({
 			});
 		}
 
-		void context.queryClient.ensureQueryData(channelsQueryOptions);
-		void context.queryClient.ensureQueryData(videoJobsQueryOptions);
+		/** Await so SSR output matches client hydration (same query state as `useQuery`). */
+		await context.queryClient.ensureQueryData(channelsQueryOptions);
+		await context.queryClient.ensureQueryData(videoJobsQueryOptions);
 
 		return { session };
 	},
