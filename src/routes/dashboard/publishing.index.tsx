@@ -25,7 +25,11 @@ import {
 } from "@/components/ui/card";
 
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
-import { MAX_CHANNELS_BY_PLAN } from "@/features/billing/tier-config";
+
+import {
+	MAX_CHANNELS_BY_PLAN,
+	planAllowsPaidPublishingConnections,
+} from "@/features/billing/tier-config";
 import {
 	createChannelFn,
 	deleteChannelFn,
@@ -36,6 +40,7 @@ import {
 	publishingDestinationSearchSchema,
 } from "@/features/publishing-destination/publishing-destination-search.schema";
 import type { MeResponse } from "@/features/user/types/me";
+
 import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
 import { cn } from "@/lib/utils";
 import { youtubeChannelUrl } from "@/lib/youtube";
@@ -268,6 +273,7 @@ function PublishingIndexPage() {
 
 	const userPlan = (session.user.plan ?? "free") as MeResponse["plan"];
 	const maxDestinations = MAX_CHANNELS_BY_PLAN[userPlan];
+	const canConnectPublishing = planAllowsPaidPublishingConnections(userPlan);
 
 	const destinationsQuery = useQuery(channelsQueryOptions);
 
@@ -370,19 +376,33 @@ function PublishingIndexPage() {
 							)}
 						>
 							{primaryDestinationId !== null && firstNeedingYoutube ? (
-								<Button
-									type="button"
-									size="lg"
-									className="h-11 w-full gap-2 shadow-md shadow-primary/15"
-									asChild
-								>
-									<a
-										href={`/api/youtube/oauth/start?channelId=${encodeURIComponent(primaryDestinationId)}`}
+								canConnectPublishing ? (
+									<Button
+										type="button"
+										size="lg"
+										className="h-11 w-full gap-2 shadow-md shadow-primary/15"
+										asChild
 									>
-										Connect YouTube
-										<ArrowUpRight className="size-4 opacity-90" aria-hidden />
-									</a>
-								</Button>
+										<a
+											href={`/api/youtube/oauth/start?channelId=${encodeURIComponent(primaryDestinationId)}`}
+										>
+											Connect YouTube
+											<ArrowUpRight className="size-4 opacity-90" aria-hidden />
+										</a>
+									</Button>
+								) : (
+									<Button
+										type="button"
+										size="lg"
+										className="h-11 w-full gap-2 shadow-md shadow-primary/15"
+										asChild
+									>
+										<Link to="/dashboard/billing">
+											Upgrade to connect YouTube
+											<ArrowUpRight className="size-4 opacity-90" aria-hidden />
+										</Link>
+									</Button>
+								)
 							) : primaryDestinationId !== null ? (
 								<div
 									className={cn(
