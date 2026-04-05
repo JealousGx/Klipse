@@ -1,7 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
+
 import { env } from "@/env";
+
+import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config";
 import { getChannelForUser } from "@/features/channels/channels.service.server";
+import type { MeResponse } from "@/features/user/types/me";
 import { buildGoogleYoutubeAuthorizeUrl } from "@/features/youtube/youtube-oauth-tokens.server";
+
 import { auth } from "@/lib/auth";
 import { signYoutubeOAuthState } from "@/lib/youtube-oauth-state.server";
 
@@ -35,6 +40,11 @@ export const Route = createFileRoute("/api/youtube/oauth/start")({
 				const channel = await getChannelForUser(session.user.id, channelId);
 				if (!channel) {
 					return fail("not_found");
+				}
+
+				const plan = (session.user.plan ?? "free") as MeResponse["plan"];
+				if (!planAllowsPaidPublishingConnections(plan)) {
+					return fail("youtube_requires_paid_plan");
 				}
 
 				const state = signYoutubeOAuthState(
