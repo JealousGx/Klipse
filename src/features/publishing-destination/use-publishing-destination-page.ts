@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import {
 	deleteChannelFn,
+	reconcileYoutubeOAuthFn,
 	updateChannelFn,
 } from "@/features/channels/channels.functions";
 import { channelQueryOptions } from "@/lib/queries/dashboard-queries";
@@ -34,6 +35,28 @@ export function usePublishingDestinationPage(
 
 	const [displayName, setDisplayName] = useState("");
 	const [niche, setNiche] = useState("");
+
+	useEffect(() => {
+		let cancelled = false;
+		void reconcileYoutubeOAuthFn({ data: { channelId: destinationId } }).then(
+			(r) => {
+				if (cancelled || !r.ok || r.revokedChannelIds.length === 0) {
+					return;
+				}
+				toast.warning(
+					"Google access for this destination was revoked or expired (for example, Klipse was removed in your Google Account). Reconnect with Google below.",
+					{ id: `youtube-oauth-revoked-${destinationId}` },
+				);
+				void queryClient.invalidateQueries({ queryKey: ["channels"] });
+				void queryClient.invalidateQueries({
+					queryKey: ["channel", destinationId],
+				});
+			},
+		);
+		return () => {
+			cancelled = true;
+		};
+	}, [destinationId, queryClient]);
 
 	useEffect(() => {
 		if (!search.youtube) {
