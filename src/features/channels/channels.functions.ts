@@ -10,6 +10,11 @@ import {
 	youtubeChannelIdSchema,
 } from "./external-channel.schema";
 import {
+	reconcileAllYoutubeOAuthForUser,
+	reconcileYoutubeOAuthForUserChannel,
+} from "@/features/youtube/youtube-oauth-reconcile.server";
+
+import {
 	ChannelLimitError,
 	ChannelNotFoundError,
 	createChannel,
@@ -28,6 +33,10 @@ const createInput = z.object({
 
 const idParam = z.object({
 	channelId: z.string().trim().min(1).max(64),
+});
+
+const reconcileYoutubeInput = z.object({
+	channelId: z.string().trim().min(1).max(64).optional(),
 });
 
 const updateInput = z
@@ -79,6 +88,40 @@ export type ChannelGetResult =
 			channel: NonNullable<Awaited<ReturnType<typeof getChannelForUser>>>;
 	  }
 	| { ok: false; code: "unauthorized" | "not_found" };
+
+export type ReconcileYoutubeOAuthResult =
+	| { ok: true; revokedChannelIds: string[] }
+	| { ok: false; code: "unauthorized" };
+
+/**
+ * Probes stored Google refresh tokens. If Google returns `invalid_grant` (user
+ * removed app access in their Google Account), clears the refresh token for
+ * that destination so the UI prompts to reconnect.
+ */
+export const reconcileYoutubeOAuthFn = createServerFn({ method: "POST" })
+	.inputValidator((raw: unknown) => reconcileYoutubeInput.parse(raw ?? {}))
+	.handler(async ({ data }): Promise<ReconcileYoutubeOAuthResult> => {
+		const request = getRequest();
+		const session = await auth.api.getSession({ headers: request.headers });
+		if (!session?.user) {
+			return { ok: false, code: "unauthorized" };
+		}
+		if (data.channelId) {
+			const outcome = await reconcileYoutubeOAuthForUserChannel({
+				userId: session.user.id,
+				channelId: data.channelId,
+			});
+			return {
+				ok: true,
+				revokedChannelIds:
+					outcome === "revoked" ? [data.channelId] : [],
+			};
+		}
+		const { revokedChannelIds } = await reconcileAllYoutubeOAuthForUser(
+			session.user.id,
+		);
+		return { ok: true, revokedChannelIds };
+	});
 
 export const getChannelFn = createServerFn({ method: "POST" })
 	.inputValidator((raw: unknown) => idParam.parse(raw))
