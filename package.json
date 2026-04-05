@@ -24,7 +24,9 @@
     "lint": "biome lint",
     "check": "biome check",
     "worker:dev": "pnpm --filter @klipse/worker dev",
-    "worker:typecheck": "pnpm --filter @klipse/worker typecheck"
+    "worker:typecheck": "pnpm --filter @klipse/worker typecheck",
+    "ffmpeg:local:build": "docker compose -f docker/ffmpeg-local/docker-compose.yml build",
+    "ffmpeg:local:smoke": "bash docker/ffmpeg-local/smoke.sh"
   },
   "dependencies": {
     "@klipse/worker-contracts": "workspace:*",
