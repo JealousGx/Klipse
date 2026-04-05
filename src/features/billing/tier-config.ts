@@ -1,3 +1,15 @@
+import type { MeResponse } from "@/features/user/types/me";
+
+/**
+ * Max channels per plan (FEATURE_DOC §10.3). Free gets one workspace for onboarding.
+ */
+export const MAX_CHANNELS_BY_PLAN: Record<MeResponse["plan"], number> = {
+	free: 1,
+	starter: 1,
+	creator: 3,
+	empire: 20,
+};
+
 /**
  * Internal credit budgets per paid tier (FEATURE_DOC §10.3).
  * UI should emphasize videos/month; credits stay server-side for metering.
