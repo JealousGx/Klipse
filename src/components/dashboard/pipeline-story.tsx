@@ -478,6 +478,11 @@ function ActiveDestinationSnapshotCard({
 
 	const linked =
 		channel.platform === "youtube" && Boolean(channel.externalChannelId);
+	const badgeLabel = channel.youtubeConnected
+		? "YouTube · Google"
+		: linked
+			? "YouTube · linked"
+			: "Not connected";
 
 	const tagBits = [
 		platformDisplayName(channel.platform),
@@ -497,12 +502,12 @@ function ActiveDestinationSnapshotCard({
 					<span
 						className={cn(
 							"rounded border px-2 py-0.5 font-mono text-[10px] font-medium",
-							linked
+							linked || channel.youtubeConnected
 								? "border-primary/40 bg-primary/10 text-primary"
 								: "border-border bg-background text-muted-foreground",
 						)}
 					>
-						{linked ? "Linked" : "Not connected"}
+						{badgeLabel}
 					</span>
 				</div>
 				<Button
