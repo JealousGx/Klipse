@@ -3,10 +3,13 @@ import "@tanstack/react-start/server-only";
 import { and, count, desc, eq, ne, or } from "drizzle-orm";
 
 import { getDb } from "@/db";
+import type { LocalDb } from "@/db/local";
 import { channels } from "@/db/schema/channels";
 import { users } from "@/db/schema/users";
+
 import { MAX_CHANNELS_BY_PLAN } from "@/features/billing/tier-config";
 import type { MeResponse } from "@/features/user/types/me";
+
 import { channelRowId } from "@/lib/id";
 
 import {
@@ -329,13 +332,38 @@ export async function setChannelYoutubeConnection(input: {
 	externalChannelTitle: string | null;
 	externalChannelHandle: string | null;
 }): Promise<void> {
-	const existing = await getChannelForUser(input.userId, input.channelId);
+	const db = getDb();
+	await setChannelYoutubeConnectionTx(db, input);
+}
+
+/**
+ * Same as {@link setChannelYoutubeConnection} but uses the given executor (e.g.
+ * transaction client) so it can run inside `FOR UPDATE` flows.
+ */
+export async function setChannelYoutubeConnectionTx(
+	tx: LocalDb,
+	input: {
+		userId: string;
+		channelId: string;
+		refreshToken: string;
+		externalChannelId: string;
+		externalChannelTitle: string | null;
+		externalChannelHandle: string | null;
+	},
+): Promise<void> {
+	const rows = await tx
+		.select()
+		.from(channels)
+		.where(
+			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
+		)
+		.limit(1);
+	const existing = rows[0];
 	if (!existing) {
 		throw new ChannelNotFoundError();
 	}
-	const db = getDb();
 	const trimmedId = input.externalChannelId.trim();
-	await db
+	await tx
 		.update(channels)
 		.set({
 			platform: "youtube",
