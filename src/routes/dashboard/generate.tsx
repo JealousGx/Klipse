@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
+import { authClient } from "@/lib/auth/client";
 
 import {
 	estimateStubGenerateCredits,
@@ -24,6 +25,7 @@ const selectClass =
 function GeneratePage() {
 	const queryClient = useQueryClient();
 	const router = useRouter();
+	const { refetch: refetchSession } = authClient.useSession();
 	const { session } = useDashboardRouteContext();
 	const user = session.user;
 	const estimate = estimateStubGenerateCredits();
@@ -62,6 +64,9 @@ function GeneratePage() {
 				setMessage(
 					`Charged ${r.creditsCharged} credits. Job ${r.ref}. Balance now ${r.creditsRemaining}.${replayNote}`,
 				);
+				if (r.creditsConsumed) {
+					await refetchSession({ query: { disableCookieCache: true } });
+				}
 				await router.invalidate();
 				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] });
 				void channelsQuery.refetch();
