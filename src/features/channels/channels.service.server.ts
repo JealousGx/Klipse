@@ -285,6 +285,42 @@ export async function updateChannel(input: {
 }
 
 /** OAuth callback only: persist YouTube tokens + channel metadata. */
+/** Server-only: read stored OAuth refresh token for validation / refresh flows. */
+export async function getYoutubeRefreshTokenForChannel(
+	userId: string,
+	channelId: string,
+): Promise<string | null> {
+	const db = getDb();
+	const rows = await db
+		.select({ t: channels.youtubeRefreshToken })
+		.from(channels)
+		.where(and(eq(channels.id, channelId), eq(channels.userId, userId)))
+		.limit(1);
+	const t = rows[0]?.t;
+	return t?.trim() ? t : null;
+}
+
+/**
+ * Clears only the stored Google refresh token (e.g. after Google returns
+ * `invalid_grant`). Keeps `boundYoutubeChannelId` and channel metadata so the
+ * user can reconnect to the same YouTube channel.
+ */
+export async function clearYoutubeRefreshTokenOnly(input: {
+	userId: string;
+	channelId: string;
+}): Promise<void> {
+	const db = getDb();
+	await db
+		.update(channels)
+		.set({
+			youtubeRefreshToken: null,
+			updatedAt: new Date(),
+		})
+		.where(
+			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
+		);
+}
+
 export async function setChannelYoutubeConnection(input: {
 	userId: string;
 	channelId: string;
