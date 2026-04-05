@@ -31,6 +31,8 @@ export type ChannelRow = {
 	externalChannelId: string | null;
 	externalChannelTitle: string | null;
 	externalChannelHandle: string | null;
+	/** Channel/profile image URL from the platform (e.g. YouTube). */
+	externalChannelThumbnailUrl: string | null;
 	/** True when a YouTube refresh token is stored (OAuth connect). Never includes the token. */
 	youtubeConnected: boolean;
 	/**
@@ -53,6 +55,7 @@ function toChannelRow(r: typeof channels.$inferSelect): ChannelRow {
 		externalChannelId: r.externalChannelId ?? null,
 		externalChannelTitle: r.externalChannelTitle ?? null,
 		externalChannelHandle: r.externalChannelHandle ?? null,
+		externalChannelThumbnailUrl: r.externalChannelThumbnailUrl ?? null,
 		youtubeConnected: Boolean(r.youtubeRefreshToken),
 		boundYoutubeChannelId: r.boundYoutubeChannelId ?? null,
 		createdAt: r.createdAt,
@@ -202,6 +205,7 @@ export async function createChannel(input: {
 		externalChannelId: null,
 		externalChannelTitle: null,
 		externalChannelHandle: null,
+		externalChannelThumbnailUrl: null,
 		youtubeRefreshToken: null,
 		boundYoutubeChannelId: null,
 		createdAt: now,
@@ -226,6 +230,7 @@ export async function updateChannel(input: {
 	externalChannelId?: string | null;
 	externalChannelTitle?: string | null;
 	externalChannelHandle?: string | null;
+	externalChannelThumbnailUrl?: string | null;
 }): Promise<ChannelRow> {
 	const db = getDb();
 	const existing = await getChannelForUser(input.userId, input.channelId);
@@ -249,10 +254,12 @@ export async function updateChannel(input: {
 		patch.platform = input.platform;
 	}
 	if (input.externalChannelId !== undefined) {
-		patch.externalChannelId =
-			input.externalChannelId === null || input.externalChannelId === ""
-				? null
-				: input.externalChannelId.trim();
+		const raw = input.externalChannelId;
+		const cleared = raw === null || raw === "";
+		patch.externalChannelId = cleared ? null : raw.trim();
+		if (cleared) {
+			patch.externalChannelThumbnailUrl = null;
+		}
 	}
 	if (input.externalChannelTitle !== undefined) {
 		patch.externalChannelTitle =
@@ -265,6 +272,13 @@ export async function updateChannel(input: {
 			input.externalChannelHandle === null || input.externalChannelHandle === ""
 				? null
 				: input.externalChannelHandle.trim();
+	}
+	if (input.externalChannelThumbnailUrl !== undefined) {
+		patch.externalChannelThumbnailUrl =
+			input.externalChannelThumbnailUrl === null ||
+			input.externalChannelThumbnailUrl === ""
+				? null
+				: input.externalChannelThumbnailUrl.trim();
 	}
 	if (input.platform === "unlinked") {
 		patch.youtubeRefreshToken = null;
@@ -331,6 +345,7 @@ export async function setChannelYoutubeConnection(input: {
 	externalChannelId: string;
 	externalChannelTitle: string | null;
 	externalChannelHandle: string | null;
+	externalChannelThumbnailUrl: string | null;
 }): Promise<void> {
 	const db = getDb();
 	await setChannelYoutubeConnectionTx(db, input);
@@ -349,6 +364,7 @@ export async function setChannelYoutubeConnectionTx(
 		externalChannelId: string;
 		externalChannelTitle: string | null;
 		externalChannelHandle: string | null;
+		externalChannelThumbnailUrl: string | null;
 	},
 ): Promise<void> {
 	const rows = await tx
@@ -370,6 +386,8 @@ export async function setChannelYoutubeConnectionTx(
 			externalChannelId: trimmedId,
 			externalChannelTitle: input.externalChannelTitle?.trim() || null,
 			externalChannelHandle: input.externalChannelHandle?.trim() || null,
+			externalChannelThumbnailUrl:
+				input.externalChannelThumbnailUrl?.trim() || null,
 			youtubeRefreshToken: input.refreshToken,
 			boundYoutubeChannelId: existing.boundYoutubeChannelId ?? trimmedId,
 			updatedAt: new Date(),
