@@ -19,6 +19,7 @@ import {
 	PipelineObservabilityPanel,
 	ProductStoryMock,
 } from "@/components/landing";
+import { PricingTierCta } from "@/components/landing/pricing-tier-cta";
 import { Badge } from "@/components/ui/badge";
 import {
 	Card,
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/card";
 import { Link } from "@/components/ui/link";
 import { Separator } from "@/components/ui/separator";
+import type { PolarCheckoutSlug } from "@/lib/billing/polar-checkout-slugs";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/")({ component: LandingPage });
@@ -107,7 +109,17 @@ const pipeline = [
 	},
 ] as const;
 
-const pricingTiers = [
+const pricingTiers: readonly {
+	name: string;
+	price: string;
+	period: string;
+	highlight: string;
+	features: readonly string[];
+	cta: string;
+	emphasis: boolean;
+	/** Polar checkout slug — omit for Free */
+	checkoutSlug?: PolarCheckoutSlug;
+}[] = [
 	{
 		name: "Free",
 		price: "$0",
@@ -143,6 +155,7 @@ const pricingTiers = [
 		],
 		cta: "Get started",
 		emphasis: false,
+		checkoutSlug: "starter",
 	},
 	{
 		name: "Creator",
@@ -160,6 +173,7 @@ const pricingTiers = [
 		],
 		cta: "Get started",
 		emphasis: true,
+		checkoutSlug: "creator",
 	},
 	{
 		name: "Empire",
@@ -177,8 +191,9 @@ const pricingTiers = [
 		],
 		cta: "Get Started",
 		emphasis: false,
+		checkoutSlug: "empire",
 	},
-] as const;
+];
 
 function LandingPage() {
 	return (
@@ -488,15 +503,11 @@ function LandingPage() {
 									</ul>
 								</CardContent>
 								<CardFooter className="border-t-0 pt-2">
-									<Link
-										to="/"
-										search={{ auth: "signup" }}
-										variant={tier.emphasis ? "default" : "outline"}
-										size="lg"
-										className="w-full font-semibold"
-									>
-										{tier.cta}
-									</Link>
+									<PricingTierCta
+										emphasis={tier.emphasis}
+										ctaLabel={tier.cta}
+										checkoutSlug={tier.checkoutSlug}
+									/>
 								</CardFooter>
 							</Card>
 						))}
