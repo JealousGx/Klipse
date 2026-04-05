@@ -4,6 +4,11 @@
  */
 export const QUEUE_MESSAGE_KIND = {
 	polarUsageSyncDrain: "polar_usage_sync_drain",
+	/**
+	 * Dispatch a `video_jobs` row to the worker runtime. `pipelineKind` matches
+	 * `video_jobs.pipeline_kind` — route on this, not on publishing platform.
+	 */
+	videoJobDispatch: "video_job_dispatch",
 } as const;
 
 export type QueueMessageKind =
@@ -15,12 +20,22 @@ export type PolarUsageSyncDrainMessage = {
 	limit?: number;
 };
 
-export type QueueMessage = PolarUsageSyncDrainMessage;
+export type VideoJobDispatchMessage = {
+	kind: typeof QUEUE_MESSAGE_KIND.videoJobDispatch;
+	jobId: string;
+	pipelineKind: string;
+	userId: string;
+};
+
+export type QueueMessage = PolarUsageSyncDrainMessage | VideoJobDispatchMessage;
 
 export function isQueueMessage(body: unknown): body is QueueMessage {
 	if (typeof body !== "object" || body === null) {
 		return false;
 	}
 	const k = (body as { kind?: unknown }).kind;
-	return k === QUEUE_MESSAGE_KIND.polarUsageSyncDrain;
+	return (
+		k === QUEUE_MESSAGE_KIND.polarUsageSyncDrain ||
+		k === QUEUE_MESSAGE_KIND.videoJobDispatch
+	);
 }
