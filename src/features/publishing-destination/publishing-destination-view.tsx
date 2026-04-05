@@ -43,6 +43,9 @@ export function PublishingDestinationView({
 	isRemovePending,
 }: PublishingDestinationViewProps) {
 	const youtubeConnected = channel.youtubeConnected;
+	const showYoutubeChannelSection = Boolean(
+		youtubeConnected || channel.externalChannelId,
+	);
 
 	return (
 		<div className="w-full space-y-8 pb-4 lg:space-y-10">
@@ -100,17 +103,22 @@ export function PublishingDestinationView({
 						</DashboardPanel>
 					</DashboardSection>
 
-					{youtubeConnected ? (
+					{showYoutubeChannelSection ? (
 						<DashboardSection
 							id="youtube-channel"
 							titleId="youtube-channel-heading"
 							title="YouTube channel"
-							description="Channel id and title from your connected Google account."
+							description={
+								youtubeConnected
+									? "Channel id and title from your connected Google account."
+									: "Last linked channel. Reconnect with Google above to restore access."
+							}
 						>
 							<DashboardPanel>
 								<DestinationYoutubeChannelFields
 									channel={channel}
 									onCopyChannelId={onCopyChannelId}
+									googleAccessActive={youtubeConnected}
 								/>
 							</DashboardPanel>
 						</DashboardSection>
