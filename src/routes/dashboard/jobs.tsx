@@ -1,20 +1,55 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+
+import { JobQueueStoryCard } from "@/components/dashboard/pipeline-story";
+import { videoJobsQueryOptions } from "@/lib/queries/dashboard-queries";
 
 export const Route = createFileRoute("/dashboard/jobs")({
 	staticData: { dashboardTitle: "Jobs" },
+	beforeLoad: ({ context }) => {
+		void context.queryClient.ensureQueryData(videoJobsQueryOptions);
+	},
 	component: JobsPage,
 });
 
 function JobsPage() {
+	const jobsQuery = useQuery(videoJobsQueryOptions);
+
+	const jobs = jobsQuery.data ?? [];
+	const loading = jobsQuery.isPending;
+
 	return (
-		<section className="max-w-2xl border-l-2 border-primary/30 pl-5">
-			<p className="m-0 text-sm leading-relaxed text-muted-foreground">
-				Video jobs list with status will load from{" "}
-				<code className="rounded-md border border-border bg-muted/60 px-2 py-0.5 font-mono text-xs text-foreground">
-					GET /api/jobs
-				</code>{" "}
-				with batched queries (no N+1).
-			</p>
-		</section>
+		<div className="space-y-6">
+			<div>
+				<h2 className="font-heading text-lg font-semibold text-foreground">
+					Video jobs
+				</h2>
+				<p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+					Async pipeline runs appear here with status, credits, and errors. Stub
+					generation completes immediately; future stages will show
+					queued/processing longer.
+				</p>
+			</div>
+
+			{!loading && jobs.length === 0 ? (
+				<div className="rounded-xl border border-dashed border-border/80 bg-muted/10 px-6 py-12 text-center text-sm text-muted-foreground">
+					No jobs yet.{" "}
+					<Link
+						to="/dashboard/generate"
+						className="font-medium text-primary underline-offset-4 hover:underline"
+					>
+						Run generate
+					</Link>{" "}
+					on a channel to create one.
+				</div>
+			) : (
+				<JobQueueStoryCard
+					jobs={jobs}
+					isLoading={loading}
+					onRefetch={() => void jobsQuery.refetch()}
+					isRefetching={jobsQuery.isFetching && !jobsQuery.isPending}
+				/>
+			)}
+		</div>
 	);
 }
