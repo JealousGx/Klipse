@@ -20,5 +20,11 @@ export function messageForYoutubeOAuthErrorReason(
 	if (r === "youtube_channel_in_use") {
 		return "This YouTube channel is already linked to another publishing destination. Disconnect it there first, or connect a different channel here.";
 	}
+	if (r === "youtube_scopes_incomplete") {
+		return "Google didn’t grant all permissions Klipse needs (view your channel and upload videos). Try again and leave every YouTube permission checked.";
+	}
+	if (r === "access_denied") {
+		return "You canceled Google sign-in or denied access. Connect again and approve access to continue.";
+	}
 	return r ? `YouTube connection failed: ${r}` : "YouTube connection failed.";
 }
