@@ -175,10 +175,28 @@ export async function refreshYoutubeAccessToken(refreshToken: string): Promise<{
 	};
 }
 
+function pickYoutubeThumbnailUrl(
+	snippet: {
+		thumbnails?: {
+			high?: { url?: string };
+			medium?: { url?: string };
+			default?: { url?: string };
+		};
+	} | undefined,
+): string | null {
+	const t = snippet?.thumbnails;
+	const u =
+		t?.high?.url?.trim() ||
+		t?.medium?.url?.trim() ||
+		t?.default?.url?.trim();
+	return u || null;
+}
+
 export async function fetchYoutubeMineChannel(accessToken: string): Promise<{
 	id: string;
 	title: string;
 	customUrl: string | null;
+	thumbnailUrl: string | null;
 }> {
 	const url = new URL("https://www.googleapis.com/youtube/v3/channels");
 	url.searchParams.set("part", "snippet");
@@ -191,15 +209,28 @@ export async function fetchYoutubeMineChannel(accessToken: string): Promise<{
 		throw new Error(`youtube_channels_failed: ${res.status} ${t}`);
 	}
 	const data = (await res.json()) as {
-		items?: Array<{ id: string; snippet?: { title?: string; customUrl?: string } }>;
+		items?: Array<{
+			id: string;
+			snippet?: {
+				title?: string;
+				customUrl?: string;
+				thumbnails?: {
+					high?: { url?: string };
+					medium?: { url?: string };
+					default?: { url?: string };
+				};
+			};
+		}>;
 	};
 	const item = data.items?.[0];
 	if (!item?.id) {
 		throw new Error("youtube_no_channel");
 	}
+	const snippet = item.snippet;
 	return {
 		id: item.id,
-		title: item.snippet?.title ?? "",
-		customUrl: item.snippet?.customUrl ?? null,
+		title: snippet?.title ?? "",
+		customUrl: snippet?.customUrl ?? null,
+		thumbnailUrl: pickYoutubeThumbnailUrl(snippet),
 	};
 }
