@@ -8,6 +8,9 @@ import { eq, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { creditTransactions, users } from "@/db/schema";
+
+import { resetDestinationReplacementsUsedForUser } from "@/features/channels/destination-replacement-quota.server";
+
 import { creditTransactionId } from "@/lib/id";
 
 import {
@@ -67,7 +70,11 @@ async function setPlanFree(userId: string) {
 	const db = getDb();
 	await db
 		.update(users)
-		.set({ plan: "free", updatedAt: new Date() })
+		.set({
+			plan: "free",
+			destinationReplacementsUsed: 0,
+			updatedAt: new Date(),
+		})
 		.where(eq(users.id, userId));
 }
 
@@ -97,6 +104,7 @@ export async function handlePolarSubscriptionActive(
 			productId: payload.data.productId,
 		},
 	});
+	await resetDestinationReplacementsUsedForUser(userId);
 }
 
 /**
@@ -135,6 +143,7 @@ export async function handlePolarOrderPaid(payload: WebhookOrderPaidPayload) {
 				productId: order.productId,
 			},
 		});
+		await resetDestinationReplacementsUsedForUser(userId);
 		return;
 	}
 
