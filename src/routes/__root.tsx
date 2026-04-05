@@ -16,6 +16,7 @@ import { getRootSession } from "@/features/auth/get-root-session";
 import { rootSearchSchema } from "@/lib/routes/root-search";
 
 import { RootChrome } from "../components/root-chrome";
+import { Toaster } from "../components/ui/sonner";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 
 import appCss from "../styles.css?url";
@@ -78,6 +79,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<AuthModalProvider>
 					<RootChrome>{children}</RootChrome>
 					<AuthModalBridge />
+					<Toaster />
 				</AuthModalProvider>
 				<TanStackDevtools
 					config={{
