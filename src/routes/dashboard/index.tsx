@@ -1,7 +1,15 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { useMemo } from "react";
 
+import { OverviewPipelineHero } from "@/components/dashboard/pipeline-story";
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
+import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types";
 import type { MeResponse } from "@/features/user/types/me";
+import {
+	channelsQueryOptions,
+	videoJobsQueryOptions,
+} from "@/lib/queries/dashboard-queries";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/dashboard/")({
@@ -28,6 +36,27 @@ function DashboardPage() {
 	const { session } = useDashboardRouteContext();
 	const user = session.user;
 
+	const channelsQuery = useQuery(channelsQueryOptions);
+	const jobsQuery = useQuery(videoJobsQueryOptions);
+
+	const latestJob = jobsQuery.data?.[0] ?? null;
+
+	const activeChannel = useMemo((): ChannelSnapshot | null => {
+		const c = channelsQuery.data?.[0];
+		if (!c) return null;
+		return {
+			id: c.id,
+			name: c.name,
+			niche: c.niche,
+			platform: c.platform,
+			externalChannelId: c.externalChannelId,
+		};
+	}, [channelsQuery.data]);
+
+	const channelValue = channelsQuery.isPending
+		? "…"
+		: String(channelsQuery.data?.length ?? 0);
+
 	const items = [
 		{
 			label: "Credits remaining",
@@ -45,14 +74,14 @@ function DashboardPage() {
 			hint: "All-time",
 		},
 		{
-			label: "Channels",
-			value: "—",
-			hint: "Connected workspaces",
+			label: "Publishing destinations",
+			value: channelValue,
+			hint: "Linked accounts (OAuth next)",
 		},
 	] as const;
 
 	return (
-		<div>
+		<div className="space-y-8">
 			<div className="overflow-hidden rounded-2xl border border-border/70 bg-muted/20 dark:bg-muted/10">
 				<div className="grid grid-cols-1 divide-y divide-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
 					{items.map((item, i) => (
@@ -64,8 +93,20 @@ function DashboardPage() {
 					))}
 				</div>
 			</div>
-			<p className="mt-12 max-w-2xl border-l-2 border-primary/35 pl-5 text-sm leading-relaxed text-muted-foreground">
-				Channel and job activity will show up here as those APIs land. Plan and
+
+			<OverviewPipelineHero
+				latestJob={latestJob}
+				activeChannel={activeChannel}
+				jobsLoading={jobsQuery.isPending}
+				channelsLoading={channelsQuery.isPending}
+			/>
+
+			<p className="max-w-2xl border-l-2 border-primary/35 pl-5 text-sm leading-relaxed text-muted-foreground">
+				Use <span className="font-medium text-foreground">Publishing</span> for
+				outbound destinations (YouTube first, more platforms later), run{" "}
+				<span className="font-medium text-foreground">Generate</span> for
+				pipeline jobs, and track{" "}
+				<span className="font-medium text-foreground">Jobs</span>. Plan and
 				credits stay aligned with billing.
 			</p>
 		</div>
