@@ -16,12 +16,12 @@ import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
+import { Route as DashboardPublishingRouteImport } from './routes/dashboard/publishing'
 import { Route as DashboardJobsRouteImport } from './routes/dashboard/jobs'
 import { Route as DashboardGenerateRouteImport } from './routes/dashboard/generate'
-import { Route as DashboardChannelsRouteImport } from './routes/dashboard/channels'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
-import { Route as DashboardChannelsChannelIdRouteImport } from './routes/dashboard/channels.$channelId'
+import { Route as DashboardPublishingDestinationIdRouteImport } from './routes/dashboard/publishing.$destinationId'
 import { Route as ApiCronPolarUsageSyncRouteImport } from './routes/api/cron/polar-usage-sync'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiInternalWorkerPolarUsageSyncDrainRouteImport } from './routes/api/internal/worker/polar-usage-sync/drain'
@@ -61,6 +61,11 @@ const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const DashboardPublishingRoute = DashboardPublishingRouteImport.update({
+  id: '/publishing',
+  path: '/publishing',
+  getParentRoute: () => DashboardRouteRoute,
+} as any)
 const DashboardJobsRoute = DashboardJobsRouteImport.update({
   id: '/jobs',
   path: '/jobs',
@@ -69,11 +74,6 @@ const DashboardJobsRoute = DashboardJobsRouteImport.update({
 const DashboardGenerateRoute = DashboardGenerateRouteImport.update({
   id: '/generate',
   path: '/generate',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
-const DashboardChannelsRoute = DashboardChannelsRouteImport.update({
-  id: '/channels',
-  path: '/channels',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
 const DashboardBillingRoute = DashboardBillingRouteImport.update({
@@ -86,11 +86,11 @@ const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
-const DashboardChannelsChannelIdRoute =
-  DashboardChannelsChannelIdRouteImport.update({
-    id: '/$channelId',
-    path: '/$channelId',
-    getParentRoute: () => DashboardChannelsRoute,
+const DashboardPublishingDestinationIdRoute =
+  DashboardPublishingDestinationIdRouteImport.update({
+    id: '/$destinationId',
+    path: '/$destinationId',
+    getParentRoute: () => DashboardPublishingRoute,
   } as any)
 const ApiCronPolarUsageSyncRoute = ApiCronPolarUsageSyncRouteImport.update({
   id: '/api/cron/polar-usage-sync',
@@ -117,14 +117,14 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/channels': typeof DashboardChannelsRouteWithChildren
   '/dashboard/generate': typeof DashboardGenerateRoute
   '/dashboard/jobs': typeof DashboardJobsRoute
+  '/dashboard/publishing': typeof DashboardPublishingRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
-  '/dashboard/channels/$channelId': typeof DashboardChannelsChannelIdRoute
+  '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
 }
 export interface FileRoutesByTo {
@@ -134,14 +134,14 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/channels': typeof DashboardChannelsRouteWithChildren
   '/dashboard/generate': typeof DashboardGenerateRoute
   '/dashboard/jobs': typeof DashboardJobsRoute
+  '/dashboard/publishing': typeof DashboardPublishingRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
-  '/dashboard/channels/$channelId': typeof DashboardChannelsChannelIdRoute
+  '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
 }
 export interface FileRoutesById {
@@ -153,14 +153,14 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/channels': typeof DashboardChannelsRouteWithChildren
   '/dashboard/generate': typeof DashboardGenerateRoute
   '/dashboard/jobs': typeof DashboardJobsRoute
+  '/dashboard/publishing': typeof DashboardPublishingRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
-  '/dashboard/channels/$channelId': typeof DashboardChannelsChannelIdRoute
+  '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
 }
 export interface FileRouteTypes {
@@ -173,14 +173,14 @@ export interface FileRouteTypes {
     | '/terms'
     | '/dashboard/analytics'
     | '/dashboard/billing'
-    | '/dashboard/channels'
     | '/dashboard/generate'
     | '/dashboard/jobs'
+    | '/dashboard/publishing'
     | '/dashboard/settings'
     | '/dashboard/'
     | '/api/auth/$'
     | '/api/cron/polar-usage-sync'
-    | '/dashboard/channels/$channelId'
+    | '/dashboard/publishing/$destinationId'
     | '/api/internal/worker/polar-usage-sync/drain'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -190,14 +190,14 @@ export interface FileRouteTypes {
     | '/terms'
     | '/dashboard/analytics'
     | '/dashboard/billing'
-    | '/dashboard/channels'
     | '/dashboard/generate'
     | '/dashboard/jobs'
+    | '/dashboard/publishing'
     | '/dashboard/settings'
     | '/dashboard'
     | '/api/auth/$'
     | '/api/cron/polar-usage-sync'
-    | '/dashboard/channels/$channelId'
+    | '/dashboard/publishing/$destinationId'
     | '/api/internal/worker/polar-usage-sync/drain'
   id:
     | '__root__'
@@ -208,14 +208,14 @@ export interface FileRouteTypes {
     | '/terms'
     | '/dashboard/analytics'
     | '/dashboard/billing'
-    | '/dashboard/channels'
     | '/dashboard/generate'
     | '/dashboard/jobs'
+    | '/dashboard/publishing'
     | '/dashboard/settings'
     | '/dashboard/'
     | '/api/auth/$'
     | '/api/cron/polar-usage-sync'
-    | '/dashboard/channels/$channelId'
+    | '/dashboard/publishing/$destinationId'
     | '/api/internal/worker/polar-usage-sync/drain'
   fileRoutesById: FileRoutesById
 }
@@ -281,6 +281,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardSettingsRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/dashboard/publishing': {
+      id: '/dashboard/publishing'
+      path: '/publishing'
+      fullPath: '/dashboard/publishing'
+      preLoaderRoute: typeof DashboardPublishingRouteImport
+      parentRoute: typeof DashboardRouteRoute
+    }
     '/dashboard/jobs': {
       id: '/dashboard/jobs'
       path: '/jobs'
@@ -293,13 +300,6 @@ declare module '@tanstack/react-router' {
       path: '/generate'
       fullPath: '/dashboard/generate'
       preLoaderRoute: typeof DashboardGenerateRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/channels': {
-      id: '/dashboard/channels'
-      path: '/channels'
-      fullPath: '/dashboard/channels'
-      preLoaderRoute: typeof DashboardChannelsRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
     '/dashboard/billing': {
@@ -316,12 +316,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAnalyticsRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
-    '/dashboard/channels/$channelId': {
-      id: '/dashboard/channels/$channelId'
-      path: '/$channelId'
-      fullPath: '/dashboard/channels/$channelId'
-      preLoaderRoute: typeof DashboardChannelsChannelIdRouteImport
-      parentRoute: typeof DashboardChannelsRoute
+    '/dashboard/publishing/$destinationId': {
+      id: '/dashboard/publishing/$destinationId'
+      path: '/$destinationId'
+      fullPath: '/dashboard/publishing/$destinationId'
+      preLoaderRoute: typeof DashboardPublishingDestinationIdRouteImport
+      parentRoute: typeof DashboardPublishingRoute
     }
     '/api/cron/polar-usage-sync': {
       id: '/api/cron/polar-usage-sync'
@@ -347,23 +347,23 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface DashboardChannelsRouteChildren {
-  DashboardChannelsChannelIdRoute: typeof DashboardChannelsChannelIdRoute
+interface DashboardPublishingRouteChildren {
+  DashboardPublishingDestinationIdRoute: typeof DashboardPublishingDestinationIdRoute
 }
 
-const DashboardChannelsRouteChildren: DashboardChannelsRouteChildren = {
-  DashboardChannelsChannelIdRoute: DashboardChannelsChannelIdRoute,
+const DashboardPublishingRouteChildren: DashboardPublishingRouteChildren = {
+  DashboardPublishingDestinationIdRoute: DashboardPublishingDestinationIdRoute,
 }
 
-const DashboardChannelsRouteWithChildren =
-  DashboardChannelsRoute._addFileChildren(DashboardChannelsRouteChildren)
+const DashboardPublishingRouteWithChildren =
+  DashboardPublishingRoute._addFileChildren(DashboardPublishingRouteChildren)
 
 interface DashboardRouteRouteChildren {
   DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
   DashboardBillingRoute: typeof DashboardBillingRoute
-  DashboardChannelsRoute: typeof DashboardChannelsRouteWithChildren
   DashboardGenerateRoute: typeof DashboardGenerateRoute
   DashboardJobsRoute: typeof DashboardJobsRoute
+  DashboardPublishingRoute: typeof DashboardPublishingRouteWithChildren
   DashboardSettingsRoute: typeof DashboardSettingsRoute
   DashboardIndexRoute: typeof DashboardIndexRoute
 }
@@ -371,9 +371,9 @@ interface DashboardRouteRouteChildren {
 const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
   DashboardAnalyticsRoute: DashboardAnalyticsRoute,
   DashboardBillingRoute: DashboardBillingRoute,
-  DashboardChannelsRoute: DashboardChannelsRouteWithChildren,
   DashboardGenerateRoute: DashboardGenerateRoute,
   DashboardJobsRoute: DashboardJobsRoute,
+  DashboardPublishingRoute: DashboardPublishingRouteWithChildren,
   DashboardSettingsRoute: DashboardSettingsRoute,
   DashboardIndexRoute: DashboardIndexRoute,
 }
