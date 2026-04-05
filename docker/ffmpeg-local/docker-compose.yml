@@ -1,0 +1,9 @@
+services:
+  ffmpeg:
+    build: .
+    image: klipse-ffmpeg-local:latest
+    # Apple Silicon: native. On Intel Mac / Linux amd64, comment out `platform:`.
+    platform: linux/arm64
+    volumes:
+      - ./work:/work
+    working_dir: /work
