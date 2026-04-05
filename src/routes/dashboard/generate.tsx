@@ -5,12 +5,11 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
-import { authClient } from "@/lib/auth/client";
-
 import {
 	estimateStubGenerateCredits,
 	runStubGenerate,
 } from "@/features/video/stub-generate";
+import { authClient } from "@/lib/auth/client";
 
 import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
 
@@ -93,13 +92,16 @@ function GeneratePage() {
 					Choose a{" "}
 					<strong className="font-medium text-foreground">
 						publishing destination
-					</strong>{" "}
-					(stub uses the same IDs until OAuth connectors land). Then run the
-					stub pipeline: estimate → balance check → deduct + ledger + Polar
-					usage outbox +{" "}
+					</strong>
+					. The stub pipeline charges credits, writes a{" "}
 					<strong className="font-medium text-foreground">video_jobs</strong>{" "}
-					row. Uploads will target whatever platform account you link here
-					(YouTube first, then others on the same model).
+					row ({`queued → processing → done`}), then syncs usage to Polar. When
+					you connect a platform on that destination, uploads will follow the
+					same job model—surface-specific code plugs in behind{" "}
+					<code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
+						pipeline_kind
+					</code>
+					, not inside this page.
 				</p>
 				<p className="m-0 text-sm text-muted-foreground">
 					<strong className="font-medium text-foreground">Balance:</strong>{" "}
