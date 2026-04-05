@@ -3,9 +3,13 @@ import React from "react";
 
 import { PolarCheckoutIntent } from "@/features/billing/polar-checkout-intent";
 import { DashboardShell } from "@/features/shell/dashboard-shell";
+import {
+	channelsQueryOptions,
+	videoJobsQueryOptions,
+} from "@/lib/queries/dashboard-queries";
 
 export const Route = createFileRoute("/dashboard")({
-	beforeLoad: async ({ context }) => {
+	beforeLoad: ({ context }) => {
 		const { session } = context;
 		if (!session?.user) {
 			throw redirect({
@@ -13,6 +17,9 @@ export const Route = createFileRoute("/dashboard")({
 				search: { auth: "login" },
 			});
 		}
+
+		void context.queryClient.ensureQueryData(channelsQueryOptions);
+		void context.queryClient.ensureQueryData(videoJobsQueryOptions);
 
 		return { session };
 	},
