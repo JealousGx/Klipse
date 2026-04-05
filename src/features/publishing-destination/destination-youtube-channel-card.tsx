@@ -8,17 +8,32 @@ import type { PublishingDestinationChannel } from "./publishing-destination-chan
 type Props = {
 	channel: PublishingDestinationChannel;
 	onCopyChannelId: () => void;
+	/** False when the user revoked Klipse in Google or the refresh token is no longer valid. */
+	googleAccessActive: boolean;
 };
 
 /**
- * Shown only when `youtubeConnected` (OAuth). Channel id comes from Google sign-in, not manual entry.
+ * Shown when we have channel metadata (active OAuth or last-linked channel after revoke).
  */
 export function DestinationYoutubeChannelFields({
 	channel: ch,
 	onCopyChannelId,
+	googleAccessActive,
 }: Props) {
 	return (
 		<div className="space-y-4">
+			{!googleAccessActive && ch.externalChannelId ? (
+				<p className="rounded-lg border border-amber-500/35 bg-amber-500/8 px-3 py-2 text-sm text-foreground">
+					Google access isn’t active for this destination—reconnect in{" "}
+					<a
+						href="#connection"
+						className="font-medium text-primary underline underline-offset-2"
+					>
+						Google & YouTube
+					</a>{" "}
+					so Klipse can publish again.
+				</p>
+			) : null}
 			{ch.externalChannelId ? (
 				<>
 					<div className="flex flex-wrap items-center gap-2">
