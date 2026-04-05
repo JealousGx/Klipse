@@ -27,4 +27,9 @@ export const additionalUserFields = {
 		input: false,
 		required: false,
 	},
+	destinationReplacementsUsed: {
+		type: "number",
+		input: false,
+		required: false,
+	},
 } satisfies Record<string, DBFieldAttribute>;
