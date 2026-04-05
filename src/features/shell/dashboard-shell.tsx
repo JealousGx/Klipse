@@ -12,8 +12,8 @@ import {
 	Menu,
 	PanelLeftClose,
 	Settings,
+	Share2,
 	Sparkles,
-	Tv,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -32,7 +32,7 @@ import { cn } from "@/lib/utils";
 
 const nav = [
 	{ to: "/dashboard", label: "Overview", icon: LayoutDashboard },
-	{ to: "/dashboard/channels", label: "Channels", icon: Tv },
+	{ to: "/dashboard/publishing", label: "Publishing", icon: Share2 },
 	{ to: "/dashboard/generate", label: "Generate", icon: Sparkles },
 	{ to: "/dashboard/jobs", label: "Jobs", icon: ListVideo },
 	{ to: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
