@@ -26,5 +26,11 @@ export function messageForYoutubeOAuthErrorReason(
 	if (r === "access_denied") {
 		return "You canceled Google sign-in or denied access. Connect again and approve access to continue.";
 	}
+	if (r === "youtube_requires_paid_plan") {
+		return "YouTube publishing isn’t available on the Free plan. Upgrade to connect a channel, or keep using Generate.";
+	}
+	if (r === "destination_replacements_exhausted") {
+		return "You’ve used all destination channel switches for this billing period. They reset when your subscription renews, or upgrade for a higher limit.";
+	}
 	return r ? `YouTube connection failed: ${r}` : "YouTube connection failed.";
 }
