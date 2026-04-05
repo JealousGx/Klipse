@@ -19,6 +19,7 @@ export async function listVideoJobsForUser(
 		.select({
 			id: videoJobs.id,
 			channelId: videoJobs.channelId,
+			pipelineKind: videoJobs.pipelineKind,
 			channelName: channels.name,
 			channelNiche: channels.niche,
 			channelPlatform: channels.platform,

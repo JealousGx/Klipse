@@ -4,19 +4,20 @@ import { and, eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { usageIdempotency } from "@/db/schema";
-import { videoJobs } from "@/db/schema/video-jobs";
 import type { StubGenerateIdempotencyResult } from "@/db/schema/usage-idempotency";
+import { videoJobs } from "@/db/schema/video-jobs";
 import {
 	applyUsageDeduction,
 	InsufficientCreditsError,
 } from "@/features/billing/credit-usage.server";
 import { POLAR_USAGE_STAGES } from "@/features/billing/meter-events";
 import { schedulePolarUsageSyncProcessing } from "@/features/billing/polar-usage-sync-schedule.server";
-import { jobRowId, usageIdempotencyRowId } from "@/lib/id";
-
 import { ChannelNotFoundError } from "@/features/channels/channel-errors";
 import { getChannelForUser } from "@/features/channels/channels.service.server";
+import { enqueueVideoJobDispatch } from "@/lib/worker/enqueue.server";
+import { jobRowId, usageIdempotencyRowId } from "@/lib/id";
 
+import { PIPELINE_KIND, PIPELINE_STAGE } from "./pipeline/pipeline-kind";
 import { estimateStubGenerateCredits } from "./stub-generate-cost";
 
 export const STUB_GENERATE_SCOPE = "stub_generate";
@@ -131,9 +132,10 @@ export async function executeStubGenerateWithIdempotency(input: {
 					id: ref,
 					userId: input.userId,
 					channelId,
-					status: "completed",
-					progress: 100,
-					currentStage: "stub",
+					pipelineKind: PIPELINE_KIND.STUB_PIPELINE,
+					status: "queued",
+					progress: 0,
+					currentStage: PIPELINE_STAGE.QUEUED,
 					costCredits: credits,
 					outputUrl: null,
 					errorMessage: null,
@@ -172,6 +174,11 @@ export async function executeStubGenerateWithIdempotency(input: {
 
 	if (outcome.kind === "fresh") {
 		schedulePolarUsageSyncProcessing();
+		await enqueueVideoJobDispatch({
+			jobId: outcome.payload.ref,
+			userId: input.userId,
+			pipelineKind: PIPELINE_KIND.STUB_PIPELINE,
+		});
 	}
 
 	return outcome;

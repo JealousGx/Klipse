@@ -2,6 +2,8 @@
 export type VideoJobListRow = {
 	id: string;
 	channelId: string;
+	/** Which pipeline implementation produced this row (`stub_pipeline`, future kinds). */
+	pipelineKind: string;
 	channelName: string;
 	channelNiche: string;
 	channelPlatform: "unlinked" | "youtube" | "tiktok" | "instagram";
