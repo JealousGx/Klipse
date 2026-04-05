@@ -9,7 +9,10 @@ import {
 } from "@/features/channels/channels.functions";
 import { channelQueryOptions } from "@/lib/queries/dashboard-queries";
 
-import type { PublishingDestinationSearch } from "./publishing-destination-search.schema";
+import {
+	messageForYoutubeOAuthErrorReason,
+	type PublishingDestinationSearch,
+} from "./publishing-destination-search.schema";
 import type { PublishingDestinationViewProps } from "./publishing-destination-view";
 
 export type PublishingDestinationPageState =
@@ -39,16 +42,7 @@ export function usePublishingDestinationPage(
 		if (search.youtube === "connected") {
 			toast.success("YouTube connected with Google.");
 		} else {
-			const r = search.reason
-				? decodeURIComponent(search.reason)
-				: undefined;
-			const message =
-				r === "wrong_youtube_channel"
-					? "This publishing destination is already tied to another YouTube channel. Sign in with the Google account that owns the channel you first connected."
-					: r
-						? `YouTube connection failed: ${r}`
-						: "YouTube connection failed.";
-			toast.error(message);
+			toast.error(messageForYoutubeOAuthErrorReason(search.reason));
 		}
 		void navigate({
 			to: "/dashboard/publishing/$destinationId",
