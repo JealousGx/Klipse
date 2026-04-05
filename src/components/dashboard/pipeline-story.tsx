@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types";
+import { labelForPipelineKind } from "@/features/video/pipeline/pipeline-kind";
 import type { VideoJobListRow } from "@/features/video/video-job-list.types";
 import { cn } from "@/lib/utils";
 import { youtubeChannelUrl } from "@/lib/youtube";
@@ -96,6 +97,7 @@ export function JobQueueStoryCard({
 	const tags = selected
 		? [
 				...tagFromNiche(selected.channelNiche),
+				labelForPipelineKind(selected.pipelineKind),
 				selected.currentStage ?? "pipeline",
 				`${selected.costCredits} cr`,
 			]
@@ -348,6 +350,7 @@ function LatestJobSnapshotCard({
 	const title = `${job.channelName} · ${shortJobId(job.id)}`;
 	const tags = [
 		...tagFromNiche(job.channelNiche).slice(0, 2),
+		labelForPipelineKind(job.pipelineKind),
 		job.status,
 		`${job.costCredits} cr`,
 	];
