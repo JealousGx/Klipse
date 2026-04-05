@@ -28,9 +28,34 @@ export type ChannelRow = {
 	externalChannelId: string | null;
 	externalChannelTitle: string | null;
 	externalChannelHandle: string | null;
+	/** True when a YouTube refresh token is stored (OAuth connect). Never includes the token. */
+	youtubeConnected: boolean;
+	/**
+	 * YouTube `UC…` id locked to this destination after first OAuth; reconnect must match.
+	 * Null until first successful connect.
+	 */
+	boundYoutubeChannelId: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 };
+
+function toChannelRow(r: typeof channels.$inferSelect): ChannelRow {
+	return {
+		id: r.id,
+		userId: r.userId,
+		name: r.name,
+		niche: r.niche,
+		config: parseConfig(r.config),
+		platform: r.platform,
+		externalChannelId: r.externalChannelId ?? null,
+		externalChannelTitle: r.externalChannelTitle ?? null,
+		externalChannelHandle: r.externalChannelHandle ?? null,
+		youtubeConnected: Boolean(r.youtubeRefreshToken),
+		boundYoutubeChannelId: r.boundYoutubeChannelId ?? null,
+		createdAt: r.createdAt,
+		updatedAt: r.updatedAt,
+	};
+}
 
 function parseConfig(raw: unknown): ChannelConfig {
 	const parsed = channelConfigSchema.safeParse(raw);
@@ -77,14 +102,7 @@ export async function listChannelsForUser(
 		.where(eq(channels.userId, userId))
 		.orderBy(desc(channels.createdAt));
 
-	return rows.map((r) => ({
-		...r,
-		config: parseConfig(r.config),
-		platform: r.platform,
-		externalChannelId: r.externalChannelId ?? null,
-		externalChannelTitle: r.externalChannelTitle ?? null,
-		externalChannelHandle: r.externalChannelHandle ?? null,
-	}));
+	return rows.map((r) => toChannelRow(r));
 }
 
 export async function getChannelForUser(
@@ -101,14 +119,7 @@ export async function getChannelForUser(
 	if (!r) {
 		return null;
 	}
-	return {
-		...r,
-		config: parseConfig(r.config),
-		platform: r.platform,
-		externalChannelId: r.externalChannelId ?? null,
-		externalChannelTitle: r.externalChannelTitle ?? null,
-		externalChannelHandle: r.externalChannelHandle ?? null,
-	};
+	return toChannelRow(r);
 }
 
 export async function createChannel(input: {
@@ -157,6 +168,8 @@ export async function createChannel(input: {
 		externalChannelId: null,
 		externalChannelTitle: null,
 		externalChannelHandle: null,
+		youtubeRefreshToken: null,
+		boundYoutubeChannelId: null,
 		createdAt: now,
 		updatedAt: now,
 	});
@@ -219,6 +232,12 @@ export async function updateChannel(input: {
 				? null
 				: input.externalChannelHandle.trim();
 	}
+	if (input.platform === "unlinked") {
+		patch.youtubeRefreshToken = null;
+		if (!existing.boundYoutubeChannelId && existing.externalChannelId) {
+			patch.boundYoutubeChannelId = existing.externalChannelId.trim();
+		}
+	}
 
 	await db
 		.update(channels)
@@ -232,6 +251,37 @@ export async function updateChannel(input: {
 		throw new ChannelNotFoundError();
 	}
 	return next;
+}
+
+/** OAuth callback only: persist YouTube tokens + channel metadata. */
+export async function setChannelYoutubeConnection(input: {
+	userId: string;
+	channelId: string;
+	refreshToken: string;
+	externalChannelId: string;
+	externalChannelTitle: string | null;
+	externalChannelHandle: string | null;
+}): Promise<void> {
+	const existing = await getChannelForUser(input.userId, input.channelId);
+	if (!existing) {
+		throw new ChannelNotFoundError();
+	}
+	const db = getDb();
+	const trimmedId = input.externalChannelId.trim();
+	await db
+		.update(channels)
+		.set({
+			platform: "youtube",
+			externalChannelId: trimmedId,
+			externalChannelTitle: input.externalChannelTitle?.trim() || null,
+			externalChannelHandle: input.externalChannelHandle?.trim() || null,
+			youtubeRefreshToken: input.refreshToken,
+			boundYoutubeChannelId: existing.boundYoutubeChannelId ?? trimmedId,
+			updatedAt: new Date(),
+		})
+		.where(
+			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
+		);
 }
 
 export async function deleteChannel(input: {

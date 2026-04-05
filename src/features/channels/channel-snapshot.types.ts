@@ -5,4 +5,5 @@ export type ChannelSnapshot = {
 	niche: string;
 	platform: "unlinked" | "youtube" | "tiktok" | "instagram";
 	externalChannelId: string | null;
+	youtubeConnected: boolean;
 };
