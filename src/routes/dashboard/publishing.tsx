@@ -1,5 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 
+import { deleteChannelFn } from "@/features/channels/channels.functions";
 import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
 import { youtubeChannelUrl } from "@/lib/youtube";
 
@@ -21,7 +23,21 @@ export const Route = createFileRoute("/dashboard/publishing")({
 });
 
 function PublishingPage() {
+	const queryClient = useQueryClient();
 	const destinationsQuery = useQuery(channelsQueryOptions);
+
+	const deleteMutation = useMutation({
+		mutationFn: (channelId: string) => deleteChannelFn({ data: { channelId } }),
+		onSuccess: (r) => {
+			if (r.ok) {
+				toast.success("Destination removed");
+				void queryClient.invalidateQueries({ queryKey: ["channels"] });
+				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] });
+				return;
+			}
+			toast.error("Couldn’t remove destination");
+		},
+	});
 
 	const loading = destinationsQuery.isPending;
 	const list = destinationsQuery.data ?? [];
@@ -59,7 +75,7 @@ function PublishingPage() {
 				</Button>
 			</div>
 
-			<Card className="border-primary/25 bg-primary/[0.04] dark:bg-primary/10">
+			<Card className="border-primary/25 bg-primary/4 dark:bg-primary/10">
 				<CardHeader className="pb-2">
 					<CardTitle className="font-heading text-base">
 						Extensible by design
@@ -166,6 +182,48 @@ function PublishingPage() {
 									<br />
 									<code className="font-mono">{ch.id}</code>
 								</p>
+								<div className="mt-4 flex flex-wrap gap-2 border-t border-border/60 pt-4">
+									<Button
+										variant="outline"
+										size="sm"
+										className="gap-1.5"
+										asChild
+									>
+										<Link
+											to="/dashboard/publishing/$destinationId"
+											params={{ destinationId: ch.id }}
+										>
+											<Pencil className="size-3.5" aria-hidden />
+											Edit
+										</Link>
+									</Button>
+									<Button
+										type="button"
+										variant="outline"
+										size="sm"
+										className="gap-1.5 text-destructive hover:bg-destructive/10 hover:text-destructive"
+										disabled={deleteMutation.isPending}
+										onClick={() => {
+											if (
+												typeof window !== "undefined" &&
+												!window.confirm(
+													"Remove this publishing destination? Associated video jobs may be deleted.",
+												)
+											) {
+												return;
+											}
+											deleteMutation.mutate(ch.id);
+										}}
+									>
+										{deleteMutation.isPending &&
+										deleteMutation.variables === ch.id ? (
+											<Loader2 className="size-3.5 animate-spin" aria-hidden />
+										) : (
+											<Trash2 className="size-3.5" aria-hidden />
+										)}
+										Remove
+									</Button>
+								</div>
 							</li>
 						);
 					})}

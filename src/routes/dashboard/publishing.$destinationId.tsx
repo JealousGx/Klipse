@@ -20,6 +20,7 @@ import {
 } from "@/features/channels/channels.functions";
 
 import { channelQueryOptions } from "@/lib/queries/dashboard-queries";
+import { cn } from "@/lib/utils";
 import { youtubeChannelUrl } from "@/lib/youtube";
 
 const fieldClass =
@@ -42,9 +43,11 @@ function PublishingDestinationPage() {
 
 	const channelQuery = useQuery(channelQueryOptions(destinationId));
 
-	const [ytId, setYtId] = useState("");
-	const [ytTitle, setYtTitle] = useState("");
-	const [ytHandle, setYtHandle] = useState("");
+	const [displayName, setDisplayName] = useState("");
+	const [niche, setNiche] = useState("");
+
+	/** Draft UC id — only used while unlinked; after link, id is read-only until disconnect. */
+	const [pendingYtId, setPendingYtId] = useState("");
 
 	const deleteMutation = useMutation({
 		mutationFn: async () => {
@@ -68,6 +71,29 @@ function PublishingDestinationPage() {
 		});
 	};
 
+	const updateProfileMutation = useMutation({
+		mutationFn: async () => {
+			return updateChannelFn({
+				data: {
+					channelId: destinationId,
+					name: displayName.trim(),
+					niche: niche.trim(),
+				},
+			});
+		},
+		onSuccess: (r) => {
+			if (r.ok) {
+				toast.success("Destination updated");
+				void queryClient.invalidateQueries({
+					queryKey: ["channel", destinationId],
+				});
+				void queryClient.invalidateQueries({ queryKey: ["channels"] });
+				return;
+			}
+			toast.error(r.message ?? "Could not save");
+		},
+	});
+
 	const updateLinkMutation = useMutation({
 		mutationFn: async (payload: {
 			platform: "unlinked" | "youtube";
@@ -82,9 +108,13 @@ function PublishingDestinationPage() {
 				},
 			});
 		},
-		onSuccess: (r) => {
+		onSuccess: (r, variables) => {
 			if (r.ok) {
-				toast.success("Saved");
+				if (variables.externalChannelId === null) {
+					toast.success("YouTube disconnected");
+				} else {
+					toast.success("Channel linked");
+				}
 				void queryClient.invalidateQueries({
 					queryKey: ["channel", destinationId],
 				});
@@ -101,15 +131,12 @@ function PublishingDestinationPage() {
 		if (!ch) {
 			return;
 		}
-		setYtId(ch.externalChannelId ?? "");
-		setYtTitle(ch.externalChannelTitle ?? "");
-		setYtHandle(ch.externalChannelHandle ?? "");
-	}, [
-		ch?.externalChannelHandle,
-		ch?.externalChannelId,
-		ch?.externalChannelTitle,
-		ch?.id,
-	]);
+		setDisplayName(ch.name);
+		setNiche(ch.niche);
+		if (!ch.externalChannelId) {
+			setPendingYtId("");
+		}
+	}, [ch]);
 
 	if (channelQuery.isPending) {
 		return <p className="text-sm text-muted-foreground">Loading…</p>;
@@ -141,37 +168,93 @@ function PublishingDestinationPage() {
 						All destinations
 					</Link>
 				</Button>
-				<div className="flex flex-wrap items-center gap-3">
-					<h2 className="font-heading text-xl font-semibold text-foreground">
-						{ch.name}
-					</h2>
-					<Badge
-						variant={
-							ch.platform === "youtube" && ch.externalChannelId
-								? "default"
-								: "secondary"
-						}
-					>
-						{ch.platform === "youtube" && ch.externalChannelId
-							? "YouTube · linked"
-							: "Not connected"}
-					</Badge>
-				</div>
-				<p className="mt-2 text-sm text-muted-foreground">{ch.niche}</p>
 			</div>
+
+			<Card className="border-border/80">
+				<CardHeader>
+					<div className="flex flex-wrap items-start justify-between gap-3">
+						<div>
+							<CardTitle className="font-heading text-base">
+								Destination details
+							</CardTitle>
+							<CardDescription className="mt-1">
+								Display name and niche for this publishing slot (shown in lists
+								and job attribution).
+							</CardDescription>
+						</div>
+						<Badge
+							variant={
+								ch.platform === "youtube" && ch.externalChannelId
+									? "default"
+									: "secondary"
+							}
+							className="shrink-0"
+						>
+							{ch.platform === "youtube" && ch.externalChannelId
+								? "YouTube · linked"
+								: "Not connected"}
+						</Badge>
+					</div>
+				</CardHeader>
+				<CardContent>
+					<form
+						className="space-y-4"
+						onSubmit={(e) => {
+							e.preventDefault();
+							updateProfileMutation.mutate();
+						}}
+					>
+						<div className="space-y-2">
+							<label className="text-sm font-medium" htmlFor="dest-name">
+								Name
+							</label>
+							<input
+								id="dest-name"
+								type="text"
+								autoComplete="off"
+								value={displayName}
+								onChange={(e) => setDisplayName(e.target.value)}
+								className={fieldClass}
+								required
+							/>
+						</div>
+						<div className="space-y-2">
+							<label className="text-sm font-medium" htmlFor="dest-niche">
+								Niche / description
+							</label>
+							<textarea
+								id="dest-niche"
+								rows={3}
+								value={niche}
+								onChange={(e) => setNiche(e.target.value)}
+								className={cn(
+									fieldClass,
+									"min-h-20 resize-y py-3 leading-relaxed",
+								)}
+								required
+							/>
+						</div>
+						<Button
+							type="submit"
+							disabled={updateProfileMutation.isPending}
+							className="gap-2"
+						>
+							{updateProfileMutation.isPending ? (
+								<Loader2 className="size-4 animate-spin" />
+							) : null}
+							Save details
+						</Button>
+					</form>
+				</CardContent>
+			</Card>
 
 			<Card className="border-border/80">
 				<CardHeader>
 					<CardTitle className="font-heading text-base">Connection</CardTitle>
 					<CardDescription>
-						When OAuth ships, accounts link here automatically. Until then you
-						can paste your{" "}
-						<strong className="font-medium text-foreground">
-							YouTube channel id
-						</strong>{" "}
-						(<span className="font-mono">UC…</span>, from YouTube Studio →
-						Channel → Advanced settings) so jobs and support can reference the
-						right channel.
+						Google / YouTube OAuth will connect your account here and fill
+						channel details automatically. Manual channel id below is only until
+						then.
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="flex flex-wrap gap-3">
@@ -184,134 +267,75 @@ function PublishingDestinationPage() {
 			<Card className="border-border/80">
 				<CardHeader>
 					<CardTitle className="font-heading text-base">
-						YouTube channel id
+						YouTube channel
 					</CardTitle>
 					<CardDescription>
-						This is the platform’s id (not Klipse’s destination id below). It
-						uniquely identifies your channel for uploads and analytics.
+						{ch.externalChannelId
+							? "Linked channel id. You can’t change it here—disconnect to unlink, then reconnect the same channel (OAuth or paste the id again) when you’re ready."
+							: "Paste your channel id to link this destination until OAuth is available. If you disconnected earlier, you can reconnect to the same channel. Title and handle will come from YouTube after connect."}
 					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-4">
 					{ch.externalChannelId ? (
-						<div className="flex flex-wrap items-center gap-2">
-							<code className="rounded-md bg-muted/60 px-2 py-1 font-mono text-xs break-all text-foreground">
-								{ch.externalChannelId}
-							</code>
-							<Button
-								type="button"
-								variant="outline"
-								size="sm"
-								className="gap-1.5"
-								onClick={() => {
-									void navigator.clipboard
-										.writeText(ch.externalChannelId!)
-										.then(
+						<div className="space-y-4">
+							<div className="flex flex-wrap items-center gap-2">
+								<code className="rounded-md bg-muted/60 px-2 py-1 font-mono text-xs break-all text-foreground">
+									{ch.externalChannelId}
+								</code>
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="gap-1.5"
+									onClick={() => {
+										const id = ch.externalChannelId;
+										if (!id) return;
+										void navigator.clipboard.writeText(id).then(
 											() => toast.success("YouTube channel id copied"),
 											() => toast.error("Could not copy"),
 										);
-								}}
-							>
-								<Copy className="size-3.5" />
-								Copy
-							</Button>
-							<Button type="button" variant="outline" size="sm" asChild>
-								<a
-									href={youtubeChannelUrl(ch.externalChannelId)}
-									target="_blank"
-									rel="noopener noreferrer"
-									className="gap-1.5"
+									}}
 								>
-									<ExternalLink className="size-3.5" />
-									Open on YouTube
-								</a>
-							</Button>
-						</div>
-					) : null}
-
-					<form
-						className="space-y-4"
-						onSubmit={(e) => {
-							e.preventDefault();
-							const idTrim = ytId.trim();
-							if (idTrim === "") {
-								updateLinkMutation.mutate({
-									platform: "unlinked",
-									externalChannelId: null,
-									externalChannelTitle: null,
-									externalChannelHandle: null,
-								});
-								setYtTitle("");
-								setYtHandle("");
-								return;
-							}
-							updateLinkMutation.mutate({
-								platform: "youtube",
-								externalChannelId: idTrim,
-								externalChannelTitle: ytTitle.trim() || null,
-								externalChannelHandle: ytHandle.trim() || null,
-							});
-						}}
-					>
-						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="yt-channel-id">
-								Channel id (UC…)
-							</label>
-							<input
-								id="yt-channel-id"
-								type="text"
-								autoComplete="off"
-								spellCheck={false}
-								placeholder="UCxxxxxxxxxxxxxxxxxxxxxx"
-								value={ytId}
-								onChange={(e) => setYtId(e.target.value)}
-								className={fieldClass}
-							/>
-						</div>
-						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="yt-title">
-								Channel title (optional)
-							</label>
-							<input
-								id="yt-title"
-								type="text"
-								placeholder="As shown on YouTube"
-								value={ytTitle}
-								onChange={(e) => setYtTitle(e.target.value)}
-								className={fieldClass}
-							/>
-						</div>
-						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="yt-handle">
-								Handle (optional)
-							</label>
-							<input
-								id="yt-handle"
-								type="text"
-								placeholder="@YourHandle"
-								value={ytHandle}
-								onChange={(e) => setYtHandle(e.target.value)}
-								className={fieldClass}
-							/>
-						</div>
-						<div className="flex flex-wrap gap-2">
-							<Button
-								type="submit"
-								disabled={updateLinkMutation.isPending}
-								className="gap-2"
-							>
-								{updateLinkMutation.isPending ? (
-									<Loader2 className="size-4 animate-spin" />
-								) : null}
-								Save platform link
-							</Button>
+									<Copy className="size-3.5" />
+									Copy
+								</Button>
+								<Button type="button" variant="outline" size="sm" asChild>
+									<a
+										href={youtubeChannelUrl(ch.externalChannelId)}
+										target="_blank"
+										rel="noopener noreferrer"
+										className="gap-1.5"
+									>
+										<ExternalLink className="size-3.5" />
+										Open on YouTube
+									</a>
+								</Button>
+							</div>
+							{ch.externalChannelTitle ? (
+								<div>
+									<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+										Channel title
+									</p>
+									<p className="mt-0.5 text-sm text-foreground">
+										{ch.externalChannelTitle}
+									</p>
+								</div>
+							) : null}
 							<Button
 								type="button"
 								variant="outline"
 								disabled={updateLinkMutation.isPending}
+								className="gap-2"
 								onClick={() => {
-									setYtId("");
-									setYtTitle("");
-									setYtHandle("");
+									if (
+										typeof window !== "undefined" &&
+										!window.confirm(
+											"Disconnect this YouTube channel from this destination? You can reconnect to the same channel later with OAuth or by pasting the channel id again.",
+										)
+									) {
+										return;
+									}
+									setPendingYtId("");
 									updateLinkMutation.mutate({
 										platform: "unlinked",
 										externalChannelId: null,
@@ -320,10 +344,57 @@ function PublishingDestinationPage() {
 									});
 								}}
 							>
-								Clear platform link
+								{updateLinkMutation.isPending ? (
+									<Loader2 className="size-4 animate-spin" />
+								) : null}
+								Disconnect YouTube
 							</Button>
 						</div>
-					</form>
+					) : (
+						<form
+							className="space-y-4"
+							onSubmit={(e) => {
+								e.preventDefault();
+								const idTrim = pendingYtId.trim();
+								if (idTrim === "") {
+									toast.error("Paste your YouTube channel id (UC…).");
+									return;
+								}
+								updateLinkMutation.mutate({
+									platform: "youtube",
+									externalChannelId: idTrim,
+									externalChannelTitle: null,
+									externalChannelHandle: null,
+								});
+							}}
+						>
+							<div className="space-y-2">
+								<label className="text-sm font-medium" htmlFor="yt-channel-id">
+									Channel id (UC…)
+								</label>
+								<input
+									id="yt-channel-id"
+									type="text"
+									autoComplete="off"
+									spellCheck={false}
+									placeholder="UCxxxxxxxxxxxxxxxxxxxxxx"
+									value={pendingYtId}
+									onChange={(e) => setPendingYtId(e.target.value)}
+									className={fieldClass}
+								/>
+							</div>
+							<Button
+								type="submit"
+								disabled={updateLinkMutation.isPending}
+								className="gap-2"
+							>
+								{updateLinkMutation.isPending ? (
+									<Loader2 className="size-4 animate-spin" />
+								) : null}
+								Link channel
+							</Button>
+						</form>
+					)}
 				</CardContent>
 			</Card>
 
@@ -359,15 +430,14 @@ function PublishingDestinationPage() {
 				</CardContent>
 			</Card>
 
-			<Card className="border-destructive/30 bg-destructive/[0.03] dark:bg-destructive/5">
+			<Card className="border-destructive/30 bg-destructive/3 dark:bg-destructive/5">
 				<CardHeader>
 					<CardTitle className="font-heading text-base text-destructive">
 						Remove destination
 					</CardTitle>
 					<CardDescription>
-						Deletes this publishing slot and associated job rows. If you have
-						none left, a default destination is created the next time you open
-						Publishing.
+						Deletes this publishing destination and associated video jobs in
+						this workspace.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
