@@ -1,4 +1,5 @@
 import { CheckCircle2, Loader2, Unplug } from "lucide-react";
+import { Link } from "@tanstack/react-router";
 
 import { Button } from "@/components/ui/button";
 
@@ -7,6 +8,8 @@ import type { PublishingDestinationChannel } from "./publishing-destination-chan
 type Props = {
 	destinationId: string;
 	channel: PublishingDestinationChannel;
+	/** False on Free — paid publishing OAuth is blocked server-side. */
+	canConnectPublishing: boolean;
 	onDisconnect: () => void;
 	isDisconnectPending: boolean;
 };
@@ -15,6 +18,7 @@ type Props = {
 export function DestinationConnectionFields({
 	destinationId,
 	channel: ch,
+	canConnectPublishing,
 	onDisconnect,
 	isDisconnectPending,
 }: Props) {
@@ -67,9 +71,15 @@ export function DestinationConnectionFields({
 
 			<div className="flex flex-wrap items-center gap-2">
 				{needsGoogleOAuth ? (
-					<Button type="button" className="w-fit gap-2 shadow-sm" asChild>
-						<a href={oauthHref}>Connect with Google</a>
-					</Button>
+					canConnectPublishing ? (
+						<Button type="button" className="w-fit gap-2 shadow-sm" asChild>
+							<a href={oauthHref}>Connect with Google</a>
+						</Button>
+					) : (
+						<Button type="button" className="w-fit gap-2 shadow-sm" asChild>
+							<Link to="/dashboard/billing">Upgrade to connect YouTube</Link>
+						</Button>
+					)
 				) : (
 					<Button
 						type="button"
