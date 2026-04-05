@@ -133,6 +133,7 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 						externalChannelId: yt.id,
 						externalChannelTitle: yt.title || null,
 						externalChannelHandle: formatHandle(yt.customUrl),
+						externalChannelThumbnailUrl: yt.thumbnailUrl,
 					});
 					if (!applied.ok) {
 						const reason =
