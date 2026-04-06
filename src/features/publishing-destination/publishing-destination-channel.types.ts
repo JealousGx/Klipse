@@ -1,8 +1,12 @@
+import type { ChannelConfig } from "@/features/channels/channel-config.schema";
+
 /** Channel fields used by publishing destination UI (client-safe). */
 export type PublishingDestinationChannel = {
 	id: string;
 	name: string;
 	niche: string;
+	/** Destination preferences (tone, approval, etc.). */
+	config: ChannelConfig;
 	platform: "unlinked" | "youtube" | "tiktok" | "instagram";
 	externalChannelId: string | null;
 	externalChannelTitle: string | null;
