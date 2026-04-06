@@ -1,10 +1,11 @@
 import "@tanstack/react-start/server-only";
 
 import { videoJobAssemblyOutputKey } from "@klipse/video-assembly-shared";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
+import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
 import { publicUrlForR2Key } from "@/lib/storage/r2.server";
 import { markFreeTierVideoConsumedIfNeeded } from "./free-tier-video-consumed.server";
 import { PIPELINE_STAGE } from "./pipeline-kind";
@@ -58,15 +59,18 @@ export async function applyVideoProcessorWebhook(
 		return { ok: false, code: "invalid_state" };
 	}
 
+	const readyForWebhook =
+		job.status === "dispatched" || job.status === "processing";
+
 	if (input.status === "completed") {
-		if (job.status !== "processing") {
+		if (!readyForWebhook) {
 			return { ok: false, code: "invalid_state" };
 		}
 
 		const key = videoJobAssemblyOutputKey(userId, jobId);
 		const outputUrl = publicUrlForR2Key(key);
 
-		await db
+		const updateResult = await db
 			.update(videoJobs)
 			.set({
 				status: "completed",
@@ -80,15 +84,27 @@ export async function applyVideoProcessorWebhook(
 				and(
 					eq(videoJobs.id, jobId),
 					eq(videoJobs.userId, userId),
-					eq(videoJobs.status, "processing"),
+					inArray(videoJobs.status, ["dispatched", "processing"]),
 				),
 			);
+
+		if (mysqlAffectedRowsFromUpdateResult(updateResult) === 0) {
+			const [again] = await db
+				.select({ status: videoJobs.status })
+				.from(videoJobs)
+				.where(eq(videoJobs.id, jobId))
+				.limit(1);
+			if (again?.status === "completed") {
+				return { ok: true, replayed: true };
+			}
+			return { ok: false, code: "invalid_state" };
+		}
 
 		await markFreeTierVideoConsumedIfNeeded(userId);
 		return { ok: true, replayed: false };
 	}
 
-	if (job.status !== "processing") {
+	if (!readyForWebhook) {
 		return { ok: false, code: "invalid_state" };
 	}
 
