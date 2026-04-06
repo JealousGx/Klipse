@@ -3,6 +3,14 @@ import { z } from "zod";
 
 export const env = createEnv({
 	server: {
+		/**
+		 * `local` — allow in-process fallbacks when the queue Worker HTTP enqueue fails (dev without `wrangler`).
+		 * Production/staging: use `production` (default) or `staging` / `development` — no inline pipeline drain.
+		 */
+		ENVIRONMENT: z
+			.enum(["local", "development", "production", "staging"])
+			.default("production"),
+
 		SERVER_URL: z.url().optional(),
 		DATABASE_URL: z.string(),
 
