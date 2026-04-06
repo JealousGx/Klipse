@@ -13,7 +13,7 @@ export function ProductStoryMock() {
 			<div className="flex items-center justify-between gap-2 border-b border-border bg-muted/40 px-4 py-3">
 				<div className="flex flex-wrap items-center gap-2">
 					<span className="font-heading text-sm font-semibold text-foreground">
-						Render queue
+						Video queue
 					</span>
 					<span className="rounded border border-border bg-background px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
 						4 jobs
