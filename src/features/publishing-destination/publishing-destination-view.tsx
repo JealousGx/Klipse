@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 import { DestinationConnectionFields } from "./destination-connection-section";
 import { DestinationDetailsFields } from "./destination-details-card";
+import { DestinationAutoPostFields } from "./destination-auto-post-fields";
 import { DestinationYoutubeChannelFields } from "./destination-youtube-channel-card";
 import type { PublishingDestinationChannel } from "./publishing-destination-channel.types";
 import { PublishingDestinationWidgets } from "./publishing-destination-widgets";
@@ -20,6 +21,9 @@ export type PublishingDestinationViewProps = {
 	onNicheChange: (value: string) => void;
 	onSaveProfile: () => void;
 	isSavingProfile: boolean;
+	autoPost: boolean;
+	onAutoPostChange: (next: boolean) => void;
+	isSavingAutoPost: boolean;
 	onDisconnect: () => void;
 	isDisconnectPending: boolean;
 	/** Paid plan allows OAuth for publishing integrations (YouTube today; others later). */
@@ -38,6 +42,9 @@ export function PublishingDestinationView({
 	onNicheChange,
 	onSaveProfile,
 	isSavingProfile,
+	autoPost,
+	onAutoPostChange,
+	isSavingAutoPost,
 	onDisconnect,
 	isDisconnectPending,
 	canConnectPublishing,
@@ -127,6 +134,27 @@ export function PublishingDestinationView({
 							</DashboardPanel>
 						</DashboardSection>
 					) : null}
+
+					<DashboardSection
+						id="auto-post"
+						titleId="auto-post-heading"
+						title="After a video is ready"
+						description="Control whether we ask you before publishing to your linked channel (paid plans)."
+					>
+						<DashboardPanel>
+							<DestinationAutoPostFields
+								autoPost={autoPost}
+								onAutoPostChange={onAutoPostChange}
+								disabled={!canConnectPublishing}
+								disabledReason={
+									!canConnectPublishing
+										? "Upgrade to a paid plan with YouTube publishing to choose auto-publish or ask-first for this destination."
+										: undefined
+								}
+								isSaving={isSavingAutoPost}
+							/>
+						</DashboardPanel>
+					</DashboardSection>
 
 					<DashboardSection
 						id="destination-details"
