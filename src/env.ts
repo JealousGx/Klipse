@@ -45,8 +45,8 @@ export const env = createEnv({
 		INTERNAL_CRON_SECRET: z.string().min(1).optional(),
 
 		/**
-		 * External FFmpeg / encoder service. When set, video assembly hands off with a
-		 * presigned PUT instead of running in this process. Omit for inline encoding.
+		 * External encoder service (FFmpeg lives here only). Required for any assembly job;
+		 * the main app never encodes video.
 		 */
 		VIDEO_PROCESSOR_URL: z.url().optional(),
 		/** App → processor: `Authorization` bearer the processor verifies. */
