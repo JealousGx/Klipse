@@ -11,6 +11,10 @@ export const PIPELINE_KIND = {
 	 * Slug is versioned only; duration and destination are pipeline-internal.
 	 */
 	VIDEO_ASSEMBLE_V1: "video_assemble_v1",
+	/**
+	 * Script (AI) → video assembly: `current_stage` moves `script` → `assemble` → `done`.
+	 */
+	CONTENT_PIPELINE_V1: "content_pipeline_v1",
 } as const;
 
 export type PipelineKind = (typeof PIPELINE_KIND)[keyof typeof PIPELINE_KIND];
@@ -19,10 +23,20 @@ export function isVideoAssemblyPipelineKind(kind: string): boolean {
 	return kind === PIPELINE_KIND.VIDEO_ASSEMBLE_V1;
 }
 
+/** Pipelines that run FFmpeg assembly (inline or external) for this job row. */
+export function isAssemblyEncodingPipelineKind(kind: string): boolean {
+	return (
+		kind === PIPELINE_KIND.VIDEO_ASSEMBLE_V1 ||
+		kind === PIPELINE_KIND.CONTENT_PIPELINE_V1
+	);
+}
+
 export const PIPELINE_STAGE = {
 	QUEUED: "queued",
 	/** External processor handoff in progress (Hono not yet accepted). */
 	DISPATCH_PENDING: "dispatch_pending",
+	/** AI script generation (content pipeline). */
+	SCRIPT: "script",
 	STUB_RUN: "stub_run",
 	ASSEMBLE: "assemble",
 	DONE: "done",
@@ -38,6 +52,8 @@ export function labelForPipelineKind(kind: string): string {
 			return "Stub pipeline";
 		case PIPELINE_KIND.VIDEO_ASSEMBLE_V1:
 			return "Video assembly";
+		case PIPELINE_KIND.CONTENT_PIPELINE_V1:
+			return "Script + assembly";
 		default:
 			return kind;
 	}
