@@ -9,7 +9,7 @@ import { PIPELINE_KIND, PIPELINE_STAGE } from "./pipeline-kind";
 
 /**
  * Advances a {@link PIPELINE_KIND.STUB_PIPELINE} job (Worker → main app dispatch, or
- * inline fallback when the Worker HTTP enqueue is unreachable).
+ * inline fallback when `ENVIRONMENT=local` and enqueue fails).
  */
 export async function processStubPipelineJob(jobId: string): Promise<void> {
 	const db = getDb();
