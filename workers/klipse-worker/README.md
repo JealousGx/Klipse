@@ -33,7 +33,7 @@ Async jobs for Klipse: [Queues](https://developers.cloudflare.com/queues/) (reli
 2. Copy `workers/klipse-worker/.dev.vars.example` → `.dev.vars` and set `WORKER_SECRET` to match the main app.
 3. Worker: `cd workers/klipse-worker && pnpm dev` (default port 8787).
 
-The main app’s `WORKER_API_URL` should be `http://127.0.0.1:8787`. If the Worker is down, the app **falls back** to an in-process Polar outbox drain so billing still works locally.
+The main app’s `WORKER_API_URL` should be `http://127.0.0.1:8787`. Set **`ENVIRONMENT=local`** in the main app `.env.local` so that if the Worker is down, the app **falls back** to an in-process Polar outbox drain and video dispatch (dev only). With `production` (default), a failed enqueue does **not** run pipelines inline.
 
 ## Deploy
 
