@@ -4,7 +4,7 @@ import {
 	type VideoProcessorHandoffPayload,
 	videoJobAssemblyOutputKey,
 } from "@klipse/video-assembly-shared";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
@@ -13,7 +13,11 @@ import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.
 import { presignPutVideoToR2 } from "@/lib/storage/r2.server";
 import { getAppPublicBaseUrl } from "@/lib/video-processor/app-base-url.server";
 
-import { isVideoAssemblyPipelineKind, PIPELINE_STAGE } from "./pipeline-kind";
+import {
+	isAssemblyEncodingPipelineKind,
+	PIPELINE_KIND,
+	PIPELINE_STAGE,
+} from "./pipeline-kind";
 import { markVideoJobFailed } from "./process-stub-pipeline.server";
 
 function requireExternalProcessorEnv(): {
@@ -61,6 +65,7 @@ export async function handoffVideoAssemblyToExternalProcessor(
 			userId: videoJobs.userId,
 			pipelineKind: videoJobs.pipelineKind,
 			status: videoJobs.status,
+			currentStage: videoJobs.currentStage,
 		})
 		.from(videoJobs)
 		.where(eq(videoJobs.id, id))
@@ -69,7 +74,7 @@ export async function handoffVideoAssemblyToExternalProcessor(
 	if (!job) {
 		throw new Error("video_job_not_found");
 	}
-	if (!isVideoAssemblyPipelineKind(job.pipelineKind)) {
+	if (!isAssemblyEncodingPipelineKind(job.pipelineKind)) {
 		throw new Error("video_job_pipeline_mismatch");
 	}
 	if (job.status === "completed" || job.status === "failed") {
@@ -80,6 +85,14 @@ export async function handoffVideoAssemblyToExternalProcessor(
 	}
 
 	if (job.status === "queued") {
+		const isContent = job.pipelineKind === PIPELINE_KIND.CONTENT_PIPELINE_V1;
+		const stagePredicate = isContent
+			? eq(videoJobs.currentStage, PIPELINE_STAGE.ASSEMBLE)
+			: or(
+					eq(videoJobs.currentStage, PIPELINE_STAGE.QUEUED),
+					isNull(videoJobs.currentStage),
+				);
+
 		const now = new Date();
 		const updateResult = await db
 			.update(videoJobs)
@@ -89,7 +102,13 @@ export async function handoffVideoAssemblyToExternalProcessor(
 				currentStage: PIPELINE_STAGE.DISPATCH_PENDING,
 				updatedAt: now,
 			})
-			.where(and(eq(videoJobs.id, id), eq(videoJobs.status, "queued")));
+			.where(
+				and(
+					eq(videoJobs.id, id),
+					eq(videoJobs.status, "queued"),
+					stagePredicate,
+				),
+			);
 
 		if (mysqlAffectedRowsFromUpdateResult(updateResult) === 0) {
 			return;
