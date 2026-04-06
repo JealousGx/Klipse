@@ -5,6 +5,7 @@ export * from "./credit-transactions";
 export * from "./polar-usage-sync";
 export * from "./provider-api-keys";
 export * from "./sessions";
+export * from "./stored-files";
 export * from "./usage-idempotency";
 export * from "./users";
 export * from "./users-relations";

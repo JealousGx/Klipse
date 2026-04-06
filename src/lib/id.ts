@@ -54,6 +54,8 @@ const ID_PREFIXES = {
 	/** `polar_usage_sync` PK — outbox for Polar `klipse.usage` ingest. */
 	polarUsageSync: "pus",
 	usageIdempotency: "uim",
+	/** `stored_files` PK — R2 object tracked for TTL purge. */
+	storedFile: "sfb",
 } as const;
 
 export function userId() {
@@ -152,4 +154,8 @@ export function polarUsageSyncRowId() {
 
 export function usageIdempotencyRowId() {
 	return prefixedId(ID_PREFIXES.usageIdempotency);
+}
+
+export function storedFileRowId() {
+	return prefixedId(ID_PREFIXES.storedFile);
 }
