@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
 import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config";
+import type { ChannelConfig } from "@/features/channels/channel-config.schema";
 import {
 	deleteChannelFn,
 	reconcileYoutubeOAuthFn,
@@ -41,6 +42,7 @@ export function usePublishingDestinationPage(
 
 	const [displayName, setDisplayName] = useState("");
 	const [niche, setNiche] = useState("");
+	const [autoPost, setAutoPost] = useState(false);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -133,6 +135,35 @@ export function usePublishingDestinationPage(
 		},
 	});
 
+	const updateAutoPostMutation = useMutation({
+		mutationFn: async (nextAutoPost: boolean) => {
+			const c = queryClient.getQueryData(["channel", destinationId]) as
+				| { config: ChannelConfig }
+				| undefined;
+			if (!c) {
+				throw new Error("Channel not loaded");
+			}
+			return updateChannelFn({
+				data: {
+					channelId: destinationId,
+					config: { ...c.config, auto_post: nextAutoPost },
+				},
+			});
+		},
+		onSuccess: (r) => {
+			if (r.ok) {
+				setAutoPost(r.channel.config.auto_post);
+				toast.success("Publishing preference saved");
+				void queryClient.invalidateQueries({
+					queryKey: ["channel", destinationId],
+				});
+				void queryClient.invalidateQueries({ queryKey: ["channels"] });
+				return;
+			}
+			toast.error(r.message ?? "Could not save");
+		},
+	});
+
 	const updateLinkMutation = useMutation({
 		mutationFn: async (payload: {
 			platform: "unlinked" | "youtube";
@@ -170,6 +201,7 @@ export function usePublishingDestinationPage(
 		}
 		setDisplayName(ch.name);
 		setNiche(ch.niche);
+		setAutoPost(ch.config.auto_post);
 	}, [ch]);
 
 	const handleDisconnect = useCallback(() => {
@@ -231,6 +263,11 @@ export function usePublishingDestinationPage(
 			updateProfileMutation.mutate();
 		},
 		isSavingProfile: updateProfileMutation.isPending,
+		autoPost,
+		onAutoPostChange: (next) => {
+			updateAutoPostMutation.mutate(next);
+		},
+		isSavingAutoPost: updateAutoPostMutation.isPending,
 		onDisconnect: handleDisconnect,
 		isDisconnectPending: updateLinkMutation.isPending,
 		canConnectPublishing,
