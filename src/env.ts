@@ -9,7 +9,7 @@ export const env = createEnv({
 		 */
 		ENVIRONMENT: z
 			.enum(["local", "development", "production", "staging"])
-			.default("production"),
+			.default("local"),
 
 		SERVER_URL: z.url().optional(),
 		DATABASE_URL: z.string(),
