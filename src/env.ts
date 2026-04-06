@@ -37,6 +37,20 @@ export const env = createEnv({
 		INTERNAL_CRON_SECRET: z.string().min(1).optional(),
 
 		/**
+		 * External FFmpeg / encoder service. When set, video assembly hands off with a
+		 * presigned PUT instead of running in this process. Omit for inline encoding.
+		 */
+		VIDEO_PROCESSOR_URL: z.url().optional(),
+		/** App → processor: `Authorization` bearer the processor verifies. */
+		VIDEO_PROCESSOR_CLIENT_SECRET: z.string().min(16).optional(),
+		/** Processor → app webhook: `Authorization` bearer for `/api/internal/video-processor/assembly-complete`. */
+		VIDEO_PROCESSOR_WEBHOOK_SECRET: z.string().min(16).optional(),
+		/**
+		 * Public base URL of this app (webhook + handoff). Falls back to `SERVER_URL` when unset.
+		 */
+		APP_PUBLIC_URL: z.url().optional(),
+
+		/**
 		 * Better Auth `session.cookieCache.maxAge` (seconds). After Polar checkout we
 		 * bypass cache once via `?checkout=success` on billing; keep this high to avoid
 		 * extra DB reads on routine `get-session` calls.
