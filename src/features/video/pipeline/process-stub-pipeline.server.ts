@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, notInArray } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
@@ -75,5 +75,10 @@ export async function markVideoJobFailed(input: {
 			errorMessage: msg || "Pipeline error",
 			updatedAt: new Date(),
 		})
-		.where(eq(videoJobs.id, input.jobId.trim()));
+		.where(
+			and(
+				eq(videoJobs.id, input.jobId.trim()),
+				notInArray(videoJobs.status, ["completed", "failed"]),
+			),
+		);
 }
