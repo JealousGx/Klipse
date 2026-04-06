@@ -1,6 +1,6 @@
 /**
- * Shared types + FFmpeg helpers for **video assembly** jobs (app + external processor).
- * Intentionally free of DB imports and platform-specific (YouTube, duration, etc.) coupling.
+ * Shared types for **video assembly** handoff (main app orchestrates; encoder runs in
+ * `packages/external-video-processor` only).
  */
 
 /** Default object key for assembled MP4 under a job (pairs with app `publicUrlForR2Key`). */
@@ -13,37 +13,15 @@ export function videoJobAssemblyOutputKey(
 	return `u/${u}/j/${j}/output.mp4`;
 }
 
-/** App → external processor: opaque presigned PUT URL + callback URL (no bucket credentials on the worker). */
+/** App → external processor: presigned PUT + webhook; encoding/watermark only in the processor. */
 export type VideoProcessorHandoffPayload = {
 	jobId: string;
 	userId: string;
 	presignedPutUrl: string;
 	contentType: string;
 	completeWebhookUrl: string;
+	/** FEATURE_DOC §10.3 — free tier: centered watermark in the processor. */
+	freeTierWatermark: boolean;
+	/** Shown inside the watermark (e.g. app title). */
+	watermarkLabel: string;
 };
-
-/**
- * Placeholder lavfi graph for **integration / dev** — replace with pipeline-specific
- * filters and settings for real product output (any format, length, or destination).
- */
-export function integrationPlaceholderFfmpegArgs(outputPath: string): string[] {
-	return [
-		"-y",
-		"-f",
-		"lavfi",
-		"-i",
-		"testsrc=duration=5:size=1280x720:rate=30",
-		"-c:v",
-		"libx264",
-		"-preset",
-		"ultrafast",
-		"-crf",
-		"28",
-		"-pix_fmt",
-		"yuv420p",
-		"-an",
-		"-t",
-		"5",
-		outputPath,
-	];
-}
