@@ -5,8 +5,13 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
 
-import { PIPELINE_KIND } from "./pipeline-kind";
+import { isVideoAssemblyPipelineKind, PIPELINE_KIND } from "./pipeline-kind";
 import { processStubPipelineJob } from "./process-stub-pipeline.server";
+import { processVideoAssemblyPipelineJob } from "./process-video-assemble.server";
+import {
+	handoffVideoAssemblyToExternalProcessor,
+	isExternalVideoProcessorConfigured,
+} from "./video-assembly-handoff.server";
 
 export type DispatchVideoJobInput = {
 	jobId: string;
@@ -55,6 +60,14 @@ export async function dispatchPipelineForJob(
 			await processStubPipelineJob(jobId);
 			return;
 		default:
+			if (isVideoAssemblyPipelineKind(row.pipelineKind)) {
+				if (isExternalVideoProcessorConfigured()) {
+					await handoffVideoAssemblyToExternalProcessor(jobId);
+				} else {
+					await processVideoAssemblyPipelineJob(jobId);
+				}
+				return;
+			}
 			throw new Error(`unsupported_pipeline_kind:${row.pipelineKind}`);
 	}
 }
