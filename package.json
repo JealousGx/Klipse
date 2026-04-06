@@ -25,10 +25,15 @@
     "check": "biome check",
     "worker:dev": "pnpm --filter @klipse/worker dev",
     "worker:typecheck": "pnpm --filter @klipse/worker typecheck",
+    "processor:dev": "pnpm --filter @klipse/external-video-processor start",
+    "processor:typecheck": "pnpm --filter @klipse/external-video-processor typecheck",
     "ffmpeg:local:build": "docker compose -f docker/ffmpeg-local/docker-compose.yml build",
     "ffmpeg:local:smoke": "bash docker/ffmpeg-local/smoke.sh"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1024.0",
+    "@aws-sdk/s3-request-presigner": "^3.1024.0",
+    "@klipse/video-assembly-shared": "workspace:*",
     "@klipse/worker-contracts": "workspace:*",
     "@polar-sh/better-auth": "^1.8.3",
     "@polar-sh/sdk": "^0.47.0",

@@ -1,0 +1,19 @@
+{
+	"name": "@klipse/external-video-processor",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"scripts": {
+		"start": "node --import tsx src/index.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"dependencies": {
+		"@hono/node-server": "^1.19.0",
+		"@klipse/video-assembly-shared": "workspace:*",
+		"hono": "^4.10.0"
+	},
+	"devDependencies": {
+		"tsx": "^4.21.0",
+		"typescript": "^5.9.0"
+	}
+}
