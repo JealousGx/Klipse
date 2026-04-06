@@ -7,7 +7,7 @@ export type VideoJobListRow = {
 	channelName: string;
 	channelNiche: string;
 	channelPlatform: "unlinked" | "youtube" | "tiktok" | "instagram";
-	status: "queued" | "processing" | "completed" | "failed";
+	status: "queued" | "dispatched" | "processing" | "completed" | "failed";
 	progress: number;
 	currentStage: string | null;
 	costCredits: number;

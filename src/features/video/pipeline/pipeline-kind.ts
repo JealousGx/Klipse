@@ -21,6 +21,8 @@ export function isVideoAssemblyPipelineKind(kind: string): boolean {
 
 export const PIPELINE_STAGE = {
 	QUEUED: "queued",
+	/** External processor handoff in progress (Hono not yet accepted). */
+	DISPATCH_PENDING: "dispatch_pending",
 	STUB_RUN: "stub_run",
 	ASSEMBLE: "assemble",
 	DONE: "done",
