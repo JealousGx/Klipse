@@ -44,7 +44,7 @@ const outcomes = [
 	},
 	{
 		title: "Platform-optimized hooks",
-		body: "Outputs tuned for Shorts, Reels, and TikTok—not one generic aspect ratio.",
+		body: "Outputs tuned per destination—not one generic aspect ratio for every surface.",
 		icon: Share2,
 	},
 	{
@@ -103,8 +103,8 @@ const pipeline = [
 	},
 	{
 		phase: "Publish",
-		title: "YouTube / Reels / TikTok",
-		body: "Schedule or push live with platform-specific metadata and disclosure hooks.",
+		title: "Publishing destinations",
+		body: "Schedule or push live with destination-specific metadata and disclosure hooks.",
 		status: "Done or retry publish",
 	},
 ] as const;
