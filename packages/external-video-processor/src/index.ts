@@ -1,13 +1,10 @@
 import { execFile } from "node:child_process";
-import { readFile, unlink } from "node:fs/promises";
+import { readFile, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
 import { serve } from "@hono/node-server";
-import {
-	integrationPlaceholderFfmpegArgs,
-	type VideoProcessorHandoffPayload,
-} from "@klipse/video-assembly-shared";
+import type { VideoProcessorHandoffPayload } from "@klipse/video-assembly-shared";
 import { Hono } from "hono";
 
 const execFileAsync = promisify(execFile);
@@ -21,6 +18,29 @@ const RETRY_BASE_MS = 500;
 
 function ffmpegBinary(): string {
 	return process.env.FFMPEG_PATH?.trim() || "ffmpeg";
+}
+
+/** Placeholder encode for integration — real product replaces with pipeline output. */
+function placeholderEncodeArgs(outputPath: string): string[] {
+	return [
+		"-y",
+		"-f",
+		"lavfi",
+		"-i",
+		"testsrc=duration=5:size=1280x720:rate=30",
+		"-c:v",
+		"libx264",
+		"-preset",
+		"ultrafast",
+		"-crf",
+		"28",
+		"-pix_fmt",
+		"yuv420p",
+		"-an",
+		"-t",
+		"5",
+		outputPath,
+	];
 }
 
 function sleep(ms: number): Promise<void> {
@@ -74,6 +94,7 @@ function isHandoffPayload(x: unknown): x is VideoProcessorHandoffPayload {
 		return false;
 	}
 	const o = x as Record<string, unknown>;
+	const label = o.watermarkLabel;
 	return (
 		typeof o.jobId === "string" &&
 		o.jobId.length > 0 &&
@@ -83,7 +104,11 @@ function isHandoffPayload(x: unknown): x is VideoProcessorHandoffPayload {
 		o.presignedPutUrl.startsWith("http") &&
 		typeof o.contentType === "string" &&
 		typeof o.completeWebhookUrl === "string" &&
-		o.completeWebhookUrl.startsWith("http")
+		o.completeWebhookUrl.startsWith("http") &&
+		typeof o.freeTierWatermark === "boolean" &&
+		typeof label === "string" &&
+		label.length > 0 &&
+		label.length <= 128
 	);
 }
 
@@ -143,19 +168,74 @@ function finalizeJob(jobId: string): void {
 	finishedJobIds.add(jobId);
 }
 
+/** Centered drawtext (FEATURE_DOC §10.3 free tier). Video-only; audio not in placeholder. */
+async function applyCenterWatermarkToFile(
+	inputPath: string,
+	outputPath: string,
+	label: string,
+): Promise<void> {
+	const labelPath = join(tmpdir(), `klipse-wm-lbl-${Date.now()}.txt`);
+	await writeFile(labelPath, label, "utf8");
+	const textPathForFilter = labelPath.replace(/\\/g, "/").replace(/:/g, "\\:");
+	const vf = `drawtext=textfile=${textPathForFilter}:fontcolor=white@0.78:fontsize=36:box=1:boxcolor=black@0.38:boxborderw=8:x=(w-text_w)/2:y=(h-text_h)/2`;
+	try {
+		await execFileAsync(
+			ffmpegBinary(),
+			[
+				"-y",
+				"-i",
+				inputPath,
+				"-vf",
+				vf,
+				"-map",
+				"0:v:0",
+				"-c:v",
+				"libx264",
+				"-preset",
+				"veryfast",
+				"-crf",
+				"23",
+				"-pix_fmt",
+				"yuv420p",
+				"-movflags",
+				"+faststart",
+				"-an",
+				outputPath,
+			],
+			{
+				timeout: 600_000,
+				maxBuffer: 80 * 1024 * 1024,
+			},
+		);
+	} finally {
+		await unlink(labelPath).catch(() => {});
+	}
+}
+
 async function runAssemblyPipeline(
 	payload: VideoProcessorHandoffPayload,
 ): Promise<void> {
-	const tmpOut = join(tmpdir(), `klipse-assembly-${payload.jobId}.mp4`);
+	const tmpRaw = join(tmpdir(), `klipse-raw-${payload.jobId}.mp4`);
+	const tmpFinal = join(tmpdir(), `klipse-out-${payload.jobId}.mp4`);
 	try {
 		await withRetries("ffmpeg", FFMPEG_ATTEMPTS, () =>
-			execFileAsync(ffmpegBinary(), integrationPlaceholderFfmpegArgs(tmpOut), {
+			execFileAsync(ffmpegBinary(), placeholderEncodeArgs(tmpRaw), {
 				timeout: 120_000,
 				maxBuffer: 10 * 1024 * 1024,
 			}),
 		);
 
-		const buf = await readFile(tmpOut);
+		if (payload.freeTierWatermark) {
+			await withRetries("watermark", FFMPEG_ATTEMPTS, () =>
+				applyCenterWatermarkToFile(
+					tmpRaw,
+					tmpFinal,
+					payload.watermarkLabel,
+				),
+			);
+		}
+
+		const buf = await readFile(payload.freeTierWatermark ? tmpFinal : tmpRaw);
 
 		await withRetries("r2_put", R2_PUT_ATTEMPTS, async () => {
 			const put = await fetch(payload.presignedPutUrl, {
@@ -208,11 +288,8 @@ async function runAssemblyPipeline(
 			);
 		}
 	} finally {
-		try {
-			await unlink(tmpOut);
-		} catch {
-			// ignore
-		}
+		await unlink(tmpRaw).catch(() => {});
+		await unlink(tmpFinal).catch(() => {});
 	}
 }
 
