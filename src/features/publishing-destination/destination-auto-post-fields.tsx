@@ -24,7 +24,7 @@ export function DestinationAutoPostFields({
 				</p>
 				<p className="mt-1 text-sm text-muted-foreground">
 					Choose whether Klipse must ask you before publishing to your connected
-					channel, or may publish on your behalf once rendering is complete.
+					channel, or may publish on your behalf once your video is ready.
 				</p>
 			</div>
 
@@ -36,7 +36,7 @@ export function DestinationAutoPostFields({
 				disabled={disabled || isSaving}
 				className="space-y-3 border-0 p-0"
 			>
-				<legend className="sr-only">Publishing mode after render</legend>
+				<legend className="sr-only">Publishing mode when your video is ready</legend>
 
 				<label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-background px-3 py-2.5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring">
 					<input
@@ -68,7 +68,7 @@ export function DestinationAutoPostFields({
 					<span>
 						<span className="font-medium text-foreground">Auto-publish</span>
 						<span className="mt-0.5 block text-sm text-muted-foreground">
-							Do not ask each time — publish when the pipeline is ready (paid
+							Do not ask each time — publish when your video is ready (paid
 							publishing).
 						</span>
 					</span>
