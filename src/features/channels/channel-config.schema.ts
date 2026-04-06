@@ -6,8 +6,11 @@ export const channelConfigSchema = z
 		tone: z.enum(["dark", "educational", "fun"]).default("educational"),
 		target_duration: z.number().int().min(15).max(600).default(30),
 		posting_frequency: z.enum(["daily", "weekly"]).default("weekly"),
+		/**
+		 * `true` = auto-publish when the pipeline is ready; `false` = ask in dashboard
+		 * (and email on paid) before publishing.
+		 */
 		auto_post: z.boolean().default(false),
-		require_approval: z.boolean().default(true),
 		style_seed: z
 			.number()
 			.int()
@@ -32,4 +35,9 @@ export type ChannelConfig = z.infer<typeof channelConfigSchema>;
 
 export function defaultChannelConfig(): ChannelConfig {
 	return channelConfigSchema.parse({});
+}
+
+export function parseChannelConfig(raw: unknown): ChannelConfig {
+	const parsed = channelConfigSchema.safeParse(raw);
+	return parsed.success ? parsed.data : defaultChannelConfig();
 }
