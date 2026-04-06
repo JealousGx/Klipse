@@ -60,6 +60,15 @@ export const videoJobs = mysqlTable(
 		costCredits: int("cost_credits").notNull().default(0),
 		outputUrl: text("output_url"),
 		errorMessage: text("error_message"),
+		/**
+		 * Paid destinations only: when `channels.config.require_approval`, set to `pending`
+		 * after render so publishing waits for user action (FEATURE_DOC §2.14).
+		 */
+		publishApprovalStatus: mysqlEnum("publish_approval_status", [
+			"pending",
+			"approved",
+			"rejected",
+		]),
 		createdAt: timestamp("created_at", { fsp: 3 })
 			.default(sql`CURRENT_TIMESTAMP(3)`)
 			.notNull(),
