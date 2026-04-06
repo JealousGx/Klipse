@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
 import {
+	estimateVideoAssemblyCredits,
+	runVideoAssembly,
+} from "@/features/video/video-assembly";
+import {
 	estimateStubGenerateCredits,
 	runStubGenerate,
 } from "@/features/video/stub-generate";
@@ -28,10 +32,12 @@ function GeneratePage() {
 	const { session } = useDashboardRouteContext();
 	const user = session.user;
 	const estimate = estimateStubGenerateCredits();
+	const assemblyEstimate = estimateVideoAssemblyCredits();
 	const [busy, setBusy] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const idempotencyKeyRef = useRef<string | null>(null);
+	const assemblyIdempotencyKeyRef = useRef<string | null>(null);
 	const [channelId, setChannelId] = useState<string>("");
 
 	const channelsQuery = useQuery(channelsQueryOptions);
@@ -85,6 +91,57 @@ function GeneratePage() {
 		}
 	};
 
+	const handleVideoAssembly = async () => {
+		if (!channelId) {
+			setError("Choose a channel first.");
+			return;
+		}
+		if (!assemblyIdempotencyKeyRef.current) {
+			assemblyIdempotencyKeyRef.current = crypto.randomUUID();
+		}
+		const idempotencyKey = assemblyIdempotencyKeyRef.current;
+
+		setBusy(true);
+		setMessage(null);
+		setError(null);
+		try {
+			const r = await runVideoAssembly({
+				data: { channelId, idempotencyKey },
+			});
+			if (r.ok) {
+				assemblyIdempotencyKeyRef.current = null;
+				const replayNote = r.replayed
+					? " (idempotent replay — no extra charge)"
+					: "";
+				setMessage(
+					`Video assembly: charged ${r.creditsCharged} credits. Job ${r.ref}. Output uploads to storage when encoding finishes. Balance ${r.creditsRemaining}.${replayNote}`,
+				);
+				if (r.creditsConsumed) {
+					await refetchSession({ query: { disableCookieCache: true } });
+				}
+				await router.invalidate();
+				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] });
+				void channelsQuery.refetch();
+			} else if (r.code === "insufficient_credits") {
+				setError(
+					`Need ${r.required} credits; you have ${r.remaining}. Add credits under Billing.`,
+				);
+			} else if (r.code === "channel_not_found") {
+				setError("That channel no longer exists. Refresh and pick again.");
+			} else if (r.code === "free_tier_video_exhausted") {
+				setError(
+					"Free tier includes one successful assembly job. Upgrade for more, or use the stub pipeline for integration testing.",
+				);
+			} else {
+				setError("Sign in required.");
+			}
+		} catch (e) {
+			setError(e instanceof Error ? e.message : "Something went wrong.");
+		} finally {
+			setBusy(false);
+		}
+	};
+
 	return (
 		<section className="max-w-2xl space-y-6">
 			<div className="space-y-2 border-l-2 border-primary/30 pl-5">
@@ -109,7 +166,15 @@ function GeneratePage() {
 					<strong className="font-medium text-foreground">
 						Stub estimate:
 					</strong>{" "}
-					{estimate} credits
+					{estimate} ·{" "}
+					<strong className="font-medium text-foreground">
+						Assembly estimate:
+					</strong>{" "}
+					{assemblyEstimate} (encode + upload; inline path needs{" "}
+					<code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
+						ffmpeg
+					</code>{" "}
+					on the app host or use an external processor)
 				</p>
 			</div>
 
@@ -157,6 +222,14 @@ function GeneratePage() {
 					onClick={() => void handleStubGenerate()}
 				>
 					{busy ? "Running…" : "Run stub generate"}
+				</Button>
+				<Button
+					type="button"
+					variant="secondary"
+					disabled={busy || !channelId || channels.length === 0}
+					onClick={() => void handleVideoAssembly()}
+				>
+					{busy ? "Running…" : "Run video assembly (sample encode)"}
 				</Button>
 				<Button type="button" variant="outline" asChild>
 					<Link to="/dashboard/jobs">View jobs</Link>
