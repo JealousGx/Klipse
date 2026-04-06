@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
 	index,
 	int,
+	json,
 	mysqlEnum,
 	mysqlTable,
 	text,
@@ -11,6 +12,16 @@ import {
 
 import { channels } from "./channels";
 import { users } from "./users";
+
+/** Immutable request payload for pipelines that need user input (e.g. content pipeline). */
+export type VideoJobInputPayload = {
+	idea: string;
+};
+
+/** Intermediate outputs produced by multi-stage pipelines (script text, etc.). */
+export type VideoJobArtifacts = {
+	scriptText?: string;
+};
 
 export const videoJobs = mysqlTable(
 	"video_jobs",
@@ -29,6 +40,12 @@ export const videoJobs = mysqlTable(
 		pipelineKind: varchar("pipeline_kind", { length: 32 })
 			.notNull()
 			.default("stub_pipeline"),
+		/**
+		 * User input at job creation (e.g. video idea). Null for older rows or stub-only jobs.
+		 */
+		inputPayload: json("input_payload").$type<VideoJobInputPayload | null>(),
+		/** Pipeline outputs not yet reflected in `output_url` (e.g. generated script). */
+		artifacts: json("artifacts").$type<VideoJobArtifacts | null>(),
 		status: mysqlEnum("status", [
 			"queued",
 			"dispatched",
