@@ -12,8 +12,61 @@ import { Hono } from "hono";
 
 const execFileAsync = promisify(execFile);
 
+const FFMPEG_ATTEMPTS = 3;
+const R2_PUT_ATTEMPTS = 4;
+const WEBHOOK_ATTEMPTS = 6;
+/** Extra attempts when notifying `status: "failed"` so the app can clear the job even if the first bursts fail. */
+const WEBHOOK_FAILURE_ATTEMPTS = 10;
+const RETRY_BASE_MS = 500;
+
 function ffmpegBinary(): string {
 	return process.env.FFMPEG_PATH?.trim() || "ffmpeg";
+}
+
+function sleep(ms: number): Promise<void> {
+	return new Promise((r) => setTimeout(r, ms));
+}
+
+async function withRetries<T>(
+	label: string,
+	attempts: number,
+	fn: (attempt: number) => Promise<T>,
+): Promise<T> {
+	let last: unknown;
+	for (let attempt = 1; attempt <= attempts; attempt++) {
+		try {
+			return await fn(attempt);
+		} catch (e) {
+			last = e;
+			if (attempt === attempts) {
+				console.warn(
+					`[external-video-processor] ${label} attempt ${attempt}/${attempts} failed (final)`,
+					e,
+				);
+				break;
+			}
+			const delay = RETRY_BASE_MS * 2 ** (attempt - 1);
+			console.warn(
+				`[external-video-processor] ${label} attempt ${attempt}/${attempts} failed; retry in ${delay}ms`,
+				e,
+			);
+			await sleep(delay);
+		}
+	}
+	throw last instanceof Error
+		? last
+		: new Error(`${label}_failed:${String(last)}`);
+}
+
+function formatErrorForWebhook(e: unknown): string {
+	if (e instanceof Error) {
+		const base = e.message.trim();
+		if (e.cause instanceof Error) {
+			return `${base} | ${e.cause.message}`.slice(0, 4000);
+		}
+		return base.slice(0, 4000);
+	}
+	return String(e).slice(0, 4000);
 }
 
 function isHandoffPayload(x: unknown): x is VideoProcessorHandoffPayload {
@@ -34,7 +87,7 @@ function isHandoffPayload(x: unknown): x is VideoProcessorHandoffPayload {
 	);
 }
 
-async function notifyApp(
+async function notifyAppOnce(
 	completeWebhookUrl: string,
 	body: {
 		jobId: string;
@@ -62,59 +115,95 @@ async function notifyApp(
 	}
 }
 
-async function runPipeline(
+async function notifyAppWithRetries(
+	completeWebhookUrl: string,
+	body: {
+		jobId: string;
+		userId: string;
+		status: "completed" | "failed";
+		error?: string;
+	},
+	attempts: number,
+): Promise<void> {
+	await withRetries("notify_app", attempts, () =>
+		notifyAppOnce(completeWebhookUrl, body),
+	);
+}
+
+/** Jobs accepted (queue + in-flight); cleared when the pipeline fully finishes. */
+const activeJobIds = new Set<string>();
+/** Terminal: webhook delivered success/failure for this `jobId` (idempotent replays). */
+const finishedJobIds = new Set<string>();
+
+const queue: VideoProcessorHandoffPayload[] = [];
+let pumpScheduled = false;
+
+function finalizeJob(jobId: string): void {
+	activeJobIds.delete(jobId);
+	finishedJobIds.add(jobId);
+}
+
+async function runAssemblyPipeline(
 	payload: VideoProcessorHandoffPayload,
 ): Promise<void> {
 	const tmpOut = join(tmpdir(), `klipse-assembly-${payload.jobId}.mp4`);
 	try {
-		await execFileAsync(
-			ffmpegBinary(),
-			integrationPlaceholderFfmpegArgs(tmpOut),
-			{
+		await withRetries("ffmpeg", FFMPEG_ATTEMPTS, () =>
+			execFileAsync(ffmpegBinary(), integrationPlaceholderFfmpegArgs(tmpOut), {
 				timeout: 120_000,
 				maxBuffer: 10 * 1024 * 1024,
-			},
+			}),
 		);
 
 		const buf = await readFile(tmpOut);
-		const put = await fetch(payload.presignedPutUrl, {
-			method: "PUT",
-			headers: {
-				"Content-Type": payload.contentType,
+
+		await withRetries("r2_put", R2_PUT_ATTEMPTS, async () => {
+			const put = await fetch(payload.presignedPutUrl, {
+				method: "PUT",
+				headers: {
+					"Content-Type": payload.contentType,
+				},
+				body: buf,
+				signal: AbortSignal.timeout(120_000),
+			});
+			if (!put.ok) {
+				const errText = await put.text().catch(() => "");
+				throw new Error(`r2_put_${put.status}:${errText.slice(0, 500)}`);
+			}
+		});
+
+		await notifyAppWithRetries(
+			payload.completeWebhookUrl,
+			{
+				jobId: payload.jobId,
+				userId: payload.userId,
+				status: "completed",
 			},
-			body: buf,
-			signal: AbortSignal.timeout(120_000),
-		});
-
-		if (!put.ok) {
-			const errText = await put.text().catch(() => "");
-			await notifyApp(payload.completeWebhookUrl, {
-				jobId: payload.jobId,
-				userId: payload.userId,
-				status: "failed",
-				error: `r2_put_${put.status}:${errText.slice(0, 500)}`,
-			});
-			return;
-		}
-
-		await notifyApp(payload.completeWebhookUrl, {
-			jobId: payload.jobId,
-			userId: payload.userId,
-			status: "completed",
-		});
+			WEBHOOK_ATTEMPTS,
+		);
 	} catch (e) {
-		const message =
-			e instanceof Error ? e.message.slice(0, 4000) : "ffmpeg_or_upload_failed";
+		const message = formatErrorForWebhook(e);
+		console.warn(
+			`[external-video-processor] job ${payload.jobId} pipeline error; sending failure webhook`,
+			e,
+		);
 		try {
-			await notifyApp(payload.completeWebhookUrl, {
-				jobId: payload.jobId,
-				userId: payload.userId,
-				status: "failed",
-				error: message,
-			});
+			await notifyAppWithRetries(
+				payload.completeWebhookUrl,
+				{
+					jobId: payload.jobId,
+					userId: payload.userId,
+					status: "failed",
+					error: message || "ffmpeg_or_upload_failed",
+				},
+				WEBHOOK_FAILURE_ATTEMPTS,
+			);
+			console.warn(
+				`[external-video-processor] failure webhook accepted for job ${payload.jobId}`,
+			);
 		} catch (notifyErr) {
 			console.error(
-				"[external-video-processor] webhook after failure failed",
+				`[external-video-processor] CRITICAL: failure webhook failed after ${WEBHOOK_FAILURE_ATTEMPTS} attempts; job ${payload.jobId} may stay processing until manual fix`,
 				notifyErr,
 			);
 		}
@@ -125,6 +214,39 @@ async function runPipeline(
 			// ignore
 		}
 	}
+}
+
+async function pumpQueue(): Promise<void> {
+	while (queue.length > 0) {
+		const payload = queue.shift();
+		if (!payload) {
+			break;
+		}
+		try {
+			await runAssemblyPipeline(payload);
+		} catch (e) {
+			console.error("[external-video-processor] pipeline error", e);
+		} finally {
+			finalizeJob(payload.jobId);
+		}
+	}
+}
+
+function schedulePump(): void {
+	if (pumpScheduled) {
+		return;
+	}
+	pumpScheduled = true;
+	void (async () => {
+		try {
+			await pumpQueue();
+		} finally {
+			pumpScheduled = false;
+			if (queue.length > 0) {
+				schedulePump();
+			}
+		}
+	})();
 }
 
 const app = new Hono();
@@ -152,9 +274,18 @@ app.post("/v1/process", async (c) => {
 		return c.json({ error: "invalid_body" }, 400);
 	}
 
-	void runPipeline(raw).catch((e) => {
-		console.error("[external-video-processor] pipeline error", e);
-	});
+	const jobId = raw.jobId;
+
+	if (finishedJobIds.has(jobId)) {
+		return c.json({ accepted: true as const, idempotent: true as const }, 202);
+	}
+	if (activeJobIds.has(jobId)) {
+		return c.json({ accepted: true as const, idempotent: true as const }, 202);
+	}
+
+	activeJobIds.add(jobId);
+	queue.push(raw);
+	schedulePump();
 
 	return c.json({ accepted: true as const }, 202);
 });

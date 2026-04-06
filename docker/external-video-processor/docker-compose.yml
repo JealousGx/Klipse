@@ -1,0 +1,23 @@
+# From repo root (recommended):
+#   cp packages/external-video-processor/.env.example packages/external-video-processor/.env
+#   pnpm processor:docker:up
+#   pnpm processor:docker:logs
+#
+# Env is loaded from packages/external-video-processor/.env (see env_file below).
+
+services:
+  external-video-processor:
+    build:
+      context: ../..
+      dockerfile: docker/external-video-processor/Dockerfile
+    image: klipse-external-video-processor:latest
+    ports:
+      - "8790:8790"
+    # So the container can reach the app on the host (webhook URL must use
+    # host.docker.internal — see root .env.example APP_PUBLIC_URL).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      PORT: "8790"
+    env_file:
+      - ../../packages/external-video-processor/.env

@@ -1,0 +1,9 @@
+# Slim context for `docker build -f docker/external-video-processor/Dockerfile .`
+.git
+**/.DS_Store
+node_modules
+**/node_modules
+**/dist
+.env
+.env.*
+!.env.example
