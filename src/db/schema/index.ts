@@ -3,6 +3,7 @@ export * from "./channels";
 export * from "./channels-relations";
 export * from "./credit-transactions";
 export * from "./polar-usage-sync";
+export * from "./provider-api-keys";
 export * from "./sessions";
 export * from "./usage-idempotency";
 export * from "./users";
