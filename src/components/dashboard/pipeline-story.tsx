@@ -1,11 +1,16 @@
+import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import { RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+
 import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types";
 import { labelForPipelineKind } from "@/features/video/pipeline/pipeline-kind";
 import type { VideoJobListRow } from "@/features/video/video-job-list.types";
+import { publishVideoJobApprovalFn } from "@/features/video/video-jobs.functions";
+
 import { cn } from "@/lib/utils";
 import { youtubeChannelUrl } from "@/lib/youtube";
 
@@ -166,7 +171,12 @@ export function JobQueueStoryCard({
 				</div>
 
 				{selected ? (
-					<JobDetailPane job={selected} title={title} tags={tags} />
+					<JobDetailPane
+						job={selected}
+						title={title}
+						tags={tags}
+						onRefetch={() => void onRefetch()}
+					/>
 				) : null}
 			</div>
 		</section>
@@ -177,11 +187,41 @@ function JobDetailPane({
 	job,
 	title,
 	tags,
+	onRefetch,
 }: {
 	job: VideoJobListRow;
 	title: string;
 	tags: string[];
+	onRefetch: () => void;
 }) {
+	const approvalMutation = useMutation({
+		mutationFn: async (decision: "approved" | "rejected") => {
+			const r = await publishVideoJobApprovalFn({
+				data: { jobId: job.id, decision },
+			});
+			return r;
+		},
+		onSuccess: (r) => {
+			if (r.ok) {
+				toast.success("Publish decision saved.");
+				onRefetch();
+				return;
+			}
+			if (r.code === "unauthorized") {
+				toast.error("Sign in required.");
+			} else if (r.code === "not_found") {
+				toast.error("Job not found.");
+			} else {
+				toast.error("This job is not awaiting approval.");
+			}
+		},
+		onError: () => {
+			toast.error("Something went wrong.");
+		},
+	});
+
+	const pendingApproval = job.publishApprovalStatus === "pending";
+
 	return (
 		<div className="flex flex-col">
 			<div className="relative aspect-video w-full border-b border-border bg-muted">
@@ -229,6 +269,36 @@ function JobDetailPane({
 						))}
 					</div>
 				</div>
+				{pendingApproval ? (
+					<div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-sm text-foreground">
+						<p className="font-medium">Publish approval required</p>
+						<p className="mt-1 text-xs text-muted-foreground">
+							Your channel is set to require approval before publishing. Approve
+							or reject below.
+						</p>
+						<div className="mt-3 flex flex-wrap gap-2">
+							<Button
+								type="button"
+								size="sm"
+								className="h-8 text-xs font-semibold"
+								disabled={approvalMutation.isPending}
+								onClick={() => approvalMutation.mutate("approved")}
+							>
+								Approve publish
+							</Button>
+							<Button
+								type="button"
+								size="sm"
+								variant="outline"
+								className="h-8 text-xs font-semibold"
+								disabled={approvalMutation.isPending}
+								onClick={() => approvalMutation.mutate("rejected")}
+							>
+								Reject
+							</Button>
+						</div>
+					</div>
+				) : null}
 				<div className="flex flex-wrap items-start justify-between gap-3 border-t border-border pt-3">
 					<div>
 						<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
