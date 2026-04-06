@@ -27,8 +27,8 @@ function isWorkerEnqueueInlineFallbackEnabled(): boolean {
 }
 
 /**
- * Ask the Cloudflare Worker to enqueue Polar outbox processing. On failure when
- * `ENVIRONMENT=local`, drains in-process so dev works without `wrangler dev`.
+ * Ask the Cloudflare Worker to enqueue Polar outbox processing.
+ * If enqueue fails, drains {@link processPolarUsageSyncBatch} in-process so metering still runs.
  */
 export async function enqueuePolarUsageSyncDrain(): Promise<void> {
 	const base = env.WORKER_API_URL.replace(/\/$/, "");
@@ -51,13 +51,6 @@ export async function enqueuePolarUsageSyncDrain(): Promise<void> {
 			throw new Error(`enqueue ${res.status}: ${await res.text()}`);
 		}
 	} catch (err) {
-		if (!isWorkerEnqueueInlineFallbackEnabled()) {
-			console.error(
-				"[enqueue] polar worker unreachable (inline fallback disabled; set ENVIRONMENT=local for dev)",
-				err,
-			);
-			return;
-		}
 		console.warn(
 			"[enqueue] worker unreachable, draining polar outbox inline",
 			err,
