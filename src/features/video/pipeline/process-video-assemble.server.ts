@@ -10,13 +10,19 @@ import {
 	videoJobAssemblyOutputKey,
 } from "@klipse/video-assembly-shared";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull, or } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
+import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
 import { putVideoToR2 } from "@/lib/storage/r2.server";
 import { markFreeTierVideoConsumedIfNeeded } from "./free-tier-video-consumed.server";
-import { isVideoAssemblyPipelineKind, PIPELINE_STAGE } from "./pipeline-kind";
+import { runAfterVideoRenderComplete } from "./video-job-after-render.server";
+import {
+	isAssemblyEncodingPipelineKind,
+	PIPELINE_KIND,
+	PIPELINE_STAGE,
+} from "./pipeline-kind";
 import { markVideoJobFailed } from "./process-stub-pipeline.server";
 
 const execFileAsync = promisify(execFile);
@@ -41,6 +47,7 @@ export async function processVideoAssemblyPipelineJob(
 			channelId: videoJobs.channelId,
 			pipelineKind: videoJobs.pipelineKind,
 			status: videoJobs.status,
+			currentStage: videoJobs.currentStage,
 		})
 		.from(videoJobs)
 		.where(eq(videoJobs.id, id))
@@ -49,15 +56,34 @@ export async function processVideoAssemblyPipelineJob(
 	if (!job) {
 		throw new Error("video_job_not_found");
 	}
-	if (!isVideoAssemblyPipelineKind(job.pipelineKind)) {
+	if (!isAssemblyEncodingPipelineKind(job.pipelineKind)) {
 		throw new Error("video_job_pipeline_mismatch");
 	}
 	if (job.status === "completed" || job.status === "failed") {
 		return;
 	}
 
+	const isContent = job.pipelineKind === PIPELINE_KIND.CONTENT_PIPELINE_V1;
+	const assemblyRowReady =
+		job.status === "queued" &&
+		(isContent
+			? job.currentStage === PIPELINE_STAGE.ASSEMBLE
+			: job.currentStage === PIPELINE_STAGE.QUEUED ||
+				job.currentStage === null);
+
+	if (!assemblyRowReady) {
+		return;
+	}
+
 	const now = new Date();
-	await db
+	const stagePredicate = isContent
+		? eq(videoJobs.currentStage, PIPELINE_STAGE.ASSEMBLE)
+		: or(
+				eq(videoJobs.currentStage, PIPELINE_STAGE.QUEUED),
+				isNull(videoJobs.currentStage),
+			);
+
+	const started = await db
 		.update(videoJobs)
 		.set({
 			status: "processing",
@@ -65,7 +91,13 @@ export async function processVideoAssemblyPipelineJob(
 			currentStage: PIPELINE_STAGE.ASSEMBLE,
 			updatedAt: now,
 		})
-		.where(and(eq(videoJobs.id, id), eq(videoJobs.status, "queued")));
+		.where(
+			and(eq(videoJobs.id, id), eq(videoJobs.status, "queued"), stagePredicate),
+		);
+
+	if (mysqlAffectedRowsFromUpdateResult(started) === 0) {
+		return;
+	}
 
 	const tmpOut = join(tmpdir(), `klipse-assembly-${id}.mp4`);
 
@@ -97,6 +129,13 @@ export async function processVideoAssemblyPipelineJob(
 			.where(eq(videoJobs.id, id));
 
 		await markFreeTierVideoConsumedIfNeeded(job.userId);
+
+		await runAfterVideoRenderComplete({
+			jobId: id,
+			userId: job.userId,
+			channelId: job.channelId,
+			logicalKey: key,
+		});
 	} catch (e) {
 		const message = e instanceof Error ? e.message : "video_assembly_failed";
 		console.error("[video-assembly]", e);
