@@ -11,6 +11,12 @@ import { labelForPipelineKind } from "@/features/video/pipeline/pipeline-kind";
 import type { VideoJobListRow } from "@/features/video/video-job-list.types";
 import { publishVideoJobApprovalFn } from "@/features/video/video-jobs.functions";
 
+import {
+	formatOutputRetentionDeadlineUtc,
+	humanizeRetentionHours,
+	PAID_TIER_RETENTION_HOURS,
+} from "@/lib/format-output-retention";
+
 import { cn } from "@/lib/utils";
 import { youtubeChannelUrl } from "@/lib/youtube";
 
@@ -75,7 +81,7 @@ type JobQueueStoryCardProps = {
 	isRefetching: boolean;
 };
 
-/** Full-width render queue + detail (Jobs page). */
+/** Full-width job queue + detail (Jobs page). */
 export function JobQueueStoryCard({
 	jobs,
 	isLoading,
@@ -119,7 +125,7 @@ export function JobQueueStoryCard({
 			<div className="flex items-center justify-between gap-2 border-b border-border bg-muted/40 px-4 py-3">
 				<div className="flex flex-wrap items-center gap-2">
 					<span className="font-heading text-sm font-semibold text-foreground">
-						Render queue
+						Video queue
 					</span>
 					<span className="rounded border border-border bg-background px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground">
 						{jobs.length} {jobs.length === 1 ? "job" : "jobs"}
@@ -221,6 +227,9 @@ function JobDetailPane({
 	});
 
 	const pendingApproval = job.publishApprovalStatus === "pending";
+	const retentionNote = job.outputStorageExpiresAt
+		? `This video is scheduled for removal after ${formatOutputRetentionDeadlineUtc(job.outputStorageExpiresAt)}. Approve or reject before then so you don’t lose access.`
+		: `Videos are kept for ${humanizeRetentionHours(PAID_TIER_RETENTION_HOURS)} on paid plans (then purged). Approve or reject before your window ends.`;
 
 	return (
 		<div className="flex flex-col">
@@ -271,10 +280,12 @@ function JobDetailPane({
 				</div>
 				{pendingApproval ? (
 					<div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-sm text-foreground">
-						<p className="font-medium">Publish approval required</p>
+						<p className="font-medium">Your call before anything goes live</p>
 						<p className="mt-1 text-xs text-muted-foreground">
-							Your channel is set to require approval before publishing. Approve
-							or reject below.
+							This destination is set to ask you first. Approve or reject below.
+						</p>
+						<p className="mt-2 rounded-md border border-amber-600/25 bg-amber-500/5 px-2.5 py-2 text-xs leading-relaxed text-amber-950 dark:text-amber-100/95">
+							{retentionNote}
 						</p>
 						<div className="mt-3 flex flex-wrap gap-2">
 							<Button
