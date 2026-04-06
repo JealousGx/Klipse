@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { RefreshCw } from "lucide-react";
+import { Download, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -257,6 +257,16 @@ function JobDetailPane({
 				</div>
 			</div>
 			<div className="space-y-3 p-4">
+				{job.outputUrl && job.status === "completed" ? (
+					<a
+						href={job.outputUrl}
+						download
+						className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/60"
+					>
+						<Download className="size-3.5 shrink-0" aria-hidden />
+						Download MP4
+					</a>
+				) : null}
 				<div>
 					<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
 						Title
@@ -485,6 +495,16 @@ function LatestJobSnapshotCard({
 					</div>
 				</div>
 				<div className="space-y-3 p-4">
+					{job.outputUrl && job.status === "completed" ? (
+						<a
+							href={job.outputUrl}
+							download
+							className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/60"
+						>
+							<Download className="size-3.5 shrink-0" aria-hidden />
+							Download MP4
+						</a>
+					) : null}
 					<div>
 						<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
 							Title
