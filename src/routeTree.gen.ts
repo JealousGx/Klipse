@@ -23,6 +23,7 @@ import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
 import { Route as DashboardPublishingIndexRouteImport } from './routes/dashboard/publishing.index'
 import { Route as DashboardPublishingDestinationIdRouteImport } from './routes/dashboard/publishing.$destinationId'
+import { Route as ApiCronPurgeStoredFilesRouteImport } from './routes/api/cron/purge-stored-files'
 import { Route as ApiCronPolarUsageSyncRouteImport } from './routes/api/cron/polar-usage-sync'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiYoutubeOauthStartRouteImport } from './routes/api/youtube/oauth/start'
@@ -103,6 +104,11 @@ const DashboardPublishingDestinationIdRoute =
     path: '/$destinationId',
     getParentRoute: () => DashboardPublishingRoute,
   } as any)
+const ApiCronPurgeStoredFilesRoute = ApiCronPurgeStoredFilesRouteImport.update({
+  id: '/api/cron/purge-stored-files',
+  path: '/api/cron/purge-stored-files',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiCronPolarUsageSyncRoute = ApiCronPolarUsageSyncRouteImport.update({
   id: '/api/cron/polar-usage-sync',
   path: '/api/cron/polar-usage-sync',
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
+  '/api/cron/purge-stored-files': typeof ApiCronPurgeStoredFilesRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -178,6 +185,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
+  '/api/cron/purge-stored-files': typeof ApiCronPurgeStoredFilesRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -202,6 +210,7 @@ export interface FileRoutesById {
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
+  '/api/cron/purge-stored-files': typeof ApiCronPurgeStoredFilesRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -227,6 +236,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/api/auth/$'
     | '/api/cron/polar-usage-sync'
+    | '/api/cron/purge-stored-files'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
@@ -248,6 +258,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/api/auth/$'
     | '/api/cron/polar-usage-sync'
+    | '/api/cron/purge-stored-files'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing'
     | '/api/internal/video-processor/assembly-complete'
@@ -271,6 +282,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/api/auth/$'
     | '/api/cron/polar-usage-sync'
+    | '/api/cron/purge-stored-files'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
@@ -288,6 +300,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronPolarUsageSyncRoute: typeof ApiCronPolarUsageSyncRoute
+  ApiCronPurgeStoredFilesRoute: typeof ApiCronPurgeStoredFilesRoute
   ApiInternalVideoProcessorAssemblyCompleteRoute: typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   ApiYoutubeOauthCallbackRoute: typeof ApiYoutubeOauthCallbackRoute
   ApiYoutubeOauthStartRoute: typeof ApiYoutubeOauthStartRoute
@@ -395,6 +408,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPublishingDestinationIdRouteImport
       parentRoute: typeof DashboardPublishingRoute
     }
+    '/api/cron/purge-stored-files': {
+      id: '/api/cron/purge-stored-files'
+      path: '/api/cron/purge-stored-files'
+      fullPath: '/api/cron/purge-stored-files'
+      preLoaderRoute: typeof ApiCronPurgeStoredFilesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cron/polar-usage-sync': {
       id: '/api/cron/polar-usage-sync'
       path: '/api/cron/polar-usage-sync'
@@ -492,6 +512,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronPolarUsageSyncRoute: ApiCronPolarUsageSyncRoute,
+  ApiCronPurgeStoredFilesRoute: ApiCronPurgeStoredFilesRoute,
   ApiInternalVideoProcessorAssemblyCompleteRoute:
     ApiInternalVideoProcessorAssemblyCompleteRoute,
   ApiYoutubeOauthCallbackRoute: ApiYoutubeOauthCallbackRoute,
