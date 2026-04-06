@@ -29,7 +29,13 @@ export const videoJobs = mysqlTable(
 		pipelineKind: varchar("pipeline_kind", { length: 32 })
 			.notNull()
 			.default("stub_pipeline"),
-		status: mysqlEnum("status", ["queued", "processing", "completed", "failed"])
+		status: mysqlEnum("status", [
+			"queued",
+			"dispatched",
+			"processing",
+			"completed",
+			"failed",
+		])
 			.notNull()
 			.default("queued"),
 		progress: int("progress").notNull().default(0),
