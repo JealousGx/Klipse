@@ -61,7 +61,7 @@ export const videoJobs = mysqlTable(
 		outputUrl: text("output_url"),
 		errorMessage: text("error_message"),
 		/**
-		 * Paid destinations only: when `channels.config.require_approval`, set to `pending`
+		 * Paid destinations only: when `channels.config.auto_post` is false, set to `pending`
 		 * after render so publishing waits for user action (FEATURE_DOC §2.14).
 		 */
 		publishApprovalStatus: mysqlEnum("publish_approval_status", [
