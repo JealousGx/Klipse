@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { channels } from "@/db/schema/channels";
@@ -29,6 +29,7 @@ export async function listVideoJobsForUser(
 			costCredits: videoJobs.costCredits,
 			outputUrl: videoJobs.outputUrl,
 			errorMessage: videoJobs.errorMessage,
+			publishApprovalStatus: videoJobs.publishApprovalStatus,
 			createdAt: videoJobs.createdAt,
 		})
 		.from(videoJobs)
@@ -38,4 +39,52 @@ export async function listVideoJobsForUser(
 		.limit(limit);
 
 	return rows;
+}
+
+export async function setPublishApprovalForUser(input: {
+	userId: string;
+	jobId: string;
+	decision: "approved" | "rejected";
+}): Promise<
+	{ ok: true } | { ok: false; code: "not_found" | "invalid_state" }
+> {
+	const db = getDb();
+	const jobId = input.jobId.trim();
+
+	const [row] = await db
+		.select({
+			id: videoJobs.id,
+			userId: videoJobs.userId,
+			publishApprovalStatus: videoJobs.publishApprovalStatus,
+			status: videoJobs.status,
+		})
+		.from(videoJobs)
+		.where(eq(videoJobs.id, jobId))
+		.limit(1);
+
+	if (!row || row.userId !== input.userId) {
+		return { ok: false, code: "not_found" };
+	}
+	if (row.publishApprovalStatus !== "pending") {
+		return { ok: false, code: "invalid_state" };
+	}
+	if (row.status !== "completed") {
+		return { ok: false, code: "invalid_state" };
+	}
+
+	await db
+		.update(videoJobs)
+		.set({
+			publishApprovalStatus: input.decision,
+			updatedAt: new Date(),
+		})
+		.where(
+			and(
+				eq(videoJobs.id, jobId),
+				eq(videoJobs.userId, input.userId),
+				eq(videoJobs.publishApprovalStatus, "pending"),
+			),
+		);
+
+	return { ok: true };
 }
