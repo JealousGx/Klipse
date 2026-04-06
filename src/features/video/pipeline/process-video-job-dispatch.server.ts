@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
 
 import { isVideoAssemblyPipelineKind, PIPELINE_KIND } from "./pipeline-kind";
+import { processContentPipelineJob } from "./process-content-pipeline.server";
 import { processStubPipelineJob } from "./process-stub-pipeline.server";
 import { processVideoAssemblyPipelineJob } from "./process-video-assemble.server";
 import {
@@ -58,6 +59,9 @@ export async function dispatchPipelineForJob(
 	switch (row.pipelineKind) {
 		case PIPELINE_KIND.STUB_PIPELINE:
 			await processStubPipelineJob(jobId);
+			return;
+		case PIPELINE_KIND.CONTENT_PIPELINE_V1:
+			await processContentPipelineJob(jobId);
 			return;
 		default:
 			if (isVideoAssemblyPipelineKind(row.pipelineKind)) {
