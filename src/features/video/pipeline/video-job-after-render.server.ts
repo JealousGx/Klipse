@@ -71,7 +71,7 @@ export async function runAfterVideoRenderComplete(input: {
 
 	if (
 		planAllowsPaidPublishingConnections(plan) &&
-		channel.config.require_approval
+		!channel.config.auto_post
 	) {
 		await db
 			.update(videoJobs)
