@@ -23,7 +23,7 @@ export function isVideoAssemblyPipelineKind(kind: string): boolean {
 	return kind === PIPELINE_KIND.VIDEO_ASSEMBLE_V1;
 }
 
-/** Pipelines that run FFmpeg assembly (inline or external) for this job row. */
+/** Pipelines that run video assembly in the external processor for this job row. */
 export function isAssemblyEncodingPipelineKind(kind: string): boolean {
 	return (
 		kind === PIPELINE_KIND.VIDEO_ASSEMBLE_V1 ||
