@@ -25,10 +25,11 @@
     "check": "biome check",
     "worker:dev": "pnpm --filter @klipse/worker dev",
     "worker:typecheck": "pnpm --filter @klipse/worker typecheck",
-    "processor:dev": "pnpm --filter @klipse/external-video-processor start",
     "processor:typecheck": "pnpm --filter @klipse/external-video-processor typecheck",
-    "ffmpeg:local:build": "docker compose -f docker/ffmpeg-local/docker-compose.yml build",
-    "ffmpeg:local:smoke": "bash docker/ffmpeg-local/smoke.sh"
+    "processor:docker:build": "docker build -f docker/external-video-processor/Dockerfile -t klipse-external-video-processor:latest .",
+    "processor:docker:up": "pnpm processor:docker:down && docker compose -p klipse-processor -f docker/external-video-processor/docker-compose.yml up -d --build",
+    "processor:docker:down": "docker compose -p klipse-processor -f docker/external-video-processor/docker-compose.yml down",
+    "processor:docker:logs": "docker compose -p klipse-processor -f docker/external-video-processor/docker-compose.yml logs -f"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1024.0",
