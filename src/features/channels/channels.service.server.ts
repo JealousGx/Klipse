@@ -12,11 +12,7 @@ import type { MeResponse } from "@/features/user/types/me";
 
 import { channelRowId } from "@/lib/id";
 
-import {
-	type ChannelConfig,
-	channelConfigSchema,
-	defaultChannelConfig,
-} from "./channel-config.schema";
+import { type ChannelConfig, parseChannelConfig } from "./channel-config.schema";
 import { ChannelLimitError, ChannelNotFoundError } from "./channel-errors";
 
 export { ChannelLimitError, ChannelNotFoundError } from "./channel-errors";
@@ -64,8 +60,7 @@ function toChannelRow(r: typeof channels.$inferSelect): ChannelRow {
 }
 
 function parseConfig(raw: unknown): ChannelConfig {
-	const parsed = channelConfigSchema.safeParse(raw);
-	return parsed.success ? parsed.data : defaultChannelConfig();
+	return parseChannelConfig(raw);
 }
 
 /**
@@ -188,9 +183,7 @@ export async function createChannel(input: {
 		throw new ChannelLimitError(max, plan);
 	}
 
-	const config = channelConfigSchema.parse(
-		input.config ?? defaultChannelConfig(),
-	);
+	const config = parseChannelConfig(input.config ?? {});
 
 	const id = channelRowId();
 	const now = new Date();
@@ -248,7 +241,7 @@ export async function updateChannel(input: {
 		patch.niche = input.niche.trim();
 	}
 	if (input.config !== undefined) {
-		patch.config = channelConfigSchema.parse(input.config);
+		patch.config = parseChannelConfig(input.config);
 	}
 	if (input.platform !== undefined) {
 		patch.platform = input.platform;
