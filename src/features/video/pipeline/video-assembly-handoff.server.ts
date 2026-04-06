@@ -6,7 +6,9 @@ import {
 } from "@klipse/video-assembly-shared";
 import { and, eq, isNull, or } from "drizzle-orm";
 
+import { siteConfig } from "@/config/site";
 import { getDb } from "@/db";
+import { users } from "@/db/schema/users";
 import { videoJobs } from "@/db/schema/video-jobs";
 import { env } from "@/env";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
@@ -66,8 +68,10 @@ export async function handoffVideoAssemblyToExternalProcessor(
 			pipelineKind: videoJobs.pipelineKind,
 			status: videoJobs.status,
 			currentStage: videoJobs.currentStage,
+			userPlan: users.plan,
 		})
 		.from(videoJobs)
+		.innerJoin(users, eq(videoJobs.userId, users.id))
 		.where(eq(videoJobs.id, id))
 		.limit(1);
 
@@ -138,12 +142,15 @@ export async function handoffVideoAssemblyToExternalProcessor(
 	const base = getAppPublicBaseUrl();
 	const completeWebhookUrl = `${base}/api/internal/video-processor/assembly-complete`;
 
+	const wmLabel = siteConfig.name.trim().slice(0, 128) || "Klipse";
 	const payload: VideoProcessorHandoffPayload = {
 		jobId: id,
 		userId: job.userId,
 		presignedPutUrl,
 		contentType: "video/mp4",
 		completeWebhookUrl,
+		freeTierWatermark: job.userPlan === "free",
+		watermarkLabel: wmLabel,
 	};
 
 	try {
