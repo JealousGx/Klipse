@@ -8,6 +8,7 @@ import { videoJobs } from "@/db/schema/video-jobs";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
 import { publicUrlForR2Key } from "@/lib/storage/r2.server";
 import { markFreeTierVideoConsumedIfNeeded } from "./free-tier-video-consumed.server";
+import { runAfterVideoRenderComplete } from "./video-job-after-render.server";
 import { PIPELINE_STAGE } from "./pipeline-kind";
 import { markVideoJobFailed } from "./process-stub-pipeline.server";
 
@@ -36,6 +37,7 @@ export async function applyVideoProcessorWebhook(
 		.select({
 			id: videoJobs.id,
 			userId: videoJobs.userId,
+			channelId: videoJobs.channelId,
 			status: videoJobs.status,
 		})
 		.from(videoJobs)
@@ -101,6 +103,14 @@ export async function applyVideoProcessorWebhook(
 		}
 
 		await markFreeTierVideoConsumedIfNeeded(userId);
+
+		await runAfterVideoRenderComplete({
+			jobId,
+			userId,
+			channelId: job.channelId,
+			logicalKey: key,
+		});
+
 		return { ok: true, replayed: false };
 	}
 
