@@ -9,34 +9,12 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
 import { env } from "@/env";
+import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
 import { presignPutVideoToR2 } from "@/lib/storage/r2.server";
 import { getAppPublicBaseUrl } from "@/lib/video-processor/app-base-url.server";
 
 import { isVideoAssemblyPipelineKind, PIPELINE_STAGE } from "./pipeline-kind";
 import { markVideoJobFailed } from "./process-stub-pipeline.server";
-
-function affectedRowsFromUpdateResult(result: unknown): number {
-	const pick = (o: object) => {
-		const r = o as { affectedRows?: number; rowsAffected?: number };
-		if (typeof r.affectedRows === "number") {
-			return r.affectedRows;
-		}
-		if (typeof r.rowsAffected === "number") {
-			return r.rowsAffected;
-		}
-		return 0;
-	};
-	if (result && typeof result === "object") {
-		const n = pick(result);
-		if (n > 0) {
-			return n;
-		}
-	}
-	if (Array.isArray(result) && result[0] && typeof result[0] === "object") {
-		return pick(result[0] as object);
-	}
-	return 0;
-}
 
 function requireExternalProcessorEnv(): {
 	processorBaseUrl: string;
@@ -65,8 +43,10 @@ export function isExternalVideoProcessorConfigured(): boolean {
 }
 
 /**
- * Queued → processing, presigned PUT, fire-and-forget to external encoder host.
- * Idempotent if the job is already `processing` (duplicate queue delivery).
+ * Hand off assembly to the external encoder: `queued` → `dispatched` (presign + POST),
+ * then `dispatched` → `processing` only after the processor returns **202** (accepted).
+ * Duplicate dispatch is a no-op for terminal/`processing` jobs; `dispatched` retries
+ * presign + POST (processor should be idempotent on `jobId`).
  */
 export async function handoffVideoAssemblyToExternalProcessor(
 	jobId: string,
@@ -99,18 +79,22 @@ export async function handoffVideoAssemblyToExternalProcessor(
 		return;
 	}
 
-	const now = new Date();
-	const updateResult = await db
-		.update(videoJobs)
-		.set({
-			status: "processing",
-			progress: 15,
-			currentStage: PIPELINE_STAGE.ASSEMBLE,
-			updatedAt: now,
-		})
-		.where(and(eq(videoJobs.id, id), eq(videoJobs.status, "queued")));
+	if (job.status === "queued") {
+		const now = new Date();
+		const updateResult = await db
+			.update(videoJobs)
+			.set({
+				status: "dispatched",
+				progress: 5,
+				currentStage: PIPELINE_STAGE.DISPATCH_PENDING,
+				updatedAt: now,
+			})
+			.where(and(eq(videoJobs.id, id), eq(videoJobs.status, "queued")));
 
-	if (affectedRowsFromUpdateResult(updateResult) === 0) {
+		if (mysqlAffectedRowsFromUpdateResult(updateResult) === 0) {
+			return;
+		}
+	} else if (job.status !== "dispatched") {
 		return;
 	}
 
@@ -154,12 +138,30 @@ export async function handoffVideoAssemblyToExternalProcessor(
 			signal: AbortSignal.timeout(30_000),
 		});
 
-		if (!res.ok) {
+		if (res.status !== 202) {
 			const text = await res.text().catch(() => "");
 			await markVideoJobFailed({
 				jobId: id,
 				message: `processor_handoff_${res.status}:${text.slice(0, 500)}`,
 			});
+			return;
+		}
+
+		const advance = await db
+			.update(videoJobs)
+			.set({
+				status: "processing",
+				progress: 15,
+				currentStage: PIPELINE_STAGE.ASSEMBLE,
+				updatedAt: new Date(),
+			})
+			.where(and(eq(videoJobs.id, id), eq(videoJobs.status, "dispatched")));
+
+		if (mysqlAffectedRowsFromUpdateResult(advance) === 0) {
+			console.warn(
+				"[video-assembly-handoff] accepted 202 but job was not dispatched (race or terminal)",
+				{ jobId: id },
+			);
 		}
 	} catch (e) {
 		console.error("[video-assembly-handoff] processor unreachable", e);
