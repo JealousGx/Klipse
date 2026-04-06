@@ -6,13 +6,17 @@ import { Button } from "@/components/ui/button";
 
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
 import {
-	estimateVideoAssemblyCredits,
-	runVideoAssembly,
-} from "@/features/video/video-assembly";
+	estimateContentPipelineCredits,
+	runContentPipeline,
+} from "@/features/video/content-pipeline";
 import {
 	estimateStubGenerateCredits,
 	runStubGenerate,
 } from "@/features/video/stub-generate";
+import {
+	estimateVideoAssemblyCredits,
+	runVideoAssembly,
+} from "@/features/video/video-assembly";
 import { authClient } from "@/lib/auth/client";
 
 import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
@@ -33,12 +37,15 @@ function GeneratePage() {
 	const user = session.user;
 	const estimate = estimateStubGenerateCredits();
 	const assemblyEstimate = estimateVideoAssemblyCredits();
+	const contentEstimate = estimateContentPipelineCredits();
 	const [busy, setBusy] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const idempotencyKeyRef = useRef<string | null>(null);
 	const assemblyIdempotencyKeyRef = useRef<string | null>(null);
+	const contentIdempotencyKeyRef = useRef<string | null>(null);
 	const [channelId, setChannelId] = useState<string>("");
+	const [idea, setIdea] = useState("");
 
 	const channelsQuery = useQuery(channelsQueryOptions);
 
@@ -142,6 +149,62 @@ function GeneratePage() {
 		}
 	};
 
+	const handleContentPipeline = async () => {
+		if (!channelId) {
+			setError("Choose a channel first.");
+			return;
+		}
+		const trimmed = idea.trim();
+		if (trimmed.length < 3) {
+			setError("Add a short video idea (at least 3 characters).");
+			return;
+		}
+		if (!contentIdempotencyKeyRef.current) {
+			contentIdempotencyKeyRef.current = crypto.randomUUID();
+		}
+		const idempotencyKey = contentIdempotencyKeyRef.current;
+
+		setBusy(true);
+		setMessage(null);
+		setError(null);
+		try {
+			const r = await runContentPipeline({
+				data: { channelId, idempotencyKey, idea: trimmed },
+			});
+			if (r.ok) {
+				contentIdempotencyKeyRef.current = null;
+				const replayNote = r.replayed
+					? " (idempotent replay — no extra charge)"
+					: "";
+				setMessage(
+					`Script + assembly: charged ${r.creditsCharged} credits. Job ${r.ref}. Script runs first, then encode + upload. Balance ${r.creditsRemaining}.${replayNote}`,
+				);
+				if (r.creditsConsumed) {
+					await refetchSession({ query: { disableCookieCache: true } });
+				}
+				await router.invalidate();
+				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] });
+				void channelsQuery.refetch();
+			} else if (r.code === "insufficient_credits") {
+				setError(
+					`Need ${r.required} credits; you have ${r.remaining}. Add credits under Billing.`,
+				);
+			} else if (r.code === "channel_not_found") {
+				setError("That channel no longer exists. Refresh and pick again.");
+			} else if (r.code === "free_tier_video_exhausted") {
+				setError(
+					"Free tier includes one successful video job. Upgrade for more, or use the stub pipeline for integration testing.",
+				);
+			} else {
+				setError("Sign in required.");
+			}
+		} catch (e) {
+			setError(e instanceof Error ? e.message : "Something went wrong.");
+		} finally {
+			setBusy(false);
+		}
+	};
+
 	return (
 		<section className="max-w-2xl space-y-6">
 			<div className="space-y-2 border-l-2 border-primary/30 pl-5">
@@ -174,7 +237,28 @@ function GeneratePage() {
 					<code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
 						ffmpeg
 					</code>{" "}
-					on the app host or use an external processor)
+					on the app host or use an external processor) ·{" "}
+					<strong className="font-medium text-foreground">
+						Script + assembly:
+					</strong>{" "}
+					{contentEstimate} (AI script: Pollinations → Gemini, then encode; use
+					DB table{" "}
+					<code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
+						provider_api_keys
+					</code>{" "}
+					or env{" "}
+					<code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
+						POLLINATIONS_API_KEY
+					</code>{" "}
+					/{" "}
+					<code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
+						GEMINI_API_KEYS
+					</code>
+					; routing is documented in{" "}
+					<code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
+						src/features/ai/config/model-routing.ts
+					</code>
+					)
 				</p>
 			</div>
 
@@ -215,6 +299,24 @@ function GeneratePage() {
 				)}
 			</div>
 
+			<div className="space-y-2">
+				<label
+					htmlFor="gen-idea"
+					className="text-sm font-medium text-foreground"
+				>
+					Video idea (script + assembly)
+				</label>
+				<textarea
+					id="gen-idea"
+					rows={4}
+					placeholder="e.g. 3 surprising facts about ocean microbes for science-curious viewers…"
+					className={`${selectClass} min-h-[96px] resize-y py-2`}
+					value={idea}
+					onChange={(e) => setIdea(e.target.value)}
+					disabled={busy}
+				/>
+			</div>
+
 			<div className="flex flex-wrap items-center gap-3">
 				<Button
 					type="button"
@@ -230,6 +332,20 @@ function GeneratePage() {
 					onClick={() => void handleVideoAssembly()}
 				>
 					{busy ? "Running…" : "Run video assembly (sample encode)"}
+				</Button>
+				<Button
+					type="button"
+					variant="default"
+					className="bg-primary"
+					disabled={
+						busy ||
+						!channelId ||
+						channels.length === 0 ||
+						idea.trim().length < 3
+					}
+					onClick={() => void handleContentPipeline()}
+				>
+					{busy ? "Running…" : "Run script + assembly"}
 				</Button>
 				<Button type="button" variant="outline" asChild>
 					<Link to="/dashboard/jobs">View jobs</Link>
