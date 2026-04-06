@@ -502,10 +502,7 @@ function PublishingIndexPage() {
 				) : (
 					<ul
 						className={cn(
-							"grid gap-6",
-							list.length === 1
-								? "mx-auto w-full max-w-md"
-								: "grid-cols-1 md:grid-cols-2 xl:grid-cols-3",
+							"grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3",
 						)}
 					>
 						{list.map((ch) => (
