@@ -7,8 +7,10 @@ import { videoJobs } from "@/db/schema/video-jobs";
 
 import { isVideoAssemblyPipelineKind, PIPELINE_KIND } from "./pipeline-kind";
 import { processContentPipelineJob } from "./process-content-pipeline.server";
-import { processStubPipelineJob } from "./process-stub-pipeline.server";
-import { processVideoAssemblyPipelineJob } from "./process-video-assemble.server";
+import {
+	markVideoJobFailed,
+	processStubPipelineJob,
+} from "./process-stub-pipeline.server";
 import {
 	handoffVideoAssemblyToExternalProcessor,
 	isExternalVideoProcessorConfigured,
@@ -21,7 +23,7 @@ export type DispatchVideoJobInput = {
 };
 
 /**
- * Worker (or inline fallback) calls this after a `video_jobs` row is committed.
+ * Worker (or local inline dispatch in dev) calls this after a `video_jobs` row is committed.
  * Verifies ownership + kind, then runs the pipeline handler. Safe to retry: no-op
  * if the job is already terminal.
  */
@@ -65,11 +67,14 @@ export async function dispatchPipelineForJob(
 			return;
 		default:
 			if (isVideoAssemblyPipelineKind(row.pipelineKind)) {
-				if (isExternalVideoProcessorConfigured()) {
-					await handoffVideoAssemblyToExternalProcessor(jobId);
-				} else {
-					await processVideoAssemblyPipelineJob(jobId);
+				if (!isExternalVideoProcessorConfigured()) {
+					await markVideoJobFailed({
+						jobId,
+						message: "video_processor_not_configured",
+					});
+					return;
 				}
+				await handoffVideoAssemblyToExternalProcessor(jobId);
 				return;
 			}
 			throw new Error(`unsupported_pipeline_kind:${row.pipelineKind}`);
