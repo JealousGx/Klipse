@@ -13,5 +13,6 @@ export type VideoJobListRow = {
 	costCredits: number;
 	outputUrl: string | null;
 	errorMessage: string | null;
+	publishApprovalStatus: "pending" | "approved" | "rejected" | null;
 	createdAt: Date;
 };
