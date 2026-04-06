@@ -14,13 +14,24 @@ import { getChannelForUser } from "@/features/channels/channels.service.server";
 import type { MeResponse } from "@/features/user/types/me";
 
 import { getTransactionEmailFrom, sendEmail } from "@/lib/email";
+import {
+	FREE_TIER_RETENTION_HOURS,
+	formatOutputRetentionDeadlineUtc,
+	humanizeRetentionHours,
+	PAID_TIER_RETENTION_HOURS,
+} from "@/lib/format-output-retention";
 import { storedFileRowId } from "@/lib/id";
 
-export const FREE_TIER_RETENTION_HOURS = 24;
-export const PAID_TIER_RETENTION_HOURS = 24 * 7;
+function escapeHtml(text: string): string {
+	return text
+		.replace(/&/g, "&amp;")
+		.replace(/</g, "&lt;")
+		.replace(/>/g, "&gt;")
+		.replace(/"/g, "&quot;");
+}
 
 /**
- * After a final render lands in R2: register TTL for purge (FEATURE_DOC §2.7–2.8) and
+ * After the assembled video lands in R2: register TTL for purge (FEATURE_DOC §2.7–2.8) and
  * optionally gate publishing behind manual approval (§2.14).
  */
 export async function runAfterVideoRenderComplete(input: {
@@ -86,13 +97,48 @@ export async function runAfterVideoRenderComplete(input: {
 			env.VITE_APP_URL?.replace(/\/$/, "") ||
 			"";
 		const dashboardUrl = `${base}/dashboard/jobs`;
+		const safeName = channel.name.trim() || "your destination";
+		const retentionPhrase = humanizeRetentionHours(hours);
+		const deadlineUtc = formatOutputRetentionDeadlineUtc(expiresAt, "en-US");
+		const deadlineShort = expiresAt.toLocaleDateString("en-US", {
+			timeZone: "UTC",
+			month: "short",
+			day: "numeric",
+			year: "numeric",
+		});
+
+		const textBody = [
+			`Your latest video for “${safeName}” is ready.`,
+			"",
+			`This destination is set to ask you before anything goes live. Open Jobs in Klipse to approve or reject publishing:`,
+			dashboardUrl,
+			"",
+			`We keep this video for ${retentionPhrase} after it’s ready. It’s scheduled for removal on ${deadlineUtc} (UTC). After that, you’d need to generate again before we can publish.`,
+			"",
+			`— Klipse`,
+		].join("\n");
+
+		const htmlBody = `
+<p style="margin:0 0 16px;font-size:16px;line-height:1.5;color:#111827;">Your latest video for <strong>${escapeHtml(safeName)}</strong> is ready.</p>
+<p style="margin:0 0 20px;font-size:15px;line-height:1.55;color:#374151;">You’ve chosen to confirm before anything is published. Take a minute in <strong>Jobs</strong> to approve or reject.</p>
+<p style="margin:0 0 24px;">
+  <a href="${dashboardUrl}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:600;font-size:15px;">Open Jobs &amp; review</a>
+</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:520px;border-collapse:collapse;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;margin:0 0 20px;">
+  <tr><td style="padding:16px 18px;">
+    <p style="margin:0 0 8px;font-size:13px;font-weight:600;color:#92400e;text-transform:uppercase;letter-spacing:0.04em;">Storage window</p>
+    <p style="margin:0;font-size:14px;line-height:1.55;color:#78350f;">Videos are kept for <strong>${escapeHtml(retentionPhrase)}</strong>. This one is scheduled for removal after <strong>${escapeHtml(deadlineUtc)}</strong>. Approve or reject before then so you don’t lose access.</p>
+  </td></tr>
+</table>
+<p style="margin:0;font-size:13px;line-height:1.5;color:#6b7280;">If you didn’t request this, you can ignore this email.</p>
+`.trim();
 
 		await sendEmail({
 			to: u.email,
 			from: getTransactionEmailFrom(),
-			subject: `Review before publish: ${channel.name}`,
-			text: `Your video for “${channel.name}” is ready. Approve or reject publishing in the dashboard: ${dashboardUrl}`,
-			html: `<p>Your video for <strong>${channel.name}</strong> is ready.</p><p><a href="${dashboardUrl}">Open Jobs</a> to approve or reject publishing.</p>`,
+			subject: `Your video is ready — review by ${deadlineShort} · ${safeName}`,
+			text: textBody,
+			html: htmlBody,
 		});
 	}
 }
