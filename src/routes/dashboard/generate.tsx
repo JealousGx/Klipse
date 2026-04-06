@@ -233,11 +233,8 @@ function GeneratePage() {
 					<strong className="font-medium text-foreground">
 						Assembly estimate:
 					</strong>{" "}
-					{assemblyEstimate} (encode + upload; inline path needs{" "}
-					<code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
-						ffmpeg
-					</code>{" "}
-					on the app host or use an external processor) ·{" "}
+					{assemblyEstimate} (encode + upload; handled by the external video
+					processor service) ·{" "}
 					<strong className="font-medium text-foreground">
 						Script + assembly:
 					</strong>{" "}
