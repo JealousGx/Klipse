@@ -36,7 +36,9 @@ export function DestinationAutoPostFields({
 				disabled={disabled || isSaving}
 				className="space-y-3 border-0 p-0"
 			>
-				<legend className="sr-only">Publishing mode when your video is ready</legend>
+				<legend className="sr-only">
+					Publishing mode when your video is ready
+				</legend>
 
 				<label className="flex cursor-pointer items-start gap-3 rounded-lg border border-border bg-background px-3 py-2.5 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-ring">
 					<input
@@ -51,8 +53,8 @@ export function DestinationAutoPostFields({
 							Ask before publishing
 						</span>
 						<span className="mt-0.5 block text-sm text-muted-foreground">
-							We email you and show the job in Jobs — you confirm or reject before
-							anything is published.
+							We email you and show the job in Jobs — you confirm or reject
+							before anything is published.
 						</span>
 					</span>
 				</label>
