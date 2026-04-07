@@ -5,7 +5,6 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { usageIdempotency } from "@/db/schema";
 import type { StubGenerateIdempotencyResult } from "@/db/schema/usage-idempotency";
-import { users } from "@/db/schema/users";
 import type { VideoJobInputPayload } from "@/db/schema/video-jobs";
 import { videoJobs } from "@/db/schema/video-jobs";
 import {
@@ -16,12 +15,15 @@ import {
 import { POLAR_USAGE_STAGES } from "@/features/billing/meter-events";
 import { ChannelNotFoundError } from "@/features/channels/channel-errors";
 import { getChannelForUser } from "@/features/channels/channels.service.server";
+import {
+	assertFreeTierAssemblyQuotaAllowed,
+	selectUserEntitlementSnapshotForUpdate,
+} from "@/features/entitlements";
 import { jobRowId, usageIdempotencyRowId } from "@/lib/id";
 import { enqueueVideoJobDispatch } from "@/lib/worker/enqueue.server";
 
 import { estimateContentPipelineCredits } from "./content-pipeline-estimate";
 import { PIPELINE_KIND, PIPELINE_STAGE } from "./pipeline/pipeline-kind";
-import { FreeTierVideoQuotaExhaustedError } from "./video-assembly-execute.server";
 
 export const CONTENT_PIPELINE_IDEMPOTENCY_SCOPE = "content_pipeline";
 
@@ -62,21 +64,14 @@ export async function executeContentPipelineWithIdempotency(input: {
 	const inputPayload: VideoJobInputPayload = { idea };
 
 	const outcome = await db.transaction(async (tx) => {
-		const [lockedUser] = await tx
-			.select({
-				plan: users.plan,
-				freeVideoConsumed: users.freeVideoConsumed,
-			})
-			.from(users)
-			.where(eq(users.id, input.userId))
-			.for("update");
-
-		if (!lockedUser) {
+		const snapshot = await selectUserEntitlementSnapshotForUpdate(
+			tx,
+			input.userId,
+		);
+		if (!snapshot) {
 			throw new Error("USER_NOT_FOUND");
 		}
-		if (lockedUser.plan === "free" && lockedUser.freeVideoConsumed) {
-			throw new FreeTierVideoQuotaExhaustedError();
-		}
+		assertFreeTierAssemblyQuotaAllowed(snapshot);
 
 		const maxIterations = 12;
 		for (let i = 0; i < maxIterations; i++) {
@@ -151,6 +146,10 @@ export async function executeContentPipelineWithIdempotency(input: {
 					credits,
 					stage: POLAR_USAGE_STAGES.contentPipeline,
 					ref,
+					prelockedBalance: {
+						creditsRemaining: snapshot.creditsRemaining,
+						creditsUsed: snapshot.creditsUsed,
+					},
 				});
 
 				const now = new Date();

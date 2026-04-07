@@ -4,10 +4,10 @@ import { z } from "zod";
 
 import { InsufficientCreditsError } from "@/features/billing/credit-usage.server";
 import { ChannelNotFoundError } from "@/features/channels/channel-errors";
+import { FreeTierVideoQuotaExhaustedError } from "@/features/entitlements";
 import { auth } from "@/lib/auth";
 
 import { executeContentPipelineWithIdempotency } from "./content-pipeline-execute.server";
-import { FreeTierVideoQuotaExhaustedError } from "./video-assembly-execute.server";
 
 export { estimateContentPipelineCredits } from "./content-pipeline-estimate";
 

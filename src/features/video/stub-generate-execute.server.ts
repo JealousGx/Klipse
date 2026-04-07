@@ -14,8 +14,9 @@ import {
 import { POLAR_USAGE_STAGES } from "@/features/billing/meter-events";
 import { ChannelNotFoundError } from "@/features/channels/channel-errors";
 import { getChannelForUser } from "@/features/channels/channels.service.server";
-import { enqueueVideoJobDispatch } from "@/lib/worker/enqueue.server";
+import { selectUserEntitlementSnapshotForUpdate } from "@/features/entitlements";
 import { jobRowId, usageIdempotencyRowId } from "@/lib/id";
+import { enqueueVideoJobDispatch } from "@/lib/worker/enqueue.server";
 
 import { PIPELINE_KIND, PIPELINE_STAGE } from "./pipeline/pipeline-kind";
 import { estimateStubGenerateCredits } from "./stub-generate-cost";
@@ -52,6 +53,14 @@ export async function executeStubGenerateWithIdempotency(input: {
 	}
 
 	const outcome = await db.transaction(async (tx) => {
+		const snapshot = await selectUserEntitlementSnapshotForUpdate(
+			tx,
+			input.userId,
+		);
+		if (!snapshot) {
+			throw new Error("USER_NOT_FOUND");
+		}
+
 		const maxIterations = 12;
 		for (let i = 0; i < maxIterations; i++) {
 			const rows = await tx
@@ -125,6 +134,10 @@ export async function executeStubGenerateWithIdempotency(input: {
 					credits,
 					stage: POLAR_USAGE_STAGES.stubGenerate,
 					ref,
+					prelockedBalance: {
+						creditsRemaining: snapshot.creditsRemaining,
+						creditsUsed: snapshot.creditsUsed,
+					},
 				});
 
 				const now = new Date();
