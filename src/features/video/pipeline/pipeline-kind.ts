@@ -12,7 +12,7 @@ export const PIPELINE_KIND = {
 	 */
 	VIDEO_ASSEMBLE_V1: "video_assemble_v1",
 	/**
-	 * Script (AI) → video assembly: `current_stage` moves `script` → `assemble` → `done`.
+	 * Script → prepare (media + voice URLs) → assemble (external processor) → `done`.
 	 */
 	CONTENT_PIPELINE_V1: "content_pipeline_v1",
 } as const;
@@ -37,6 +37,8 @@ export const PIPELINE_STAGE = {
 	DISPATCH_PENDING: "dispatch_pending",
 	/** AI script generation (content pipeline). */
 	SCRIPT: "script",
+	/** Resolve parallel media + TTS URLs (no blob persistence; refs only). */
+	PREPARE: "prepare",
 	STUB_RUN: "stub_run",
 	ASSEMBLE: "assemble",
 	DONE: "done",
@@ -53,7 +55,7 @@ export function labelForPipelineKind(kind: string): string {
 		case PIPELINE_KIND.VIDEO_ASSEMBLE_V1:
 			return "Video assembly";
 		case PIPELINE_KIND.CONTENT_PIPELINE_V1:
-			return "Script + assembly";
+			return "Script · media · assembly";
 		default:
 			return kind;
 	}
