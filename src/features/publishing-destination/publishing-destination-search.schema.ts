@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { PUBLISHING_CONNECTION_DENIAL_REASONS } from "@/features/entitlements/publishing-connection-reasons";
+
 export const publishingDestinationSearchSchema = z.object({
 	youtube: z.enum(["connected", "error"]).optional(),
 	reason: z.string().optional(),
@@ -10,7 +12,7 @@ export type PublishingDestinationSearch = z.infer<
 >;
 
 /** User-facing copy for OAuth redirects that include `reason` in the URL. */
-export function messageForYoutubeOAuthErrorReason(
+export function messageForPublishingConnectionErrorReason(
 	reasonRaw: string | undefined,
 ): string {
 	const r = reasonRaw ? decodeURIComponent(reasonRaw) : undefined;
@@ -26,11 +28,13 @@ export function messageForYoutubeOAuthErrorReason(
 	if (r === "access_denied") {
 		return "You canceled Google sign-in or denied access. Connect again and approve access to continue.";
 	}
-	if (r === "youtube_requires_paid_plan") {
-		return "YouTube publishing isn’t available on the Free plan. Upgrade to connect a channel, or keep using Generate.";
+	if (r === PUBLISHING_CONNECTION_DENIAL_REASONS.PAID_PLAN_REQUIRED) {
+		return "Connecting a publishing account isn’t available on the Free plan. Upgrade to link a channel, or keep using Generate.";
 	}
 	if (r === "destination_replacements_exhausted") {
 		return "You’ve used all destination channel switches for this billing period. They reset when your subscription renews, or upgrade for a higher limit.";
 	}
-	return r ? `YouTube connection failed: ${r}` : "YouTube connection failed.";
+	return r
+		? `Publishing connection failed: ${r}`
+		: "Publishing connection failed.";
 }
