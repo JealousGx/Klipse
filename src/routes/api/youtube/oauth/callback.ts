@@ -8,13 +8,13 @@ import {
 	userHasAnotherDestinationWithYoutubeChannelId,
 } from "@/features/channels/channels.service.server";
 import { applyYoutubeOAuthConnectionWithQuota } from "@/features/channels/destination-replacement-quota.server";
+import { PUBLISHING_CONNECTION_DENIAL_REASONS } from "@/features/entitlements";
 import {
 	exchangeYoutubeAuthorizationCode,
 	fetchYoutubeMineChannel,
 	resolveYoutubeOAuthGrantedScopes,
 	youtubeOAuthGrantsAllRequiredScopes,
 } from "@/features/youtube/youtube-oauth-tokens.server";
-
 import { auth } from "@/lib/auth";
 import { verifyYoutubeOAuthState } from "@/lib/youtube-oauth-state.server";
 
@@ -138,7 +138,7 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 					if (!applied.ok) {
 						const reason =
 							applied.code === "free_plan_blocked"
-								? "youtube_requires_paid_plan"
+								? PUBLISHING_CONNECTION_DENIAL_REASONS.PAID_PLAN_REQUIRED
 								: "destination_replacements_exhausted";
 						return redirectBack(
 							`/dashboard/publishing/${payload.c}?youtube=error&reason=${encodeURIComponent(reason)}`,
