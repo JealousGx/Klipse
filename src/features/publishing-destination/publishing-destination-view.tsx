@@ -51,9 +51,9 @@ export function PublishingDestinationView({
 	onRemoveClick,
 	isRemovePending,
 }: PublishingDestinationViewProps) {
-	const youtubeConnected = channel.youtubeConnected;
-	const showYoutubeChannelSection = Boolean(
-		youtubeConnected || channel.externalChannelId,
+	const oauthConnected = channel.oauthConnected;
+	const showConnectedChannelSection = Boolean(
+		oauthConnected || channel.externalChannelId,
 	);
 
 	return (
@@ -76,15 +76,15 @@ export function PublishingDestinationView({
 						{channel.name}
 					</h2>
 					<p className="m-0 max-w-3xl text-sm leading-relaxed text-muted-foreground">
-						Link your Google account, set how this destination appears in
-						Klipse, and review your YouTube channel after you connect. The
+						Link your publishing account, set how this destination appears in
+						Klipse, and review connected channel details after you connect. The
 						distinction between your{" "}
 						<strong className="font-medium text-foreground">
 							Klipse label
 						</strong>{" "}
 						and your{" "}
 						<strong className="font-medium text-foreground">
-							YouTube channel title
+							platform channel title
 						</strong>{" "}
 						is explained next to each field below.
 					</p>
@@ -96,8 +96,8 @@ export function PublishingDestinationView({
 					<DashboardSection
 						id="connection"
 						titleId="connection-heading"
-						title="Google & YouTube"
-						description="Connect your Google account so we can read channel metadata and publish."
+						title="Publishing account"
+						description="Connect your publishing account so we can read channel metadata and publish."
 						isFirst
 						tabIndex={-1}
 						className="scroll-mt-24 outline-none md:scroll-mt-20 lg:scroll-mt-24"
@@ -113,22 +113,22 @@ export function PublishingDestinationView({
 						</DashboardPanel>
 					</DashboardSection>
 
-					{showYoutubeChannelSection ? (
+					{showConnectedChannelSection ? (
 						<DashboardSection
-							id="youtube-channel"
-							titleId="youtube-channel-heading"
-							title="YouTube channel"
+							id="connected-channel"
+							titleId="connected-channel-heading"
+							title="Connected channel"
 							description={
-								youtubeConnected
-									? "Channel id and title from your connected Google account."
-									: "Last linked channel. Reconnect with Google above to restore access."
+								oauthConnected
+									? "Channel id and title from your connected account."
+									: "Last linked channel. Reconnect above to restore access."
 							}
 						>
 							<DashboardPanel>
 								<DestinationYoutubeChannelFields
 									channel={channel}
 									onCopyChannelId={onCopyChannelId}
-									googleAccessActive={youtubeConnected}
+									googleAccessActive={oauthConnected}
 								/>
 							</DashboardPanel>
 						</DashboardSection>
@@ -160,14 +160,14 @@ export function PublishingDestinationView({
 						titleId="destination-details-heading"
 						title="Destination details"
 						description={
-							youtubeConnected
-								? "Internal to Klipse: not synced from YouTube. Your public channel title from Google is shown in the YouTube channel section."
-								: "Internal to Klipse: not synced from YouTube. After you connect Google, your channel title appears in the YouTube channel section."
+							oauthConnected
+								? "Internal to Klipse: not synced from your platform. Your public channel title is shown in the connected channel section."
+								: "Internal to Klipse: not synced from your platform. After you connect your account, your channel title appears in the connected channel section."
 						}
 					>
 						<DashboardPanel>
 							<DestinationDetailsFields
-								youtubeConnected={youtubeConnected}
+								oauthConnected={oauthConnected}
 								displayName={displayName}
 								niche={niche}
 								onDisplayNameChange={onDisplayNameChange}
@@ -185,7 +185,7 @@ export function PublishingDestinationView({
 				>
 					<PublishingDestinationWidgets
 						destinationId={destinationId}
-						youtubeConnected={youtubeConnected}
+						oauthConnected={oauthConnected}
 						onRemoveClick={onRemoveClick}
 						isRemovePending={isRemovePending}
 					/>

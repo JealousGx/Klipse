@@ -23,14 +23,14 @@ export function DestinationConnectionFields({
 	isDisconnectPending,
 }: Props) {
 	const oauthHref = `/api/youtube/oauth/start?channelId=${encodeURIComponent(destinationId)}`;
-	const showDisconnect = Boolean(ch.externalChannelId || ch.youtubeConnected);
-	const needsGoogleOAuth = !ch.youtubeConnected;
-	const boundId = ch.boundYoutubeChannelId;
-	const mustReconnectSameChannel = Boolean(boundId && !ch.youtubeConnected);
+	const showDisconnect = Boolean(ch.externalChannelId || ch.oauthConnected);
+	const needsGoogleOAuth = !ch.oauthConnected;
+	const boundId = ch.boundExternalAccountId;
+	const mustReconnectSameChannel = Boolean(boundId && !ch.oauthConnected);
 
 	return (
 		<div className="flex flex-col gap-5" data-section="publishing-connection">
-			{ch.youtubeConnected ? (
+			{ch.oauthConnected ? (
 				<div className="flex gap-3">
 					<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
 						<CheckCircle2 className="size-5" aria-hidden />

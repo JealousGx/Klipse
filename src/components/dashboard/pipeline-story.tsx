@@ -267,9 +267,9 @@ function JobDetailPane({
 							<Download className="size-3.5 shrink-0" aria-hidden />
 							Download MP4
 						</a>
-						{job.youtubeVideoId ? (
+						{job.publishedVideoId && job.channelPlatform === "youtube" ? (
 							<a
-								href={youtubeWatchUrl(job.youtubeVideoId)}
+								href={youtubeWatchUrl(job.publishedVideoId)}
 								target="_blank"
 								rel="noreferrer"
 								className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/60"
@@ -283,7 +283,7 @@ function JobDetailPane({
 						) : null}
 					</div>
 				) : null}
-				{job.publishLastError && job.status === "completed" ? (
+				{job.publishLastError && job.status === "completed" && !job.publishedVideoId ? (
 					<p className="text-xs text-destructive">
 						Publish failed: {job.publishLastError}
 					</p>
@@ -606,7 +606,7 @@ function ActiveDestinationSnapshotCard({
 
 	const linked =
 		channel.platform === "youtube" && Boolean(channel.externalChannelId);
-	const badgeLabel = channel.youtubeConnected
+	const badgeLabel = channel.oauthConnected
 		? "YouTube · Google"
 		: linked
 			? "YouTube · linked"
@@ -630,7 +630,7 @@ function ActiveDestinationSnapshotCard({
 					<span
 						className={cn(
 							"rounded border px-2 py-0.5 font-mono text-[10px] font-medium",
-							linked || channel.youtubeConnected
+							linked || channel.oauthConnected
 								? "border-primary/40 bg-primary/10 text-primary"
 								: "border-border bg-background text-muted-foreground",
 						)}
@@ -690,7 +690,7 @@ function ActiveDestinationSnapshotCard({
 						<p className="mt-0.5 font-mono text-xs text-foreground break-all">
 							{channel.externalChannelId}
 						</p>
-						{channel.platform === "youtube" ? (
+						{channel.platform === "youtube" && channel.externalChannelId ? (
 							<a
 								href={youtubeChannelUrl(channel.externalChannelId)}
 								target="_blank"

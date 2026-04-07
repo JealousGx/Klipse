@@ -325,7 +325,7 @@ function PublishingIndexPage() {
 	const list = destinationsQuery.data ?? [];
 	const canAddDestination = list.length < maxDestinations;
 
-	const firstNeedingYoutube = list.find((c) => !c.youtubeConnected);
+	const firstNeedingYoutube = list.find((c) => !c.oauthConnected);
 	const primaryDestinationId = firstNeedingYoutube?.id ?? list[0]?.id ?? null;
 
 	const handleDelete = (channelId: string) => {

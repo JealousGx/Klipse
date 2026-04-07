@@ -7,7 +7,7 @@ import { DestinationRemoveFields } from "./destination-remove-card";
 
 type Props = {
 	destinationId: string;
-	youtubeConnected: boolean;
+	oauthConnected: boolean;
 	onRemoveClick: () => void;
 	isRemovePending: boolean;
 };
@@ -25,7 +25,7 @@ function WidgetLabel({ children }: { children: ReactNode }) {
  */
 export function PublishingDestinationWidgets({
 	destinationId,
-	youtubeConnected,
+	oauthConnected,
 	onRemoveClick,
 	isRemovePending,
 }: Props) {
@@ -42,14 +42,14 @@ export function PublishingDestinationWidgets({
 							href="#connection"
 							className="font-medium text-foreground/90 underline-offset-4 hover:underline"
 						>
-							Google & YouTube
+							Publishing account
 						</a>
-						{youtubeConnected ? (
+						{oauthConnected ? (
 							<a
-								href="#youtube-channel"
+								href="#connected-channel"
 								className="font-medium text-foreground/90 underline-offset-4 hover:underline"
 							>
-								YouTube channel
+								Connected channel
 							</a>
 						) : null}
 						<a

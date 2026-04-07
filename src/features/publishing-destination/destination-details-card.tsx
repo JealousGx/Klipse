@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { publishingDestinationFieldClass } from "./publishing-destination-field-class";
 
 type Props = {
-	youtubeConnected: boolean;
+	oauthConnected: boolean;
 	displayName: string;
 	niche: string;
 	onDisplayNameChange: (value: string) => void;
@@ -16,7 +16,7 @@ type Props = {
 };
 
 export function DestinationDetailsFields({
-	youtubeConnected,
+	oauthConnected,
 	displayName,
 	niche,
 	onDisplayNameChange,
@@ -43,10 +43,10 @@ export function DestinationDetailsFields({
 					>
 						For lists and pickers in this app only. This is{" "}
 						<strong className="font-medium text-foreground">not</strong> your
-						YouTube channel title
-						{youtubeConnected
-							? "—that appears in the YouTube channel section below."
-							: "—after you connect Google, it appears in the YouTube channel section."}
+						platform channel title
+						{oauthConnected
+							? "—that appears in the connected channel section below."
+							: "—after you connect your account, it appears in the connected channel section."}
 					</p>
 					<input
 						id="dest-name"

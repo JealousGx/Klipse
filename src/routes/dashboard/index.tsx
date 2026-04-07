@@ -50,7 +50,7 @@ function DashboardPage() {
 			niche: c.niche,
 			platform: c.platform,
 			externalChannelId: c.externalChannelId,
-			youtubeConnected: c.youtubeConnected,
+			oauthConnected: c.oauthConnected,
 		};
 	}, [channelsQuery.data]);
 
