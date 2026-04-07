@@ -10,10 +10,10 @@ import type { VideoJobInputPayload } from "@/db/schema/video-jobs";
 import { videoJobs } from "@/db/schema/video-jobs";
 import {
 	applyUsageDeduction,
+	firePolarUsageIngestAfterDeduction,
 	InsufficientCreditsError,
 } from "@/features/billing/credit-usage.server";
 import { POLAR_USAGE_STAGES } from "@/features/billing/meter-events";
-import { schedulePolarUsageSyncProcessing } from "@/features/billing/polar-usage-sync-schedule.server";
 import { ChannelNotFoundError } from "@/features/channels/channel-errors";
 import { getChannelForUser } from "@/features/channels/channels.service.server";
 import { jobRowId, usageIdempotencyRowId } from "@/lib/id";
@@ -199,7 +199,12 @@ export async function executeContentPipelineWithIdempotency(input: {
 	});
 
 	if (outcome.kind === "fresh") {
-		schedulePolarUsageSyncProcessing();
+		firePolarUsageIngestAfterDeduction({
+			userId: input.userId,
+			credits,
+			stage: POLAR_USAGE_STAGES.contentPipeline,
+			ref: outcome.payload.ref,
+		});
 		await enqueueVideoJobDispatch({
 			jobId: outcome.payload.ref,
 			userId: input.userId,
