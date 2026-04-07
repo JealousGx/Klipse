@@ -40,7 +40,7 @@ export const env = createEnv({
 		POLAR_PRODUCT_CREDITS: z.string(),
 		POLAR_PRODUCT_CREDITS_LARGE: z.string(),
 
-		/** Bearer token for `POST /api/cron/polar-usage-sync` (Polar usage outbox retries). */
+		/** Bearer token for optional crons (e.g. `POST /api/cron/purge-stored-files`). */
 		INTERNAL_CRON_SECRET: z.string().min(1).optional(),
 
 		/**
