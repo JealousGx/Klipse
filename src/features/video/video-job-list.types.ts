@@ -14,6 +14,10 @@ export type VideoJobListRow = {
 	outputUrl: string | null;
 	errorMessage: string | null;
 	publishApprovalStatus: "pending" | "approved" | "rejected" | null;
+	/** YouTube `videoId` after successful upload (§2.12). */
+	youtubeVideoId: string | null;
+	/** Last publish error message, if any. */
+	publishLastError: string | null;
 	/** When the output video is scheduled for purge (R2 TTL), if tracked. */
 	outputStorageExpiresAt: Date | null;
 	createdAt: Date;

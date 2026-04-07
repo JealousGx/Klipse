@@ -11,6 +11,7 @@ import { env } from "@/env";
 
 import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config";
 import { getChannelForUser } from "@/features/channels/channels.service.server";
+import { maybeEnqueueYoutubePublishAfterRender } from "@/features/publishing/youtube/maybe-enqueue-youtube-publish.server";
 import type { MeResponse } from "@/features/user/types/me";
 
 import { getTransactionEmailFrom, sendEmail } from "@/lib/email";
@@ -141,4 +142,11 @@ export async function runAfterVideoRenderComplete(input: {
 			html: htmlBody,
 		});
 	}
+
+	await maybeEnqueueYoutubePublishAfterRender({
+		jobId,
+		userId,
+		channel,
+		plan,
+	});
 }

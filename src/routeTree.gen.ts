@@ -27,6 +27,7 @@ import { Route as ApiCronPurgeStoredFilesRouteImport } from './routes/api/cron/p
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiYoutubeOauthStartRouteImport } from './routes/api/youtube/oauth/start'
 import { Route as ApiYoutubeOauthCallbackRouteImport } from './routes/api/youtube/oauth/callback'
+import { Route as ApiInternalWorkerYoutubePublishRouteImport } from './routes/api/internal/worker/youtube-publish'
 import { Route as ApiInternalVideoProcessorAssemblyCompleteRouteImport } from './routes/api/internal/video-processor/assembly-complete'
 import { Route as ApiInternalWorkerVideoJobsDispatchRouteImport } from './routes/api/internal/worker/video-jobs/dispatch'
 
@@ -122,6 +123,12 @@ const ApiYoutubeOauthCallbackRoute = ApiYoutubeOauthCallbackRouteImport.update({
   path: '/api/youtube/oauth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiInternalWorkerYoutubePublishRoute =
+  ApiInternalWorkerYoutubePublishRouteImport.update({
+    id: '/api/internal/worker/youtube-publish',
+    path: '/api/internal/worker/youtube-publish',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiInternalVideoProcessorAssemblyCompleteRoute =
   ApiInternalVideoProcessorAssemblyCompleteRouteImport.update({
     id: '/api/internal/video-processor/assembly-complete',
@@ -153,6 +160,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
+  '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
@@ -173,6 +181,7 @@ export interface FileRoutesByTo {
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
+  '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
@@ -196,6 +205,7 @@ export interface FileRoutesById {
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
+  '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
@@ -220,6 +230,7 @@ export interface FileRouteTypes {
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
+    | '/api/internal/worker/youtube-publish'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
     | '/api/internal/worker/video-jobs/dispatch'
@@ -240,6 +251,7 @@ export interface FileRouteTypes {
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing'
     | '/api/internal/video-processor/assembly-complete'
+    | '/api/internal/worker/youtube-publish'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
     | '/api/internal/worker/video-jobs/dispatch'
@@ -262,6 +274,7 @@ export interface FileRouteTypes {
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
+    | '/api/internal/worker/youtube-publish'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
     | '/api/internal/worker/video-jobs/dispatch'
@@ -276,6 +289,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronPurgeStoredFilesRoute: typeof ApiCronPurgeStoredFilesRoute
   ApiInternalVideoProcessorAssemblyCompleteRoute: typeof ApiInternalVideoProcessorAssemblyCompleteRoute
+  ApiInternalWorkerYoutubePublishRoute: typeof ApiInternalWorkerYoutubePublishRoute
   ApiYoutubeOauthCallbackRoute: typeof ApiYoutubeOauthCallbackRoute
   ApiYoutubeOauthStartRoute: typeof ApiYoutubeOauthStartRoute
   ApiInternalWorkerVideoJobsDispatchRoute: typeof ApiInternalWorkerVideoJobsDispatchRoute
@@ -409,6 +423,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiYoutubeOauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/internal/worker/youtube-publish': {
+      id: '/api/internal/worker/youtube-publish'
+      path: '/api/internal/worker/youtube-publish'
+      fullPath: '/api/internal/worker/youtube-publish'
+      preLoaderRoute: typeof ApiInternalWorkerYoutubePublishRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/internal/video-processor/assembly-complete': {
       id: '/api/internal/video-processor/assembly-complete'
       path: '/api/internal/video-processor/assembly-complete'
@@ -473,6 +494,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCronPurgeStoredFilesRoute: ApiCronPurgeStoredFilesRoute,
   ApiInternalVideoProcessorAssemblyCompleteRoute:
     ApiInternalVideoProcessorAssemblyCompleteRoute,
+  ApiInternalWorkerYoutubePublishRoute: ApiInternalWorkerYoutubePublishRoute,
   ApiYoutubeOauthCallbackRoute: ApiYoutubeOauthCallbackRoute,
   ApiYoutubeOauthStartRoute: ApiYoutubeOauthStartRoute,
   ApiInternalWorkerVideoJobsDispatchRoute:
