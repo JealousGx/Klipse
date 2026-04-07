@@ -36,7 +36,13 @@ export async function listVideoJobsForUser(
 		})
 		.from(videoJobs)
 		.innerJoin(channels, eq(videoJobs.channelId, channels.id))
-		.leftJoin(expiringAssets, eq(expiringAssets.videoJobId, videoJobs.id))
+		.leftJoin(
+			expiringAssets,
+			and(
+				eq(expiringAssets.videoJobId, videoJobs.id),
+				eq(expiringAssets.kind, "output"),
+			),
+		)
 		.where(eq(videoJobs.userId, userId))
 		.orderBy(desc(videoJobs.createdAt))
 		.limit(limit);

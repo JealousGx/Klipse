@@ -6,7 +6,7 @@ Klipse is an AI-powered video creation and publishing SaaS platform. It automate
 
 Key capabilities:
 - Multi-stage video generation pipeline (stub, content, publish-only)
-- Multiple AI providers for script/image/audio/video generation (OpenAI, Gemini, Pollinations, Luma, Kling)
+- AI providers: Gemini (script, primary) + Pollinations (script fallback, images) + Google TTS (audio, primary) + Pollinations TTS (audio fallback)
 - Subscription tiers (Free, Starter, Creator, Empire) with a credit-based billing system via Polar
 - YouTube OAuth publishing with auto-post or approval-pending modes
 - Cloudflare R2 for asset storage, Cloudflare Workers for async job processing
@@ -25,9 +25,9 @@ Key capabilities:
 | Database | MySQL (TiDB serverless in prod) + Drizzle ORM |
 | Auth | Better Auth (Email OTP + Google OAuth + Polar plugin) |
 | Storage | Cloudflare R2 (S3-compatible) |
-| AI — Script | OpenAI, Google Gemini, Pollinations (fallback chain) |
-| AI — Media | Pollinations, Luma AI, Kling AI |
-| TTS | Google Text-to-Speech |
+| AI — Script | Gemini 2.0 Flash (primary) → Pollinations text (fallback) |
+| AI — Images | Pollinations Flux (only) |
+| AI — TTS | Google Cloud TTS (primary) → Pollinations audio (fallback) |
 | Queue | Cloudflare Workers + Cloudflare Queues |
 | Video Encoding | External Hono/Node service (Docker, FFmpeg) |
 | Billing | Polar (subscriptions + usage metering) |
@@ -68,7 +68,7 @@ The project is a **pnpm monorepo** with three runtime services:
 **Video pipeline flow:**
 1. User submits idea → `content-pipeline-execute.server.ts`
 2. Prepare stage — fetch/generate images, TTS audio, upload to R2
-3. Script stage — AI script generation (OpenAI → Gemini → Pollinations fallback)
+3. Script stage — AI script generation (Gemini 2.0 Flash → Pollinations fallback)
 4. Handoff — main app sends assembly manifest to external processor
 5. Processor encodes video (FFmpeg), uploads final file to R2, calls webhook back
 6. Webhook handler marks job complete, triggers publishing if auto-post enabled

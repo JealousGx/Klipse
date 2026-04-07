@@ -49,12 +49,8 @@ export async function synthesizeSpeechWithFallback(
 	if (await isGoogleTtsConfigured()) {
 		try {
 			const { audioContentBase64 } = await synthesizeGoogleTts({ text });
-			const binary = atob(audioContentBase64);
-			const bytes = new Uint8Array(binary.length);
-			for (let i = 0; i < binary.length; i++) {
-				bytes[i] = binary.charCodeAt(i);
-			}
-			return { source: "google", buffer: bytes.buffer };
+			const buf = Buffer.from(audioContentBase64, "base64");
+			return { source: "google", buffer: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer };
 		} catch {
 			// fall through to Pollinations
 		}

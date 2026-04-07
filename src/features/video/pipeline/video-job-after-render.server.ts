@@ -72,6 +72,7 @@ export async function runAfterVideoRenderComplete(input: {
 		userId,
 		logicalKey: input.logicalKey.trim(),
 		videoJobId: jobId,
+		kind: "output",
 		expiresAt,
 	});
 

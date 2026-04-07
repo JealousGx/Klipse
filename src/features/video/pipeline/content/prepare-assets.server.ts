@@ -80,6 +80,7 @@ async function prepareTtsAsset(input: {
 		userId: input.userId,
 		logicalKey,
 		videoJobId: input.jobId,
+		kind: "tts_intermediate",
 		expiresAt: new Date(Date.now() + TTS_ASSET_TTL_MS),
 	});
 
