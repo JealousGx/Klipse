@@ -1,9 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { env } from "@/env";
-
-import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config";
 import { getChannelForUser } from "@/features/channels/channels.service.server";
+import { getPublishingConnectionDenialReason } from "@/features/entitlements";
 import type { MeResponse } from "@/features/user/types/me";
 import { buildGoogleYoutubeAuthorizeUrl } from "@/features/youtube/youtube-oauth-tokens.server";
 
@@ -43,8 +42,9 @@ export const Route = createFileRoute("/api/youtube/oauth/start")({
 				}
 
 				const plan = (session.user.plan ?? "free") as MeResponse["plan"];
-				if (!planAllowsPaidPublishingConnections(plan)) {
-					return fail("youtube_requires_paid_plan");
+				const denial = getPublishingConnectionDenialReason(plan);
+				if (denial) {
+					return fail(denial);
 				}
 
 				const state = signYoutubeOAuthState(
