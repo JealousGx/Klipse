@@ -4,7 +4,7 @@ export * from "./channels-relations";
 export * from "./credit-transactions";
 export * from "./provider-api-keys";
 export * from "./sessions";
-export * from "./stored-files";
+export * from "./expiring-assets";
 export * from "./usage-idempotency";
 export * from "./users";
 export * from "./users-relations";

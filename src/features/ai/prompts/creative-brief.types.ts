@@ -16,4 +16,9 @@ export type ChannelCreativeBrief = {
 	destinationDisplayName?: string | null;
 	/** Brand accent for visual prompts (hex). */
 	primaryColorHex?: string;
+	/**
+	 * Explicit output aspect ratio from channel config.
+	 * Drives image dimensions and composition hints — not inferred from duration.
+	 */
+	aspectRatio?: "16:9" | "9:16" | "1:1";
 };

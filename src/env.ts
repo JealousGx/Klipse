@@ -40,7 +40,7 @@ export const env = createEnv({
 		POLAR_PRODUCT_CREDITS: z.string(),
 		POLAR_PRODUCT_CREDITS_LARGE: z.string(),
 
-		/** Bearer token for optional crons (e.g. `POST /api/cron/purge-stored-files`). */
+		/** Bearer token for optional crons (e.g. `POST /api/cron/purge-expiring-assets` — purges expired R2 assets). */
 		INTERNAL_CRON_SECRET: z.string().min(1).optional(),
 
 		/**
@@ -57,31 +57,20 @@ export const env = createEnv({
 		 */
 		APP_PUBLIC_URL: z.url().optional(),
 
-		/** OpenAI-compatible Chat Completions (script stage). Omit to use demo scripts. */
-		OPENAI_API_KEY: z.string().min(1).optional(),
-		/** Override API base (default `https://api.openai.com/v1`). */
-		OPENAI_API_BASE: z.url().optional(),
-		OPENAI_SCRIPT_MODEL: z.string().min(1).default("gpt-4o-mini"),
-
-		/** Pollinations Gen API (text/image/video/audio). Keys from https://enter.pollinations.ai */
+		/** Pollinations Gen API (text/image/audio). Keys from https://enter.pollinations.ai */
 		POLLINATIONS_GEN_BASE: z.url().optional(),
 		POLLINATIONS_API_KEY: z.string().min(1).optional(),
 		/** Text model id for `POST /v1/chat/completions` (e.g. mistral, claude-fast). */
 		POLLINATIONS_TEXT_MODEL: z.string().min(1).optional(),
 
-		/** Comma-separated Google AI Studio keys for Gemini fallback (script). */
+		/** Comma-separated Google AI Studio keys for Gemini (primary script provider). */
 		GEMINI_API_KEYS: z.string().optional(),
-		GEMINI_SCRIPT_MODEL: z.string().min(1).default("gemini-2.5-flash"),
+		/** @default gemini-2.0-flash */
+		GEMINI_SCRIPT_MODEL: z.string().min(1).default("gemini-2.0-flash"),
 
-		/** Comma-separated Google Cloud API keys for Text-to-Speech fallback. */
+		/** Comma-separated Google Cloud API keys for Text-to-Speech (primary audio provider). */
 		GOOGLE_TTS_API_KEYS: z.string().optional(),
 		GOOGLE_TTS_VOICE_NAME: z.string().min(1).optional(),
-
-		LUMA_API_KEY: z.string().min(1).optional(),
-		KLING_API_KEY: z.string().min(1).optional(),
-		KLING_API_BASE: z.url().optional(),
-		/** Kling task type for video fallback chain — confirm with your API vendor. */
-		KLING_VIDEO_TYPE: z.string().min(1).optional(),
 
 		/**
 		 * Better Auth `session.cookieCache.maxAge` (seconds). After Polar checkout we

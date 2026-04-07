@@ -11,6 +11,11 @@ export const channelConfigSchema = z
 		 * (and email on paid) before publishing.
 		 */
 		auto_post: z.boolean().default(false),
+		/**
+		 * Output aspect ratio for generated video and images.
+		 * Decoupled from publishing platform — a 9:16 video can be posted to any platform.
+		 */
+		aspect_ratio: z.enum(["16:9", "9:16", "1:1"]).default("16:9"),
 		style_seed: z
 			.number()
 			.int()

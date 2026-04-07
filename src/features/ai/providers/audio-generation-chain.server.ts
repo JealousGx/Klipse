@@ -8,7 +8,7 @@ import {
 } from "./google-tts.server";
 import { fetchPollinationsSpeech } from "./pollinations-tts.server";
 
-export type AudioGenerationSource = "pollinations" | "google";
+export type AudioGenerationSource = "google" | "pollinations";
 
 export type SynthesizeSpeechInput =
 	| { kind: "raw"; text: string; voice?: string }
@@ -19,41 +19,47 @@ export type SynthesizeSpeechInput =
 			voiceOverride?: string;
 	  };
 
-function resolveTtsPayload(input: SynthesizeSpeechInput): {
+function resolveTtsText(input: SynthesizeSpeechInput): {
 	text: string;
-	voice?: string;
+	pollinationsVoice: string;
 } {
 	if (input.kind === "raw") {
-		return { text: input.text, voice: input.voice };
+		return { text: input.text, pollinationsVoice: input.voice ?? "alloy" };
 	}
-	const { plainText, pollinationsVoice } = buildVoiceoverTtsPayload(
+	const { plainText, voice } = buildVoiceoverTtsPayload(
 		input.brief,
 		input.scriptMarkdown,
 		input.voiceOverride,
 	);
-	return { text: plainText, voice: pollinationsVoice };
+	return { text: plainText, pollinationsVoice: voice };
 }
 
 /**
- * TTS: Pollinations Audio → Google TTS.
- * Use `kind: "brief"` to sanitize markdown and map channel tone → Pollinations voice.
- * Future premium order: branch on `resolveAiRoutingTier` in `ai-routing-policy.server.ts`.
+ * TTS: **Google Cloud TTS** (primary, free 4M chars/month) → **Pollinations Audio** (fallback, free).
+ * Always returns `ArrayBuffer` regardless of which provider succeeded.
+ *
+ * Google TTS voice is controlled by `GOOGLE_TTS_VOICE_NAME` env var (default: en-US-Neural2-A).
+ * Pollinations voice is tone-mapped from channel brief.
  */
 export async function synthesizeSpeechWithFallback(
 	input: SynthesizeSpeechInput,
-): Promise<
-	| { source: "pollinations"; buffer: ArrayBuffer }
-	| { source: "google"; audioContentBase64: string }
-> {
-	const { text, voice } = resolveTtsPayload(input);
-	try {
-		const buffer = await fetchPollinationsSpeech({ text, voice });
-		return { source: "pollinations", buffer };
-	} catch {
-		if (!(await isGoogleTtsConfigured())) {
-			throw new Error("tts_all_providers_failed");
+): Promise<{ source: AudioGenerationSource; buffer: ArrayBuffer }> {
+	const { text, pollinationsVoice } = resolveTtsText(input);
+
+	if (await isGoogleTtsConfigured()) {
+		try {
+			const { audioContentBase64 } = await synthesizeGoogleTts({ text });
+			const binary = atob(audioContentBase64);
+			const bytes = new Uint8Array(binary.length);
+			for (let i = 0; i < binary.length; i++) {
+				bytes[i] = binary.charCodeAt(i);
+			}
+			return { source: "google", buffer: bytes.buffer };
+		} catch {
+			// fall through to Pollinations
 		}
-		const { audioContentBase64 } = await synthesizeGoogleTts({ text });
-		return { source: "google", audioContentBase64 };
 	}
+
+	const buffer = await fetchPollinationsSpeech({ text, voice: pollinationsVoice });
+	return { source: "pollinations", buffer };
 }

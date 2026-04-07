@@ -19,7 +19,7 @@ import { markVideoJobFailed } from "../../process-stub-pipeline.server";
 import { resolvePrepareRefs } from "../prepare-assets.server";
 
 /**
- * Prepare stage: parallel Pollinations image + TTS **URLs** (no blob storage), then queue assembly.
+ * Prepare stage: generate TTS audio (uploaded to R2) + Pollinations image URLs, then queue assembly.
  */
 export async function processContentPrepareStage(jobId: string): Promise<void> {
 	const db = getDb();
@@ -115,6 +115,8 @@ export async function processContentPrepareStage(jobId: string): Promise<void> {
 		const prepareRefs = await resolvePrepareRefs({
 			scriptMarkdown: scriptText,
 			channel,
+			userId: row.userId,
+			jobId: id,
 		});
 
 		const artifacts: VideoJobArtifacts = {

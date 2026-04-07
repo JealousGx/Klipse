@@ -3,7 +3,7 @@ import "@tanstack/react-start/server-only";
 import { and, eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
-import { storedFiles } from "@/db/schema/stored-files";
+import { expiringAssets } from "@/db/schema/expiring-assets";
 import { users } from "@/db/schema/users";
 import { videoJobs } from "@/db/schema/video-jobs";
 
@@ -20,7 +20,7 @@ import {
 	humanizeRetentionHours,
 	PAID_TIER_RETENTION_HOURS,
 } from "@/lib/format-output-retention";
-import { storedFileRowId } from "@/lib/id";
+import { expiringAssetRowId } from "@/lib/id";
 
 function escapeHtml(text: string): string {
 	return text
@@ -45,9 +45,9 @@ export async function runAfterVideoRenderComplete(input: {
 	const userId = input.userId.trim();
 
 	const [existing] = await db
-		.select({ id: storedFiles.id })
-		.from(storedFiles)
-		.where(eq(storedFiles.videoJobId, jobId))
+		.select({ id: expiringAssets.id })
+		.from(expiringAssets)
+		.where(eq(expiringAssets.videoJobId, jobId))
 		.limit(1);
 	if (existing) {
 		return;
@@ -67,8 +67,8 @@ export async function runAfterVideoRenderComplete(input: {
 		plan === "free" ? FREE_TIER_RETENTION_HOURS : PAID_TIER_RETENTION_HOURS;
 	const expiresAt = new Date(Date.now() + hours * 60 * 60 * 1000);
 
-	await db.insert(storedFiles).values({
-		id: storedFileRowId(),
+	await db.insert(expiringAssets).values({
+		id: expiringAssetRowId(),
 		userId,
 		logicalKey: input.logicalKey.trim(),
 		videoJobId: jobId,

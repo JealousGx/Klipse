@@ -10,17 +10,19 @@ import { users } from "./users";
 import { videoJobs } from "./video-jobs";
 
 /**
- * Tracks R2 objects subject to TTL purge (FEATURE_DOC §2.7–2.8).
- * Row deleted after successful object delete.
+ * Tracks R2 objects subject to TTL purge.
+ * Covers both intermediate pipeline assets (e.g. TTS audio, ~2h TTL) and
+ * final output files (plan-based retention window).
+ * Row is deleted after the R2 object is successfully removed.
  */
-export const storedFiles = mysqlTable(
-	"stored_files",
+export const expiringAssets = mysqlTable(
+	"expiring_assets",
 	{
 		id: varchar("id", { length: 64 }).primaryKey(),
 		userId: varchar("user_id", { length: 64 })
 			.notNull()
 			.references(() => users.id, { onDelete: "cascade" }),
-		/** Logical key (same string passed to `uploadToR2` / `deleteFile`). */
+		/** Logical key passed to `uploadToR2` / `deleteFile` (env prefix applied at runtime). */
 		logicalKey: varchar("logical_key", { length: 512 }).notNull(),
 		videoJobId: varchar("video_job_id", { length: 64 }).references(
 			() => videoJobs.id,
@@ -32,18 +34,18 @@ export const storedFiles = mysqlTable(
 			.notNull(),
 	},
 	(table) => [
-		index("stored_files_expires_idx").on(table.expiresAt),
-		index("stored_files_user_idx").on(table.userId),
+		index("expiring_assets_expires_idx").on(table.expiresAt),
+		index("expiring_assets_user_idx").on(table.userId),
 	],
 );
 
-export const storedFilesRelations = relations(storedFiles, ({ one }) => ({
+export const expiringAssetsRelations = relations(expiringAssets, ({ one }) => ({
 	user: one(users, {
-		fields: [storedFiles.userId],
+		fields: [expiringAssets.userId],
 		references: [users.id],
 	}),
 	job: one(videoJobs, {
-		fields: [storedFiles.videoJobId],
+		fields: [expiringAssets.videoJobId],
 		references: [videoJobs.id],
 	}),
 }));

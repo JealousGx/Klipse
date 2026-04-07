@@ -3,10 +3,13 @@ import "@tanstack/react-start/server-only";
 import type { ChannelCreativeBrief } from "./creative-brief.types";
 
 export type VoiceoverTtsPayload = {
-	/** Plain text safe for Google / Pollinations speech APIs (no markdown headings). */
+	/** Plain text safe for any speech API (markdown stripped). */
 	plainText: string;
-	/** Pollinations `voice` query param — maps from channel tone. */
-	pollinationsVoice: string;
+	/**
+	 * Tone-mapped voice ID used by Pollinations TTS fallback.
+	 * Google TTS (primary) uses `GOOGLE_TTS_VOICE_NAME` env config instead.
+	 */
+	voice: string;
 };
 
 /**
@@ -53,7 +56,6 @@ export function buildVoiceoverTtsPayload(
 	voiceOverride?: string,
 ): VoiceoverTtsPayload {
 	const plain = sanitizeScriptForTts(scriptMarkdown);
-	const pollinationsVoice =
-		voiceOverride?.trim() || selectVoiceForChannelTone(brief.tone);
-	return { plainText: plain, pollinationsVoice };
+	const voice = voiceOverride?.trim() || selectVoiceForChannelTone(brief.tone);
+	return { plainText: plain, voice };
 }
