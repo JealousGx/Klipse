@@ -18,9 +18,18 @@ export type VideoJobInputPayload = {
 	idea: string;
 };
 
+/** HTTPS asset URLs for the external processor to fetch — no blobs stored in Klipse. */
+export type VideoJobPrepareRefs = {
+	imageUrls: string[];
+	/** Pollinations (or compatible) GET URL returning audio/mpeg. */
+	ttsAudioUrl: string;
+};
+
 /** Intermediate outputs produced by multi-stage pipelines (script text, etc.). */
 export type VideoJobArtifacts = {
 	scriptText?: string;
+	/** Populated after the prepare stage (parallel media + TTS URL resolution). */
+	prepareRefs?: VideoJobPrepareRefs;
 };
 
 export const videoJobs = mysqlTable(
