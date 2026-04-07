@@ -21,6 +21,31 @@ function ffmpegBinary(): string {
 	return process.env.FFMPEG_PATH?.trim() || "ffmpeg";
 }
 
+function ffprobeBinary(): string {
+	return process.env.FFPROBE_PATH?.trim() || "ffprobe";
+}
+
+async function ffprobeDurationSeconds(mediaPath: string): Promise<number> {
+	const { stdout } = await execFileAsync(
+		ffprobeBinary(),
+		[
+			"-v",
+			"error",
+			"-show_entries",
+			"format=duration",
+			"-of",
+			"default=noprint_wrappers=1:nokey=1",
+			mediaPath,
+		],
+		{ timeout: 60_000, maxBuffer: 1024 * 1024 },
+	);
+	const v = parseFloat(String(stdout).trim());
+	if (!Number.isFinite(v) || v <= 0) {
+		throw new Error("ffprobe_invalid_duration");
+	}
+	return v;
+}
+
 /** Placeholder encode for integration — real product replaces with pipeline output. */
 function placeholderEncodeArgs(outputPath: string): string[] {
 	return [
@@ -288,28 +313,47 @@ async function applyCenterWatermarkToVideoWithAudio(
 }
 
 /**
- * Content pipeline: first image URL + TTS audio URL → still video + voice (no Klipse R2 for intermediates).
+ * Content pipeline: all `imageUrls` as a slideshow (equal time per slide) + TTS audio.
+ * Klipse does not store image bytes — processor fetches URLs.
  */
 async function runRichStillImageWithAudioPipeline(
 	payload: VideoProcessorHandoffPayload,
 ): Promise<void> {
-	const imgUrl = payload.imageUrls?.[0];
+	const imageUrls =
+		payload.imageUrls?.filter(
+			(u) => typeof u === "string" && /^https?:\/\//.test(u),
+		) ?? [];
 	const audUrl = payload.ttsAudioUrl;
-	if (!imgUrl || !audUrl) {
+	if (imageUrls.length === 0 || !audUrl) {
 		throw new Error("rich_pipeline_missing_assets");
 	}
-	const tmpImg = join(tmpdir(), `klipse-img-${randomUUID()}.png`);
+
 	const tmpAud = join(tmpdir(), `klipse-aud-${randomUUID()}.mp3`);
 	const tmpVid = join(tmpdir(), `klipse-rich-${payload.jobId}.mp4`);
 	const tmpWm = join(tmpdir(), `klipse-rich-wm-${payload.jobId}.mp4`);
+	const tmpVideoOnly = join(tmpdir(), `klipse-rich-vo-${payload.jobId}.mp4`);
+	const concatListPath = join(tmpdir(), `klipse-concat-${payload.jobId}.txt`);
+	const cleanup: string[] = [];
+
 	try {
-		await withRetries("fetch_image", R2_PUT_ATTEMPTS, async () => {
-			const res = await fetch(imgUrl, { signal: AbortSignal.timeout(300_000) });
-			if (!res.ok) {
-				throw new Error(`image_fetch_${res.status}`);
-			}
-			await writeFile(tmpImg, Buffer.from(await res.arrayBuffer()));
-		});
+		const tmpImagePaths: string[] = [];
+		for (let i = 0; i < imageUrls.length; i++) {
+			const url = imageUrls[i];
+			const imgPath = join(
+				tmpdir(),
+				`klipse-img-${payload.jobId}-${i}-${randomUUID()}.bin`,
+			);
+			tmpImagePaths.push(imgPath);
+			cleanup.push(imgPath);
+			await withRetries(`fetch_image_${i}`, R2_PUT_ATTEMPTS, async () => {
+				const res = await fetch(url, { signal: AbortSignal.timeout(300_000) });
+				if (!res.ok) {
+					throw new Error(`image_fetch_${res.status}`);
+				}
+				await writeFile(imgPath, Buffer.from(await res.arrayBuffer()));
+			});
+		}
+
 		await withRetries("fetch_audio", R2_PUT_ATTEMPTS, async () => {
 			const res = await fetch(audUrl, { signal: AbortSignal.timeout(300_000) });
 			if (!res.ok) {
@@ -317,28 +361,102 @@ async function runRichStillImageWithAudioPipeline(
 			}
 			await writeFile(tmpAud, Buffer.from(await res.arrayBuffer()));
 		});
+		cleanup.push(tmpAud);
+
+		const audioDuration = await withRetries("ffprobe_audio", FFMPEG_ATTEMPTS, () =>
+			ffprobeDurationSeconds(tmpAud),
+		);
+		const n = imageUrls.length;
+		const segmentDur = audioDuration / n;
+
+		const segPaths: string[] = [];
+		const vf =
+			"scale=1280:720:force_original_aspect_ratio=decrease,pad=1280:720:(ow-iw)/2:(oh-ih)/2,format=yuv420p";
+
+		for (let i = 0; i < n; i++) {
+			const segPath = join(tmpdir(), `klipse-seg-${payload.jobId}-${i}.mp4`);
+			segPaths.push(segPath);
+			cleanup.push(segPath);
+			await withRetries(`ffmpeg_seg_${i}`, FFMPEG_ATTEMPTS, () =>
+				execFileAsync(
+					ffmpegBinary(),
+					[
+						"-y",
+						"-loop",
+						"1",
+						"-i",
+						tmpImagePaths[i],
+						"-t",
+						String(segmentDur),
+						"-vf",
+						vf,
+						"-c:v",
+						"libx264",
+						"-preset",
+						"veryfast",
+						"-crf",
+						"23",
+						"-pix_fmt",
+						"yuv420p",
+						"-an",
+						segPath,
+					],
+					{
+						timeout: 600_000,
+						maxBuffer: 80 * 1024 * 1024,
+					},
+				),
+			);
+		}
+
+		const concatBody = segPaths
+			.map((p) => `file '${p.replace(/'/g, "'\\''")}'`)
+			.join("\n");
+		await writeFile(concatListPath, concatBody, "utf8");
+		cleanup.push(concatListPath);
+
+		await withRetries("ffmpeg_concat", FFMPEG_ATTEMPTS, () =>
+			execFileAsync(
+				ffmpegBinary(),
+				[
+					"-y",
+					"-f",
+					"concat",
+					"-safe",
+					"0",
+					"-i",
+					concatListPath,
+					"-c",
+					"copy",
+					tmpVideoOnly,
+				],
+				{
+					timeout: 600_000,
+					maxBuffer: 80 * 1024 * 1024,
+				},
+			),
+		);
+		cleanup.push(tmpVideoOnly);
 
 		await withRetries("ffmpeg_mux", FFMPEG_ATTEMPTS, () =>
 			execFileAsync(
 				ffmpegBinary(),
 				[
 					"-y",
-					"-loop",
-					"1",
 					"-i",
-					tmpImg,
+					tmpVideoOnly,
 					"-i",
 					tmpAud,
 					"-c:v",
-					"libx264",
-					"-tune",
-					"stillimage",
-					"-pix_fmt",
-					"yuv420p",
+					"copy",
 					"-c:a",
 					"aac",
 					"-b:a",
 					"192k",
+					"-map",
+					"0:v:0",
+					"-map",
+					"1:a:0",
 					"-shortest",
 					"-movflags",
 					"+faststart",
@@ -350,6 +468,7 @@ async function runRichStillImageWithAudioPipeline(
 				},
 			),
 		);
+		cleanup.push(tmpVid);
 
 		let videoPath = tmpVid;
 		if (payload.freeTierWatermark) {
@@ -361,6 +480,7 @@ async function runRichStillImageWithAudioPipeline(
 				),
 			);
 			videoPath = tmpWm;
+			cleanup.push(tmpWm);
 		}
 
 		const buf = await readFile(videoPath);
@@ -390,10 +510,9 @@ async function runRichStillImageWithAudioPipeline(
 			WEBHOOK_ATTEMPTS,
 		);
 	} finally {
-		await unlink(tmpImg).catch(() => {});
-		await unlink(tmpAud).catch(() => {});
-		await unlink(tmpVid).catch(() => {});
-		await unlink(tmpWm).catch(() => {});
+		for (const p of cleanup) {
+			await unlink(p).catch(() => {});
+		}
 	}
 }
 
