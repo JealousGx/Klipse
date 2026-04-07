@@ -4,7 +4,7 @@ import { and, desc, eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { channels } from "@/db/schema/channels";
-import { storedFiles } from "@/db/schema/stored-files";
+import { expiringAssets } from "@/db/schema/expiring-assets";
 import { videoJobs } from "@/db/schema/video-jobs";
 
 import { requestYoutubePublishForJob } from "@/features/publishing/youtube/request-youtube-publish.server";
@@ -35,12 +35,18 @@ export async function listVideoJobsForUser(
 			publishApprovalStatus: videoJobs.publishApprovalStatus,
 			youtubeVideoId: videoJobs.youtubeVideoId,
 			publishLastError: videoJobs.publishLastError,
-			outputStorageExpiresAt: storedFiles.expiresAt,
+			outputStorageExpiresAt: expiringAssets.expiresAt,
 			createdAt: videoJobs.createdAt,
 		})
 		.from(videoJobs)
 		.innerJoin(channels, eq(videoJobs.channelId, channels.id))
-		.leftJoin(storedFiles, eq(storedFiles.videoJobId, videoJobs.id))
+		.leftJoin(
+			expiringAssets,
+			and(
+				eq(expiringAssets.videoJobId, videoJobs.id),
+				eq(expiringAssets.kind, "output"),
+			),
+		)
 		.where(eq(videoJobs.userId, userId))
 		.orderBy(desc(videoJobs.createdAt))
 		.limit(limit);

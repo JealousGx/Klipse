@@ -9,13 +9,7 @@ import { providerApiKeyRowId } from "@/lib/id";
 
 import { secretFingerprint } from "./provider-key-fingerprint.server";
 
-export type AiProviderKind =
-	| "gemini"
-	| "google_tts"
-	| "pollinations"
-	| "openai"
-	| "kling"
-	| "luma";
+export type AiProviderKind = "gemini" | "google_tts" | "pollinations";
 
 /** One row in `provider_api_keys` (manually created or materialized from env). */
 export type ProviderApiKeyCredential = {
@@ -40,18 +34,6 @@ function envFallbackKeys(provider: AiProviderKind): string[] {
 			return parseCommaEnv(env.GOOGLE_TTS_API_KEYS);
 		case "pollinations": {
 			const k = env.POLLINATIONS_API_KEY?.trim();
-			return k ? [k] : [];
-		}
-		case "openai": {
-			const k = env.OPENAI_API_KEY?.trim();
-			return k ? [k] : [];
-		}
-		case "kling": {
-			const k = env.KLING_API_KEY?.trim();
-			return k ? [k] : [];
-		}
-		case "luma": {
-			const k = env.LUMA_API_KEY?.trim();
 			return k ? [k] : [];
 		}
 		default: {

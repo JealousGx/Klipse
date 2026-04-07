@@ -1,22 +1,23 @@
 /**
- * Klipse AI routing (single source of truth for prompts + implementation).
+ * Klipse AI routing — single source of truth for provider selection.
  *
- * **Matrix:** Primary → Fallback only. Future **premium (paid)** tiers can branch in
- * `resolveAiRoutingTier` (`ai-routing-policy.server.ts`) without changing provider modules.
+ * **Stack:**
+ * - Script:  Gemini 2.0 Flash (primary, free 1500 req/day) → Pollinations text (fallback, free)
+ * - Images:  Pollinations Flux (free, no key required)
+ * - TTS:     Google Cloud TTS (primary, free 4M chars/month) → Pollinations Audio (fallback, free)
  *
- * Docs (implementations under `src/features/ai/providers/`):
- * - Pollinations: https://enter.pollinations.ai/api/docs/llm.txt
- * - Gemini: https://ai.google.dev/gemini-api/docs/quickstart
- * - OpenAI Images: https://platform.openai.com/docs/api-reference/images
- * - Google Cloud TTS: https://cloud.google.com/text-to-speech/docs/reference/rest
- * - Luma: https://docs.lumalabs.ai/docs/video-generation
- * - Kling: set `KLING_API_BASE` to your vendor’s API host.
+ * Future premium tiers can branch in `resolveAiRoutingTier` (`ai-routing-policy.server.ts`)
+ * without changing provider modules.
+ *
+ * Provider docs:
+ * - Gemini:       https://ai.google.dev/gemini-api/docs/quickstart
+ * - Pollinations: https://text.pollinations.ai / https://image.pollinations.ai / https://audio.pollinations.ai
+ * - Google TTS:   https://cloud.google.com/text-to-speech/docs/reference/rest/v1/text/synthesize
  */
 
 export const AI_TASK = {
 	script: "script",
 	image: "image",
-	video: "video",
 	tts: "tts",
 } as const;
 
@@ -24,16 +25,15 @@ export type AiTask = (typeof AI_TASK)[keyof typeof AI_TASK];
 
 /** Defaults — override with env vars where supported. */
 export const DEFAULT_MODEL_IDS = {
-	/** Pollinations `POST …/v1/chat/completions` — Claude/Mistral-class ids from Pollinations model list. */
+	/** Gemini model for script generation. @default gemini-2.0-flash */
+	geminiScript: "gemini-2.0-flash",
+	/** Pollinations text model. @default mistral */
 	pollinationsText: "mistral",
-	geminiScript: "gemini-2.5-flash",
+	/** Pollinations image model. @default flux */
 	pollinationsImage: "flux",
-	openaiImage: "dall-e-3",
-	pollinationsVideo: "wan-fast",
-	/** Kling task type — confirm with your API vendor. */
-	klingVideo: "pro-text-to-video",
-	lumaVideo: "ray-flash-2",
-	pollinationsTtsVoice: "nova",
+	/** Pollinations TTS voice (fallback). @default alloy */
+	pollinationsTtsVoice: "alloy",
+	/** Google Cloud TTS voice. @default en-US-Neural2-A */
 	googleTtsVoice: "en-US-Neural2-A",
 } as const;
 
@@ -43,37 +43,34 @@ export type RoutingRow = {
 	fallback: string;
 };
 
-/** Product matrix: Primary → Fallback (same order for all users until premium is implemented). */
+/** Provider matrix shown in system prompts so the model doesn't hallucinate a different stack. */
 export const MODEL_ROUTING_TABLE: RoutingRow[] = [
 	{
 		task: "Script",
-		primary: "Pollinations (Claude / Mistral-class)",
-		fallback: "Gemini 2.5 Flash",
+		primary: "Gemini 2.0 Flash",
+		fallback: "Pollinations (Mistral-class)",
 	},
 	{
 		task: "Images",
-		primary: "Pollinations (Flux / SDXL-class)",
-		fallback: "DALL·E 3",
-	},
-	{
-		task: "Video",
-		primary: "Pollinations (Wan-Fast)",
-		fallback: "Kling 3.0 → Luma",
+		primary: "Pollinations (Flux)",
+		fallback: "—",
 	},
 	{
 		task: "TTS",
-		primary: "Pollinations Audio",
-		fallback: "Google TTS",
+		primary: "Google Cloud TTS",
+		fallback: "Pollinations Audio",
 	},
 ];
 
 export function pipelineModelContextBlock(): string {
 	const lines = MODEL_ROUTING_TABLE.map(
-		(r) => `- ${r.task}: primary ${r.primary}; fallback ${r.fallback}.`,
+		(r) =>
+			r.fallback === "—"
+				? `- ${r.task}: ${r.primary}.`
+				: `- ${r.task}: primary ${r.primary}; fallback ${r.fallback}.`,
 	);
 	return [
-		"## Klipse AI routing (do not claim a different vendor stack)",
+		"## AI routing (do not claim a different vendor stack)",
 		...lines,
-		"Script: Pollinations first, then Gemini 2.5 Flash. Prompts target niche fit, retention, and engagement on the connected destination.",
 	].join("\n");
 }

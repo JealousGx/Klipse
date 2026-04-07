@@ -3,15 +3,16 @@ import "@tanstack/react-start/server-only";
 import { asc, eq, lte } from "drizzle-orm";
 
 import { getDb } from "@/db";
-import { storedFiles } from "@/db/schema/stored-files";
+import { expiringAssets } from "@/db/schema/expiring-assets";
 import { deleteFile } from "@/lib/storage/r2.server";
 
 const BATCH = 80;
 
 /**
- * Deletes expired R2 objects and their `stored_files` rows (FEATURE_DOC §2.7–2.8).
+ * Deletes expired R2 objects and their `expiring_assets` rows.
+ * Runs on a cron schedule via `POST /api/cron/purge-expiring-assets`.
  */
-export async function purgeExpiredStoredFiles(): Promise<{
+export async function purgeExpiredAssets(): Promise<{
 	deleted: number;
 	errors: number;
 }> {
@@ -22,18 +23,18 @@ export async function purgeExpiredStoredFiles(): Promise<{
 
 	const rows = await db
 		.select({
-			id: storedFiles.id,
-			logicalKey: storedFiles.logicalKey,
+			id: expiringAssets.id,
+			logicalKey: expiringAssets.logicalKey,
 		})
-		.from(storedFiles)
-		.where(lte(storedFiles.expiresAt, now))
-		.orderBy(asc(storedFiles.expiresAt))
+		.from(expiringAssets)
+		.where(lte(expiringAssets.expiresAt, now))
+		.orderBy(asc(expiringAssets.expiresAt))
 		.limit(BATCH);
 
 	for (const row of rows) {
 		try {
 			await deleteFile(row.logicalKey);
-			await db.delete(storedFiles).where(eq(storedFiles.id, row.id));
+			await db.delete(expiringAssets).where(eq(expiringAssets.id, row.id));
 			deleted += 1;
 		} catch {
 			errors += 1;

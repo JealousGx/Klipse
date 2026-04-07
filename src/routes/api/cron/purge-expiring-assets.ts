@@ -1,13 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
 
-import { purgeExpiredStoredFiles } from "@/features/video/pipeline/purge-stored-files-process.server";
+import { purgeExpiredAssets } from "@/features/video/pipeline/purge-expiring-assets-process.server";
 import { isAuthorizedWorkerOrInternalCron } from "@/lib/worker/verify-bearer.server";
 
 /**
- * Deletes R2 objects past TTL and removes `stored_files` rows (FEATURE_DOC §2.7–2.8).
+ * Deletes R2 objects past TTL and removes `expiring_assets` rows.
  * Auth: `WORKER_SECRET` or `INTERNAL_CRON_SECRET`.
  */
-export const Route = createFileRoute("/api/cron/purge-stored-files")({
+export const Route = createFileRoute("/api/cron/purge-expiring-assets")({
 	server: {
 		handlers: {
 			POST: async ({ request }) => {
@@ -18,7 +18,7 @@ export const Route = createFileRoute("/api/cron/purge-stored-files")({
 					);
 				}
 
-				const result = await purgeExpiredStoredFiles();
+				const result = await purgeExpiredAssets();
 				return Response.json({ ok: true as const, ...result });
 			},
 		},

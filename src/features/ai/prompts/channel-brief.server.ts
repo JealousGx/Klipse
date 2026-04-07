@@ -18,10 +18,8 @@ export function channelToCreativeBrief(
 		captionStyle: channel.config.visual_identity.caption_style,
 		fontPairLabel: channel.config.visual_identity.font_pair.join(" + "),
 		primaryColorHex: channel.config.visual_identity.primary_color,
-		publishingSurfaceLabel: publishingSurfaceLabel(
-			channel.platform,
-			channel.config.target_duration,
-		),
+		aspectRatio: channel.config.aspect_ratio,
+		publishingSurfaceLabel: publishingSurfaceLabel(channel.config.target_duration),
 		destinationDisplayName:
 			channel.externalChannelTitle?.trim() || channel.name,
 	};
