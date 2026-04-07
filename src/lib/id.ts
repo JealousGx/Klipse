@@ -52,8 +52,8 @@ const ID_PREFIXES = {
 	generatedUpload: "gup",
 	creditTransaction: "ctx",
 	usageIdempotency: "uim",
-	/** `stored_files` PK — R2 object tracked for TTL purge. */
-	storedFile: "sfb",
+	/** `expiring_assets` PK — R2 object tracked for TTL purge. */
+	expiringAsset: "sfb",
 } as const;
 
 export function userId() {
@@ -150,6 +150,6 @@ export function usageIdempotencyRowId() {
 	return prefixedId(ID_PREFIXES.usageIdempotency);
 }
 
-export function storedFileRowId() {
-	return prefixedId(ID_PREFIXES.storedFile);
+export function expiringAssetRowId() {
+	return prefixedId(ID_PREFIXES.expiringAsset);
 }

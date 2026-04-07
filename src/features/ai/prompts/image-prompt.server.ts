@@ -1,34 +1,29 @@
 import "@tanstack/react-start/server-only";
 
 import type { ChannelCreativeBrief } from "./creative-brief.types";
-import { isShortFormTargetSeconds } from "./video-format-surface";
 
 export type ImagePromptIntent = {
 	brief: ChannelCreativeBrief;
 	/** What the frame should depict (subject, action, setting). */
 	subject: string;
-	/** Default: portrait vertical feed; optional square or landscape. */
-	aspectIntent?: "9:16_vertical" | "1:1" | "16:9";
 };
 
-/**
- * Single prompt string for Pollinations Flux / SDXL-class and DALL·E 3.
- * Optimized for **thumbnail / hero frames**: niche-native visuals, scroll-stopping clarity,
- * and suitability for the connected publishing destination (not stock-generic).
- */
 const NEUTRAL_SURFACE_FALLBACK = "video for your audience";
 
+/**
+ * Single prompt string for Pollinations Flux / SDXL-class image generation.
+ * Aspect ratio is driven by `brief.aspectRatio` (explicit channel config field),
+ * not inferred from video duration or publishing platform.
+ */
 export function buildImageGenerationPrompt(input: ImagePromptIntent): string {
-	const { brief, subject, aspectIntent } = input;
+	const { brief, subject } = input;
 
-	const t = brief.targetSeconds ?? 60;
-	const resolvedAspect =
-		aspectIntent ?? (isShortFormTargetSeconds(t) ? "9:16_vertical" : "16:9");
+	const aspectRatio = brief.aspectRatio ?? "16:9";
 
-	const aspect =
-		resolvedAspect === "9:16_vertical"
+	const aspectCopy =
+		aspectRatio === "9:16"
 			? "vertical 9:16 composition, mobile-first, subject in safe zones for on-screen title and caption overlays"
-			: resolvedAspect === "1:1"
+			: aspectRatio === "1:1"
 				? "square 1:1 composition, centered focal subject"
 				: "wide 16:9 cinematic composition";
 
@@ -52,7 +47,7 @@ export function buildImageGenerationPrompt(input: ImagePromptIntent): string {
 	const lines = [
 		"Professional high-quality digital still, no watermark, no UI mockups, no fake app screenshots unless the brief explicitly asks.",
 		"Designed to stop the scroll: clear focal subject, strong focal point, readable at small sizes.",
-		aspect,
+		aspectCopy,
 		toneVisual,
 		brand,
 		dest,

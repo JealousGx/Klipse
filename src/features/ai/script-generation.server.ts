@@ -12,11 +12,11 @@ import { generateTextPollinationsOpenAi } from "./providers/pollinations-text.se
 
 export type ScriptGenerationContext = ChannelCreativeBrief & { idea: string };
 
-export type ScriptGenerationMode = "pollinations" | "gemini";
+export type ScriptGenerationMode = "gemini" | "pollinations";
 
 function shortFormSystemPrompt(): string {
 	return [
-		"You are an elite **short-form** video strategist and scriptwriter. Your job is to produce scripts that feel native to **vertical, mobile-first feeds** (full-screen portrait, tight pacing), maximize watch-time and replays, and drive engagement on the creator's **connected publishing destination** — not generic internet content.",
+		"You are an elite **short-form** video strategist and scriptwriter. Your job is to produce scripts that feel native to **short-form, mobile-first feeds** (tight pacing, portrait-optimized), maximize watch-time and replays, and drive engagement for the creator's **connected publishing destination** — not generic internet content.",
 		"## Niche and audience",
 		"- Treat the niche as law. Every line must sound like it was written **for that audience only** — vocabulary, references, pain points, and wins belong to that niche.",
 		'- The viewer should feel: "this channel gets me." Never flatten the niche into vague advice.',
@@ -29,7 +29,7 @@ function shortFormSystemPrompt(): string {
 		"- Honor the requested tone (dark / educational / fun) consistently.",
 		"- If caption style is bold, suggest punchy on-screen phrases; if minimal, suggest fewer, sharper lines.",
 		"## Quality bar",
-		'- No fabricated statistics, fake studies, or "doctors hate this" tropes unless the brief explicitly requires them and they are clearly framed.',
+		'- No fabricated statistics, fake studies, or misleading claims unless the brief explicitly requires them and they are clearly framed.',
 		'- No meta commentary about the AI, the prompt, or "as an AI". Output only the script artifact.',
 		"## Output format (markdown)",
 		"Use exactly these sections with clear headers:",
@@ -43,7 +43,7 @@ function shortFormSystemPrompt(): string {
 
 function longFormSystemPrompt(): string {
 	return [
-		"You are an elite **long-form** video scriptwriter. Your job is to produce scripts that feel native to **in-depth, main-feed or landscape video** (tutorials, explainers, essays, storytelling) — clear structure, sustained value, and a strong payoff — for the creator's **connected publishing destination**, not generic internet content.",
+		"You are an elite **long-form** video scriptwriter. Your job is to produce scripts that feel native to **in-depth video content** (tutorials, explainers, essays, storytelling) — clear structure, sustained value, and a strong payoff — for the creator's **connected publishing destination**, not generic internet content.",
 		"## Niche and audience",
 		"- Treat the niche as law. Every section must sound like it was written **for that audience only** — vocabulary, examples, and stakes belong to that niche.",
 		"## Structure and pacing (long-form)",
@@ -131,6 +131,17 @@ async function runProviders(
 ): Promise<{ text: string; mode: ScriptGenerationMode }> {
 	const attempts: string[] = [];
 
+	// Gemini is primary: free tier (1500 req/day), higher quality output.
+	if (await isGeminiConfigured()) {
+		try {
+			const text = await generateTextGemini({ system, user });
+			return { text, mode: "gemini" };
+		} catch (e) {
+			attempts.push(`gemini:${e instanceof Error ? e.message : String(e)}`);
+		}
+	}
+
+	// Pollinations is the free fallback — no key required.
 	try {
 		const text = await generateTextPollinationsOpenAi({ system, user });
 		return { text, mode: "pollinations" };
@@ -138,28 +149,14 @@ async function runProviders(
 		attempts.push(`pollinations:${e instanceof Error ? e.message : String(e)}`);
 	}
 
-	if (!(await isGeminiConfigured())) {
-		throw new ScriptGenerationFailedError(
-			"Script generation failed: Gemini is not configured (add `provider_api_keys` rows or set GEMINI_API_KEYS) and Pollinations failed.",
-			attempts,
-		);
-	}
-
-	try {
-		const text = await generateTextGemini({ system, user });
-		return { text, mode: "gemini" };
-	} catch (e) {
-		attempts.push(`gemini:${e instanceof Error ? e.message : String(e)}`);
-	}
-
 	throw new ScriptGenerationFailedError(
-		"Script generation failed: Pollinations and Gemini both failed. Check credentials and quotas.",
+		"Script generation failed: both Gemini and Pollinations failed. Check GEMINI_API_KEYS and provider quotas.",
 		attempts,
 	);
 }
 
 /**
- * Script: **Pollinations** (Claude/Mistral-class) → **Gemini 2.5 Flash** (multi-key).
+ * Script generation: **Gemini 2.0 Flash** (primary) → **Pollinations** (fallback).
  * Prompts are tuned for niche fit, retention, and engagement on the connected destination.
  */
 export async function generateVideoScript(

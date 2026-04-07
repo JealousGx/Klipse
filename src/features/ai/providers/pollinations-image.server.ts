@@ -8,7 +8,16 @@ import {
 	throwProviderHttpError,
 } from "../lib/provider-key-execution.server";
 
-import { genBase } from "./pollinations-gen-base.server";
+import { env } from "@/env";
+
+/**
+ * Official: https://image.pollinations.ai/prompt/{prompt}
+ * Override with POLLINATIONS_GEN_BASE for custom/self-hosted deployments.
+ */
+function imageBaseUrl(): string {
+	const base = env.POLLINATIONS_GEN_BASE?.replace(/\/$/, "");
+	return base ? `${base}/image` : "https://image.pollinations.ai/prompt";
+}
 
 function buildPollinationsImageUrl(
 	input: {
@@ -33,7 +42,7 @@ function buildPollinationsImageUrl(
 		params.set("key", token);
 	}
 	const path = encodeURIComponent(input.prompt);
-	return `${genBase()}/image/${path}?${params.toString()}`;
+	return `${imageBaseUrl()}/${path}?${params.toString()}`;
 }
 
 /**

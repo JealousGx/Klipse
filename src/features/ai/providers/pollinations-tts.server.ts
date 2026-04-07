@@ -8,7 +8,16 @@ import {
 	throwProviderHttpError,
 } from "../lib/provider-key-execution.server";
 
-import { genBase } from "./pollinations-gen-base.server";
+import { env } from "@/env";
+
+/**
+ * Official: https://audio.pollinations.ai/{text}
+ * Override with POLLINATIONS_GEN_BASE for custom/self-hosted deployments.
+ */
+function audioBaseUrl(): string {
+	const base = env.POLLINATIONS_GEN_BASE?.replace(/\/$/, "");
+	return base ? `${base}/audio` : "https://audio.pollinations.ai";
+}
 
 function buildPollinationsAudioUrl(
 	input: { text: string; voice?: string },
@@ -20,7 +29,7 @@ function buildPollinationsAudioUrl(
 		params.set("key", token);
 	}
 	const path = encodeURIComponent(input.text);
-	return `${genBase()}/audio/${path}?${params.toString()}`;
+	return `${audioBaseUrl()}/${path}?${params.toString()}`;
 }
 
 /**

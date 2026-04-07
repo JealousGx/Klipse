@@ -7,10 +7,15 @@ import {
 	executeWithProviderKeyRotation,
 	throwProviderHttpError,
 } from "../lib/provider-key-execution.server";
-import { genBase } from "./pollinations-gen-base.server";
+import { env } from "@/env";
 
+/**
+ * Official: https://text.pollinations.ai/openai
+ * Override with POLLINATIONS_GEN_BASE for custom/self-hosted deployments.
+ */
 function chatCompletionsUrl(): string {
-	return `${genBase()}/v1/chat/completions`;
+	const base = env.POLLINATIONS_GEN_BASE?.replace(/\/$/, "");
+	return base ? `${base}/v1/chat/completions` : "https://text.pollinations.ai/openai";
 }
 
 /**
