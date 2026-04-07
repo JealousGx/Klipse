@@ -13,7 +13,8 @@ export type PublishingDestinationChannel = {
 	externalChannelHandle: string | null;
 	/** Channel image from the platform API when available. */
 	externalChannelThumbnailUrl: string | null;
-	youtubeConnected: boolean;
-	/** Set on first OAuth; reconnect must return this YouTube channel id. */
-	boundYoutubeChannelId: string | null;
+	/** True when a platform OAuth refresh token is stored. */
+	oauthConnected: boolean;
+	/** External account id locked on first OAuth; reconnect must match. */
+	boundExternalAccountId: string | null;
 };

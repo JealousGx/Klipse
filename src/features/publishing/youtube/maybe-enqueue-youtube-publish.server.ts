@@ -21,7 +21,7 @@ export async function maybeEnqueueYoutubePublishAfterRender(input: {
 	if (input.channel.platform !== "youtube") {
 		return;
 	}
-	if (!input.channel.youtubeConnected) {
+	if (!input.channel.oauthConnected) {
 		return;
 	}
 	if (!input.channel.config.auto_post) {

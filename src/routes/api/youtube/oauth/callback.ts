@@ -5,9 +5,9 @@ import { env } from "@/env";
 import { ChannelNotFoundError } from "@/features/channels/channel-errors";
 import {
 	getChannelForUser,
-	userHasAnotherDestinationWithYoutubeChannelId,
+	userHasAnotherDestinationWithExternalChannelId,
 } from "@/features/channels/channels.service.server";
-import { applyYoutubeOAuthConnectionWithQuota } from "@/features/channels/destination-replacement-quota.server";
+import { applyOAuthConnectionWithQuota } from "@/features/channels/destination-replacement-quota.server";
 import { PUBLISHING_CONNECTION_DENIAL_REASONS } from "@/features/entitlements";
 import {
 	exchangeYoutubeAuthorizationCode,
@@ -107,7 +107,7 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 					}
 
 					const lockedChannelId =
-						destination.boundYoutubeChannelId ?? destination.externalChannelId;
+						destination.boundExternalAccountId ?? destination.externalChannelId;
 					if (lockedChannelId && lockedChannelId !== yt.id) {
 						return redirectBack(
 							`/dashboard/publishing/${payload.c}?youtube=error&reason=${encodeURIComponent("wrong_youtube_channel")}`,
@@ -115,10 +115,10 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 					}
 
 					const duplicateElsewhere =
-						await userHasAnotherDestinationWithYoutubeChannelId({
+						await userHasAnotherDestinationWithExternalChannelId({
 							userId: session.user.id,
 							excludeChannelId: payload.c,
-							youtubeChannelId: yt.id,
+							externalChannelId: yt.id,
 						});
 					if (duplicateElsewhere) {
 						return redirectBack(
@@ -126,9 +126,10 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 						);
 					}
 
-					const applied = await applyYoutubeOAuthConnectionWithQuota({
+					const applied = await applyOAuthConnectionWithQuota({
 						userId: payload.u,
 						channelId: payload.c,
+						platform: "youtube",
 						refreshToken: tokens.refresh_token,
 						externalChannelId: yt.id,
 						externalChannelTitle: yt.title || null,

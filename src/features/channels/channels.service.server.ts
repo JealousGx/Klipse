@@ -30,15 +30,15 @@ export type ChannelRow = {
 	externalChannelId: string | null;
 	externalChannelTitle: string | null;
 	externalChannelHandle: string | null;
-	/** Channel/profile image URL from the platform (e.g. YouTube). */
+	/** Channel/profile image URL from the platform API. */
 	externalChannelThumbnailUrl: string | null;
-	/** True when a YouTube refresh token is stored (OAuth connect). Never includes the token. */
-	youtubeConnected: boolean;
+	/** True when a platform OAuth refresh token is stored. Never includes the token. */
+	oauthConnected: boolean;
 	/**
-	 * YouTube `UC…` id locked to this destination after first OAuth; reconnect must match.
+	 * External account id locked to this destination after first OAuth; reconnect must match.
 	 * Null until first successful connect.
 	 */
-	boundYoutubeChannelId: string | null;
+	boundExternalAccountId: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 };
@@ -55,8 +55,8 @@ function toChannelRow(r: typeof channels.$inferSelect): ChannelRow {
 		externalChannelTitle: r.externalChannelTitle ?? null,
 		externalChannelHandle: r.externalChannelHandle ?? null,
 		externalChannelThumbnailUrl: r.externalChannelThumbnailUrl ?? null,
-		youtubeConnected: Boolean(r.youtubeRefreshToken),
-		boundYoutubeChannelId: r.boundYoutubeChannelId ?? null,
+		oauthConnected: Boolean(r.oauthRefreshToken),
+		boundExternalAccountId: r.boundExternalAccountId ?? null,
 		createdAt: r.createdAt,
 		updatedAt: r.updatedAt,
 	};
@@ -127,16 +127,16 @@ export async function getChannelForUser(
 }
 
 /**
- * True if another publishing destination for this user already uses this YouTube
- * `UC…` id (bound and/or external column), excluding `excludeChannelId`.
+ * True if another publishing destination for this user already uses this external
+ * account id (bound and/or external column), excluding `excludeChannelId`.
  */
-export async function userHasAnotherDestinationWithYoutubeChannelId(input: {
+export async function userHasAnotherDestinationWithExternalChannelId(input: {
 	userId: string;
 	excludeChannelId: string;
-	youtubeChannelId: string;
+	externalChannelId: string;
 }): Promise<boolean> {
 	const db = getDb();
-	const yt = input.youtubeChannelId.trim();
+	const yt = input.externalChannelId.trim();
 	if (!yt) {
 		return false;
 	}
@@ -148,7 +148,7 @@ export async function userHasAnotherDestinationWithYoutubeChannelId(input: {
 				eq(channels.userId, input.userId),
 				ne(channels.id, input.excludeChannelId),
 				or(
-					eq(channels.boundYoutubeChannelId, yt),
+					eq(channels.boundExternalAccountId, yt),
 					eq(channels.externalChannelId, yt),
 				),
 			),
@@ -202,8 +202,8 @@ export async function createChannel(input: {
 		externalChannelTitle: null,
 		externalChannelHandle: null,
 		externalChannelThumbnailUrl: null,
-		youtubeRefreshToken: null,
-		boundYoutubeChannelId: null,
+		oauthRefreshToken: null,
+		boundExternalAccountId: null,
 		createdAt: now,
 		updatedAt: now,
 	});
@@ -277,9 +277,9 @@ export async function updateChannel(input: {
 				: input.externalChannelThumbnailUrl.trim();
 	}
 	if (input.platform === "unlinked") {
-		patch.youtubeRefreshToken = null;
-		if (!existing.boundYoutubeChannelId && existing.externalChannelId) {
-			patch.boundYoutubeChannelId = existing.externalChannelId.trim();
+		patch.oauthRefreshToken = null;
+		if (!existing.boundExternalAccountId && existing.externalChannelId) {
+			patch.boundExternalAccountId = existing.externalChannelId.trim();
 		}
 	}
 
@@ -297,15 +297,14 @@ export async function updateChannel(input: {
 	return next;
 }
 
-/** OAuth callback only: persist YouTube tokens + channel metadata. */
-/** Server-only: read stored OAuth refresh token for validation / refresh flows. */
-export async function getYoutubeRefreshTokenForChannel(
+/** Server-only: read the stored platform OAuth refresh token for validation / refresh flows. */
+export async function getOAuthRefreshTokenForChannel(
 	userId: string,
 	channelId: string,
 ): Promise<string | null> {
 	const db = getDb();
 	const rows = await db
-		.select({ t: channels.youtubeRefreshToken })
+		.select({ t: channels.oauthRefreshToken })
 		.from(channels)
 		.where(and(eq(channels.id, channelId), eq(channels.userId, userId)))
 		.limit(1);
@@ -314,11 +313,11 @@ export async function getYoutubeRefreshTokenForChannel(
 }
 
 /**
- * Clears only the stored Google refresh token (e.g. after Google returns
- * `invalid_grant`). Keeps `boundYoutubeChannelId` and channel metadata so the
- * user can reconnect to the same YouTube channel.
+ * Clears only the stored OAuth refresh token (e.g. after the platform returns
+ * an invalid_grant error). Keeps `boundExternalAccountId` and channel metadata
+ * so the user can reconnect to the same account.
  */
-export async function clearYoutubeRefreshTokenOnly(input: {
+export async function clearOAuthRefreshTokenOnly(input: {
 	userId: string;
 	channelId: string;
 }): Promise<void> {
@@ -326,7 +325,7 @@ export async function clearYoutubeRefreshTokenOnly(input: {
 	await db
 		.update(channels)
 		.set({
-			youtubeRefreshToken: null,
+			oauthRefreshToken: null,
 			updatedAt: new Date(),
 		})
 		.where(
@@ -334,9 +333,10 @@ export async function clearYoutubeRefreshTokenOnly(input: {
 		);
 }
 
-export async function setChannelYoutubeConnection(input: {
+export async function setChannelOAuthConnection(input: {
 	userId: string;
 	channelId: string;
+	platform: "youtube" | "tiktok" | "instagram";
 	refreshToken: string;
 	externalChannelId: string;
 	externalChannelTitle: string | null;
@@ -344,18 +344,19 @@ export async function setChannelYoutubeConnection(input: {
 	externalChannelThumbnailUrl: string | null;
 }): Promise<void> {
 	const db = getDb();
-	await setChannelYoutubeConnectionTx(db, input);
+	await setChannelOAuthConnectionTx(db, input);
 }
 
 /**
- * Same as {@link setChannelYoutubeConnection} but uses the given executor (e.g.
+ * Same as {@link setChannelOAuthConnection} but uses the given executor (e.g.
  * transaction client) so it can run inside `FOR UPDATE` flows.
  */
-export async function setChannelYoutubeConnectionTx(
+export async function setChannelOAuthConnectionTx(
 	tx: LocalDb,
 	input: {
 		userId: string;
 		channelId: string;
+		platform: "youtube" | "tiktok" | "instagram";
 		refreshToken: string;
 		externalChannelId: string;
 		externalChannelTitle: string | null;
@@ -378,14 +379,14 @@ export async function setChannelYoutubeConnectionTx(
 	await tx
 		.update(channels)
 		.set({
-			platform: "youtube",
+			platform: input.platform,
 			externalChannelId: trimmedId,
 			externalChannelTitle: input.externalChannelTitle?.trim() || null,
 			externalChannelHandle: input.externalChannelHandle?.trim() || null,
 			externalChannelThumbnailUrl:
 				input.externalChannelThumbnailUrl?.trim() || null,
-			youtubeRefreshToken: input.refreshToken,
-			boundYoutubeChannelId: existing.boundYoutubeChannelId ?? trimmedId,
+			oauthRefreshToken: input.refreshToken,
+			boundExternalAccountId: existing.boundExternalAccountId ?? trimmedId,
 			updatedAt: new Date(),
 		})
 		.where(

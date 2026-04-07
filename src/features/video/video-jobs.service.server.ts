@@ -33,7 +33,7 @@ export async function listVideoJobsForUser(
 			outputUrl: videoJobs.outputUrl,
 			errorMessage: videoJobs.errorMessage,
 			publishApprovalStatus: videoJobs.publishApprovalStatus,
-			youtubeVideoId: videoJobs.youtubeVideoId,
+			publishedVideoId: videoJobs.publishedVideoId,
 			publishLastError: videoJobs.publishLastError,
 			outputStorageExpiresAt: expiringAssets.expiresAt,
 			createdAt: videoJobs.createdAt,

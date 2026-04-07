@@ -9,8 +9,8 @@ import { videoJobs } from "@/db/schema/video-jobs";
 
 import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config";
 import {
-	clearYoutubeRefreshTokenOnly,
-	getYoutubeRefreshTokenForChannel,
+	clearOAuthRefreshTokenOnly,
+	getOAuthRefreshTokenForChannel,
 } from "@/features/channels/channels.service.server";
 import type { MeResponse } from "@/features/user/types/me";
 import {
@@ -50,7 +50,7 @@ export async function runYoutubePublishForJob(input: {
 			return { kind: "skip" as const, reason: "job_not_found" };
 		}
 
-		if (job.youtubeVideoId?.trim()) {
+		if (job.publishedVideoId?.trim()) {
 			return { kind: "skip" as const, reason: "already_published" };
 		}
 
@@ -94,7 +94,7 @@ export async function runYoutubePublishForJob(input: {
 		const upd = await tx
 			.update(videoJobs)
 			.set({
-				youtubePublishStartedAt: new Date(),
+				publishStartedAt: new Date(),
 				publishLastError: null,
 				updatedAt: new Date(),
 			})
@@ -102,8 +102,8 @@ export async function runYoutubePublishForJob(input: {
 				and(
 					eq(videoJobs.id, jobId),
 					eq(videoJobs.userId, userId),
-					isNull(videoJobs.youtubeVideoId),
-					isNull(videoJobs.youtubePublishStartedAt),
+					isNull(videoJobs.publishedVideoId),
+					isNull(videoJobs.publishStartedAt),
 				),
 			);
 
@@ -127,16 +127,13 @@ export async function runYoutubePublishForJob(input: {
 
 	let refreshToken: string | null;
 	try {
-		refreshToken = await getYoutubeRefreshTokenForChannel(
-			userId,
-			job.channelId,
-		);
+		refreshToken = await getOAuthRefreshTokenForChannel(userId, job.channelId);
 	} catch {
 		refreshToken = null;
 	}
 	if (!refreshToken?.trim()) {
-		await clearPublishAttempt(jobId, userId, "missing_youtube_refresh_token");
-		return { ok: false, error: "missing_youtube_refresh_token" };
+		await clearPublishAttempt(jobId, userId, "missing_oauth_refresh_token");
+		return { ok: false, error: "missing_oauth_refresh_token" };
 	}
 
 	let accessToken: string;
@@ -145,7 +142,7 @@ export async function runYoutubePublishForJob(input: {
 		accessToken = tok.access_token;
 	} catch (e) {
 		if (e instanceof GoogleOAuthRefreshTokenInvalidError) {
-			await clearYoutubeRefreshTokenOnly({
+			await clearOAuthRefreshTokenOnly({
 				userId,
 				channelId: job.channelId,
 			});
@@ -196,9 +193,9 @@ export async function runYoutubePublishForJob(input: {
 		await db
 			.update(videoJobs)
 			.set({
-				youtubeVideoId: videoId,
-				youtubePublishedAt: new Date(),
-				youtubePublishStartedAt: null,
+				publishedVideoId: videoId,
+				publishedAt: new Date(),
+				publishStartedAt: null,
 				publishLastError: null,
 				updatedAt: new Date(),
 			})
@@ -221,7 +218,7 @@ async function clearPublishAttempt(
 	await db
 		.update(videoJobs)
 		.set({
-			youtubePublishStartedAt: null,
+			publishStartedAt: null,
 			publishLastError: errorMessage.slice(0, 4000),
 			updatedAt: new Date(),
 		})

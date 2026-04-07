@@ -13,7 +13,7 @@ import {
 import type { MeResponse } from "@/features/user/types/me";
 
 import { ChannelNotFoundError } from "./channel-errors";
-import { setChannelYoutubeConnectionTx } from "./channels.service.server";
+import { setChannelOAuthConnectionTx } from "./channels.service.server";
 import {
 	consumesDestinationReplacementQuota,
 	priorExternalChannelIdFromDestinationRow,
@@ -52,7 +52,7 @@ export async function runDestinationReplacementQuotaTransaction(input: {
 		input.priorExternalChannelIdFromChannelRow ??
 		((row: ChannelRowSelect) =>
 			priorExternalChannelIdFromDestinationRow({
-				boundYoutubeChannelId: row.boundYoutubeChannelId,
+				boundExternalAccountId: row.boundExternalAccountId,
 				externalChannelId: row.externalChannelId,
 			}));
 
@@ -119,10 +119,11 @@ export async function runDestinationReplacementQuotaTransaction(input: {
 	});
 }
 
-/** YouTube OAuth: persists tokens + channel metadata after quota checks. */
-export async function applyYoutubeOAuthConnectionWithQuota(input: {
+/** Persists OAuth tokens + channel metadata after quota checks. */
+export async function applyOAuthConnectionWithQuota(input: {
 	userId: string;
 	channelId: string;
+	platform: "youtube" | "tiktok" | "instagram";
 	refreshToken: string;
 	externalChannelId: string;
 	externalChannelTitle: string | null;
@@ -134,9 +135,10 @@ export async function applyYoutubeOAuthConnectionWithQuota(input: {
 		channelId: input.channelId,
 		newExternalChannelId: input.externalChannelId,
 		persistAfterQuotaCheck: async (tx) => {
-			await setChannelYoutubeConnectionTx(tx, {
+			await setChannelOAuthConnectionTx(tx, {
 				userId: input.userId,
 				channelId: input.channelId,
+				platform: input.platform,
 				refreshToken: input.refreshToken,
 				externalChannelId: input.externalChannelId,
 				externalChannelTitle: input.externalChannelTitle,

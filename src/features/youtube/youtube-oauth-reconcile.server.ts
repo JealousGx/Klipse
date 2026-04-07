@@ -1,8 +1,8 @@
 import "@tanstack/react-start/server-only";
 
 import {
-	clearYoutubeRefreshTokenOnly,
-	getYoutubeRefreshTokenForChannel,
+	clearOAuthRefreshTokenOnly,
+	getOAuthRefreshTokenForChannel,
 	listChannelsForUser,
 } from "@/features/channels/channels.service.server";
 import {
@@ -19,7 +19,7 @@ export async function getYoutubeAccessTokenForChannelOrClear(input: {
 	userId: string;
 	channelId: string;
 }): Promise<{ accessToken: string } | { cleared: true }> {
-	const token = await getYoutubeRefreshTokenForChannel(
+	const token = await getOAuthRefreshTokenForChannel(
 		input.userId,
 		input.channelId,
 	);
@@ -31,7 +31,7 @@ export async function getYoutubeAccessTokenForChannelOrClear(input: {
 		return { accessToken: access_token };
 	} catch (e) {
 		if (e instanceof GoogleOAuthRefreshTokenInvalidError) {
-			await clearYoutubeRefreshTokenOnly({
+			await clearOAuthRefreshTokenOnly({
 				userId: input.userId,
 				channelId: input.channelId,
 			});
@@ -45,7 +45,7 @@ export async function reconcileYoutubeOAuthForUserChannel(input: {
 	userId: string;
 	channelId: string;
 }): Promise<"ok" | "revoked" | "skipped"> {
-	const token = await getYoutubeRefreshTokenForChannel(
+	const token = await getOAuthRefreshTokenForChannel(
 		input.userId,
 		input.channelId,
 	);
@@ -57,7 +57,7 @@ export async function reconcileYoutubeOAuthForUserChannel(input: {
 		return "ok";
 	} catch (e) {
 		if (e instanceof GoogleOAuthRefreshTokenInvalidError) {
-			await clearYoutubeRefreshTokenOnly({
+			await clearOAuthRefreshTokenOnly({
 				userId: input.userId,
 				channelId: input.channelId,
 			});
@@ -73,7 +73,7 @@ export async function reconcileAllYoutubeOAuthForUser(
 	const list = await listChannelsForUser(userId);
 	const revokedChannelIds: string[] = [];
 	for (const ch of list) {
-		if (!ch.youtubeConnected) {
+		if (!ch.oauthConnected) {
 			continue;
 		}
 		const r = await reconcileYoutubeOAuthForUserChannel({

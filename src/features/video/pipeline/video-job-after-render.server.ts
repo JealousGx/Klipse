@@ -48,7 +48,7 @@ export async function runAfterVideoRenderComplete(input: {
 	const [existing] = await db
 		.select({ id: expiringAssets.id })
 		.from(expiringAssets)
-		.where(eq(expiringAssets.videoJobId, jobId))
+		.where(and(eq(expiringAssets.videoJobId, jobId), eq(expiringAssets.kind, "output")))
 		.limit(1);
 	if (existing) {
 		return;

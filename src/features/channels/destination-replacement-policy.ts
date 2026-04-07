@@ -2,25 +2,21 @@ import type { MeResponse } from "@/features/user/types/me";
 
 /**
  * Minimal slice of a `channels` row used to resolve the previously linked
- * platform account id. Today this maps to YouTube fields; when you add TikTok /
- * Instagram, extend the row + pass a different extractor into
- * `runDestinationReplacementQuotaTransaction`, or add columns and update
- * {@link priorExternalChannelIdFromDestinationRow}.
+ * platform account id.
  */
 export type DestinationExternalIdentitySlice = {
-	boundYoutubeChannelId: string | null;
+	boundExternalAccountId: string | null;
 	externalChannelId: string | null;
 };
 
 /**
- * Previously linked platform “external” id for this destination (e.g. YouTube
- * `UC…`, or a future TikTok / Instagram account id stored in `external_channel_id`
- * or dedicated columns). Bound id wins when present.
+ * Previously linked platform external id for this destination.
+ * Bound id wins when present.
  */
 export function priorExternalChannelIdFromDestinationRow(
 	input: DestinationExternalIdentitySlice,
 ): string | null {
-	const b = input.boundYoutubeChannelId?.trim();
+	const b = input.boundExternalAccountId?.trim();
 	const e = input.externalChannelId?.trim();
 	return b || e || null;
 }
