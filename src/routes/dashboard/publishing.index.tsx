@@ -36,7 +36,7 @@ import {
 } from "@/features/channels/channels.functions";
 import { PublishingChannelThumbnail } from "@/features/publishing-destination/publishing-channel-thumbnail";
 import {
-	messageForYoutubeOAuthErrorReason,
+	messageForPublishingConnectionErrorReason,
 	publishingDestinationSearchSchema,
 } from "@/features/publishing-destination/publishing-destination-search.schema";
 import type { MeResponse } from "@/features/user/types/me";
@@ -246,7 +246,7 @@ function PublishingIndexPage() {
 		if (search.youtube === "connected") {
 			toast.success("YouTube connected with Google.");
 		} else {
-			toast.error(messageForYoutubeOAuthErrorReason(search.reason));
+			toast.error(messageForPublishingConnectionErrorReason(search.reason));
 		}
 		void navigate({
 			to: "/dashboard/publishing",
