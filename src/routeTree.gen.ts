@@ -24,13 +24,11 @@ import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analy
 import { Route as DashboardPublishingIndexRouteImport } from './routes/dashboard/publishing.index'
 import { Route as DashboardPublishingDestinationIdRouteImport } from './routes/dashboard/publishing.$destinationId'
 import { Route as ApiCronPurgeStoredFilesRouteImport } from './routes/api/cron/purge-stored-files'
-import { Route as ApiCronPolarUsageSyncRouteImport } from './routes/api/cron/polar-usage-sync'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiYoutubeOauthStartRouteImport } from './routes/api/youtube/oauth/start'
 import { Route as ApiYoutubeOauthCallbackRouteImport } from './routes/api/youtube/oauth/callback'
 import { Route as ApiInternalVideoProcessorAssemblyCompleteRouteImport } from './routes/api/internal/video-processor/assembly-complete'
 import { Route as ApiInternalWorkerVideoJobsDispatchRouteImport } from './routes/api/internal/worker/video-jobs/dispatch'
-import { Route as ApiInternalWorkerPolarUsageSyncDrainRouteImport } from './routes/api/internal/worker/polar-usage-sync/drain'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -109,11 +107,6 @@ const ApiCronPurgeStoredFilesRoute = ApiCronPurgeStoredFilesRouteImport.update({
   path: '/api/cron/purge-stored-files',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiCronPolarUsageSyncRoute = ApiCronPolarUsageSyncRouteImport.update({
-  id: '/api/cron/polar-usage-sync',
-  path: '/api/cron/polar-usage-sync',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -141,12 +134,6 @@ const ApiInternalWorkerVideoJobsDispatchRoute =
     path: '/api/internal/worker/video-jobs/dispatch',
     getParentRoute: () => rootRouteImport,
   } as any)
-const ApiInternalWorkerPolarUsageSyncDrainRoute =
-  ApiInternalWorkerPolarUsageSyncDrainRouteImport.update({
-    id: '/api/internal/worker/polar-usage-sync/drain',
-    path: '/api/internal/worker/polar-usage-sync/drain',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -162,14 +149,12 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
   '/api/cron/purge-stored-files': typeof ApiCronPurgeStoredFilesRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
-  '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
 }
 export interface FileRoutesByTo {
@@ -184,14 +169,12 @@ export interface FileRoutesByTo {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
   '/api/cron/purge-stored-files': typeof ApiCronPurgeStoredFilesRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
-  '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
 }
 export interface FileRoutesById {
@@ -209,14 +192,12 @@ export interface FileRoutesById {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/cron/polar-usage-sync': typeof ApiCronPolarUsageSyncRoute
   '/api/cron/purge-stored-files': typeof ApiCronPurgeStoredFilesRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
-  '/api/internal/worker/polar-usage-sync/drain': typeof ApiInternalWorkerPolarUsageSyncDrainRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
 }
 export interface FileRouteTypes {
@@ -235,14 +216,12 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/'
     | '/api/auth/$'
-    | '/api/cron/polar-usage-sync'
     | '/api/cron/purge-stored-files'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
-    | '/api/internal/worker/polar-usage-sync/drain'
     | '/api/internal/worker/video-jobs/dispatch'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -257,14 +236,12 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard'
     | '/api/auth/$'
-    | '/api/cron/polar-usage-sync'
     | '/api/cron/purge-stored-files'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing'
     | '/api/internal/video-processor/assembly-complete'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
-    | '/api/internal/worker/polar-usage-sync/drain'
     | '/api/internal/worker/video-jobs/dispatch'
   id:
     | '__root__'
@@ -281,14 +258,12 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/'
     | '/api/auth/$'
-    | '/api/cron/polar-usage-sync'
     | '/api/cron/purge-stored-files'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
-    | '/api/internal/worker/polar-usage-sync/drain'
     | '/api/internal/worker/video-jobs/dispatch'
   fileRoutesById: FileRoutesById
 }
@@ -299,12 +274,10 @@ export interface RootRouteChildren {
   RefundRoute: typeof RefundRoute
   TermsRoute: typeof TermsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiCronPolarUsageSyncRoute: typeof ApiCronPolarUsageSyncRoute
   ApiCronPurgeStoredFilesRoute: typeof ApiCronPurgeStoredFilesRoute
   ApiInternalVideoProcessorAssemblyCompleteRoute: typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   ApiYoutubeOauthCallbackRoute: typeof ApiYoutubeOauthCallbackRoute
   ApiYoutubeOauthStartRoute: typeof ApiYoutubeOauthStartRoute
-  ApiInternalWorkerPolarUsageSyncDrainRoute: typeof ApiInternalWorkerPolarUsageSyncDrainRoute
   ApiInternalWorkerVideoJobsDispatchRoute: typeof ApiInternalWorkerVideoJobsDispatchRoute
 }
 
@@ -415,13 +388,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCronPurgeStoredFilesRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/cron/polar-usage-sync': {
-      id: '/api/cron/polar-usage-sync'
-      path: '/api/cron/polar-usage-sync'
-      fullPath: '/api/cron/polar-usage-sync'
-      preLoaderRoute: typeof ApiCronPolarUsageSyncRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -455,13 +421,6 @@ declare module '@tanstack/react-router' {
       path: '/api/internal/worker/video-jobs/dispatch'
       fullPath: '/api/internal/worker/video-jobs/dispatch'
       preLoaderRoute: typeof ApiInternalWorkerVideoJobsDispatchRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/internal/worker/polar-usage-sync/drain': {
-      id: '/api/internal/worker/polar-usage-sync/drain'
-      path: '/api/internal/worker/polar-usage-sync/drain'
-      fullPath: '/api/internal/worker/polar-usage-sync/drain'
-      preLoaderRoute: typeof ApiInternalWorkerPolarUsageSyncDrainRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -511,14 +470,11 @@ const rootRouteChildren: RootRouteChildren = {
   RefundRoute: RefundRoute,
   TermsRoute: TermsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiCronPolarUsageSyncRoute: ApiCronPolarUsageSyncRoute,
   ApiCronPurgeStoredFilesRoute: ApiCronPurgeStoredFilesRoute,
   ApiInternalVideoProcessorAssemblyCompleteRoute:
     ApiInternalVideoProcessorAssemblyCompleteRoute,
   ApiYoutubeOauthCallbackRoute: ApiYoutubeOauthCallbackRoute,
   ApiYoutubeOauthStartRoute: ApiYoutubeOauthStartRoute,
-  ApiInternalWorkerPolarUsageSyncDrainRoute:
-    ApiInternalWorkerPolarUsageSyncDrainRoute,
   ApiInternalWorkerVideoJobsDispatchRoute:
     ApiInternalWorkerVideoJobsDispatchRoute,
 }
