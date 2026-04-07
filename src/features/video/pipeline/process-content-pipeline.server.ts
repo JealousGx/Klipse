@@ -5,16 +5,17 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
 
+import { processContentPrepareStage } from "./content/stages/prepare-stage.server";
+import { processContentScriptStage } from "./content/stages/script-stage.server";
 import { PIPELINE_KIND, PIPELINE_STAGE } from "./pipeline-kind";
 import { markVideoJobFailed } from "./process-stub-pipeline.server";
-import { processScriptStage } from "./process-script-stage.server";
 import {
 	handoffVideoAssemblyToExternalProcessor,
 	isExternalVideoProcessorConfigured,
 } from "./video-assembly-handoff.server";
 
 /**
- * Multi-stage content pipeline: script → assembly (external processor only).
+ * Modular content pipeline: {@link PIPELINE_STAGE.SCRIPT} → {@link PIPELINE_STAGE.PREPARE} → assemble.
  */
 export async function processContentPipelineJob(jobId: string): Promise<void> {
 	const db = getDb();
@@ -40,20 +41,24 @@ export async function processContentPipelineJob(jobId: string): Promise<void> {
 		return;
 	}
 
-	if (row.currentStage === PIPELINE_STAGE.SCRIPT) {
-		await processScriptStage(id);
-		return;
-	}
-
-	if (row.currentStage === PIPELINE_STAGE.ASSEMBLE) {
-		if (!isExternalVideoProcessorConfigured()) {
-			await markVideoJobFailed({
-				jobId: id,
-				message: "video_processor_not_configured",
-			});
+	switch (row.currentStage) {
+		case PIPELINE_STAGE.SCRIPT:
+			await processContentScriptStage(id);
 			return;
-		}
-		await handoffVideoAssemblyToExternalProcessor(id);
-		return;
+		case PIPELINE_STAGE.PREPARE:
+			await processContentPrepareStage(id);
+			return;
+		case PIPELINE_STAGE.ASSEMBLE:
+			if (!isExternalVideoProcessorConfigured()) {
+				await markVideoJobFailed({
+					jobId: id,
+					message: "video_processor_not_configured",
+				});
+				return;
+			}
+			await handoffVideoAssemblyToExternalProcessor(id);
+			return;
+		default:
+			return;
 	}
 }
