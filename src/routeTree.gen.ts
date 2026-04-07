@@ -23,7 +23,7 @@ import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
 import { Route as DashboardPublishingIndexRouteImport } from './routes/dashboard/publishing.index'
 import { Route as DashboardPublishingDestinationIdRouteImport } from './routes/dashboard/publishing.$destinationId'
-import { Route as ApiCronPurgeStoredFilesRouteImport } from './routes/api/cron/purge-stored-files'
+import { Route as ApiCronPurgeExpiringAssetsRouteImport } from './routes/api/cron/purge-expiring-assets'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiYoutubeOauthStartRouteImport } from './routes/api/youtube/oauth/start'
 import { Route as ApiYoutubeOauthCallbackRouteImport } from './routes/api/youtube/oauth/callback'
@@ -103,11 +103,12 @@ const DashboardPublishingDestinationIdRoute =
     path: '/$destinationId',
     getParentRoute: () => DashboardPublishingRoute,
   } as any)
-const ApiCronPurgeStoredFilesRoute = ApiCronPurgeStoredFilesRouteImport.update({
-  id: '/api/cron/purge-stored-files',
-  path: '/api/cron/purge-stored-files',
-  getParentRoute: () => rootRouteImport,
-} as any)
+const ApiCronPurgeExpiringAssetsRoute =
+  ApiCronPurgeExpiringAssetsRouteImport.update({
+    id: '/api/cron/purge-expiring-assets',
+    path: '/api/cron/purge-expiring-assets',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -156,7 +157,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/cron/purge-stored-files': typeof ApiCronPurgeStoredFilesRoute
+  '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -177,7 +178,7 @@ export interface FileRoutesByTo {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/cron/purge-stored-files': typeof ApiCronPurgeStoredFilesRoute
+  '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -201,7 +202,7 @@ export interface FileRoutesById {
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
-  '/api/cron/purge-stored-files': typeof ApiCronPurgeStoredFilesRoute
+  '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -226,7 +227,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/'
     | '/api/auth/$'
-    | '/api/cron/purge-stored-files'
+    | '/api/cron/purge-expiring-assets'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
@@ -247,7 +248,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard'
     | '/api/auth/$'
-    | '/api/cron/purge-stored-files'
+    | '/api/cron/purge-expiring-assets'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing'
     | '/api/internal/video-processor/assembly-complete'
@@ -270,7 +271,7 @@ export interface FileRouteTypes {
     | '/dashboard/settings'
     | '/dashboard/'
     | '/api/auth/$'
-    | '/api/cron/purge-stored-files'
+    | '/api/cron/purge-expiring-assets'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
@@ -287,7 +288,7 @@ export interface RootRouteChildren {
   RefundRoute: typeof RefundRoute
   TermsRoute: typeof TermsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
-  ApiCronPurgeStoredFilesRoute: typeof ApiCronPurgeStoredFilesRoute
+  ApiCronPurgeExpiringAssetsRoute: typeof ApiCronPurgeExpiringAssetsRoute
   ApiInternalVideoProcessorAssemblyCompleteRoute: typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   ApiInternalWorkerYoutubePublishRoute: typeof ApiInternalWorkerYoutubePublishRoute
   ApiYoutubeOauthCallbackRoute: typeof ApiYoutubeOauthCallbackRoute
@@ -395,11 +396,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPublishingDestinationIdRouteImport
       parentRoute: typeof DashboardPublishingRoute
     }
-    '/api/cron/purge-stored-files': {
-      id: '/api/cron/purge-stored-files'
-      path: '/api/cron/purge-stored-files'
-      fullPath: '/api/cron/purge-stored-files'
-      preLoaderRoute: typeof ApiCronPurgeStoredFilesRouteImport
+    '/api/cron/purge-expiring-assets': {
+      id: '/api/cron/purge-expiring-assets'
+      path: '/api/cron/purge-expiring-assets'
+      fullPath: '/api/cron/purge-expiring-assets'
+      preLoaderRoute: typeof ApiCronPurgeExpiringAssetsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -491,7 +492,7 @@ const rootRouteChildren: RootRouteChildren = {
   RefundRoute: RefundRoute,
   TermsRoute: TermsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
-  ApiCronPurgeStoredFilesRoute: ApiCronPurgeStoredFilesRoute,
+  ApiCronPurgeExpiringAssetsRoute: ApiCronPurgeExpiringAssetsRoute,
   ApiInternalVideoProcessorAssemblyCompleteRoute:
     ApiInternalVideoProcessorAssemblyCompleteRoute,
   ApiInternalWorkerYoutubePublishRoute: ApiInternalWorkerYoutubePublishRoute,
