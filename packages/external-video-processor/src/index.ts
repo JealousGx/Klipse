@@ -1,4 +1,5 @@
 import { execFile } from "node:child_process";
+import { randomUUID } from "node:crypto";
 import { readFile, unlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
@@ -89,27 +90,52 @@ function formatErrorForWebhook(e: unknown): string {
 	return String(e).slice(0, 4000);
 }
 
+function optionalHttpUrlList(x: unknown): boolean {
+	if (x === undefined) {
+		return true;
+	}
+	return (
+		Array.isArray(x) &&
+		x.every((u) => typeof u === "string" && /^https?:\/\//.test(u))
+	);
+}
+
 function isHandoffPayload(x: unknown): x is VideoProcessorHandoffPayload {
 	if (!x || typeof x !== "object") {
 		return false;
 	}
 	const o = x as Record<string, unknown>;
 	const label = o.watermarkLabel;
-	return (
-		typeof o.jobId === "string" &&
-		o.jobId.length > 0 &&
-		typeof o.userId === "string" &&
-		o.userId.length > 0 &&
-		typeof o.presignedPutUrl === "string" &&
-		o.presignedPutUrl.startsWith("http") &&
-		typeof o.contentType === "string" &&
-		typeof o.completeWebhookUrl === "string" &&
-		o.completeWebhookUrl.startsWith("http") &&
-		typeof o.freeTierWatermark === "boolean" &&
-		typeof label === "string" &&
-		label.length > 0 &&
-		label.length <= 128
-	);
+	if (
+		typeof o.jobId !== "string" ||
+		o.jobId.length === 0 ||
+		typeof o.userId !== "string" ||
+		o.userId.length === 0 ||
+		typeof o.presignedPutUrl !== "string" ||
+		!o.presignedPutUrl.startsWith("http") ||
+		typeof o.contentType !== "string" ||
+		typeof o.completeWebhookUrl !== "string" ||
+		!o.completeWebhookUrl.startsWith("http") ||
+		typeof o.freeTierWatermark !== "boolean" ||
+		typeof label !== "string" ||
+		label.length === 0 ||
+		label.length > 128
+	) {
+		return false;
+	}
+	if (o.scriptText !== undefined && typeof o.scriptText !== "string") {
+		return false;
+	}
+	if (!optionalHttpUrlList(o.imageUrls)) {
+		return false;
+	}
+	if (
+		o.ttsAudioUrl !== undefined &&
+		(typeof o.ttsAudioUrl !== "string" || !/^https?:\/\//.test(o.ttsAudioUrl))
+	) {
+		return false;
+	}
+	return true;
 }
 
 async function notifyAppOnce(
@@ -212,9 +238,179 @@ async function applyCenterWatermarkToFile(
 	}
 }
 
+/** Watermark video while preserving the first audio stream (content pipeline mux output). */
+async function applyCenterWatermarkToVideoWithAudio(
+	inputPath: string,
+	outputPath: string,
+	label: string,
+): Promise<void> {
+	const labelPath = join(tmpdir(), `klipse-wm-lbl-${Date.now()}.txt`);
+	await writeFile(labelPath, label, "utf8");
+	const textPathForFilter = labelPath.replace(/\\/g, "/").replace(/:/g, "\\:");
+	const vf = `drawtext=textfile=${textPathForFilter}:fontcolor=white@0.78:fontsize=36:box=1:boxcolor=black@0.38:boxborderw=8:x=(w-text_w)/2:y=(h-text_h)/2`;
+	try {
+		await execFileAsync(
+			ffmpegBinary(),
+			[
+				"-y",
+				"-i",
+				inputPath,
+				"-vf",
+				vf,
+				"-map",
+				"0:v:0",
+				"-c:v",
+				"libx264",
+				"-preset",
+				"veryfast",
+				"-crf",
+				"23",
+				"-pix_fmt",
+				"yuv420p",
+				"-map",
+				"0:a:0",
+				"-c:a",
+				"aac",
+				"-b:a",
+				"192k",
+				"-movflags",
+				"+faststart",
+				outputPath,
+			],
+			{
+				timeout: 600_000,
+				maxBuffer: 80 * 1024 * 1024,
+			},
+		);
+	} finally {
+		await unlink(labelPath).catch(() => {});
+	}
+}
+
+/**
+ * Content pipeline: first image URL + TTS audio URL → still video + voice (no Klipse R2 for intermediates).
+ */
+async function runRichStillImageWithAudioPipeline(
+	payload: VideoProcessorHandoffPayload,
+): Promise<void> {
+	const imgUrl = payload.imageUrls?.[0];
+	const audUrl = payload.ttsAudioUrl;
+	if (!imgUrl || !audUrl) {
+		throw new Error("rich_pipeline_missing_assets");
+	}
+	const tmpImg = join(tmpdir(), `klipse-img-${randomUUID()}.png`);
+	const tmpAud = join(tmpdir(), `klipse-aud-${randomUUID()}.mp3`);
+	const tmpVid = join(tmpdir(), `klipse-rich-${payload.jobId}.mp4`);
+	const tmpWm = join(tmpdir(), `klipse-rich-wm-${payload.jobId}.mp4`);
+	try {
+		await withRetries("fetch_image", R2_PUT_ATTEMPTS, async () => {
+			const res = await fetch(imgUrl, { signal: AbortSignal.timeout(300_000) });
+			if (!res.ok) {
+				throw new Error(`image_fetch_${res.status}`);
+			}
+			await writeFile(tmpImg, Buffer.from(await res.arrayBuffer()));
+		});
+		await withRetries("fetch_audio", R2_PUT_ATTEMPTS, async () => {
+			const res = await fetch(audUrl, { signal: AbortSignal.timeout(300_000) });
+			if (!res.ok) {
+				throw new Error(`audio_fetch_${res.status}`);
+			}
+			await writeFile(tmpAud, Buffer.from(await res.arrayBuffer()));
+		});
+
+		await withRetries("ffmpeg_mux", FFMPEG_ATTEMPTS, () =>
+			execFileAsync(
+				ffmpegBinary(),
+				[
+					"-y",
+					"-loop",
+					"1",
+					"-i",
+					tmpImg,
+					"-i",
+					tmpAud,
+					"-c:v",
+					"libx264",
+					"-tune",
+					"stillimage",
+					"-pix_fmt",
+					"yuv420p",
+					"-c:a",
+					"aac",
+					"-b:a",
+					"192k",
+					"-shortest",
+					"-movflags",
+					"+faststart",
+					tmpVid,
+				],
+				{
+					timeout: 600_000,
+					maxBuffer: 80 * 1024 * 1024,
+				},
+			),
+		);
+
+		let videoPath = tmpVid;
+		if (payload.freeTierWatermark) {
+			await withRetries("watermark", FFMPEG_ATTEMPTS, () =>
+				applyCenterWatermarkToVideoWithAudio(
+					tmpVid,
+					tmpWm,
+					payload.watermarkLabel,
+				),
+			);
+			videoPath = tmpWm;
+		}
+
+		const buf = await readFile(videoPath);
+
+		await withRetries("r2_put", R2_PUT_ATTEMPTS, async () => {
+			const put = await fetch(payload.presignedPutUrl, {
+				method: "PUT",
+				headers: {
+					"Content-Type": payload.contentType,
+				},
+				body: buf,
+				signal: AbortSignal.timeout(120_000),
+			});
+			if (!put.ok) {
+				const errText = await put.text().catch(() => "");
+				throw new Error(`r2_put_${put.status}:${errText.slice(0, 500)}`);
+			}
+		});
+
+		await notifyAppWithRetries(
+			payload.completeWebhookUrl,
+			{
+				jobId: payload.jobId,
+				userId: payload.userId,
+				status: "completed",
+			},
+			WEBHOOK_ATTEMPTS,
+		);
+	} finally {
+		await unlink(tmpImg).catch(() => {});
+		await unlink(tmpAud).catch(() => {});
+		await unlink(tmpVid).catch(() => {});
+		await unlink(tmpWm).catch(() => {});
+	}
+}
+
 async function runAssemblyPipeline(
 	payload: VideoProcessorHandoffPayload,
 ): Promise<void> {
+	const hasRich =
+		payload.imageUrls &&
+		payload.imageUrls.length > 0 &&
+		payload.ttsAudioUrl &&
+		/^https?:\/\//.test(payload.ttsAudioUrl);
+
+	if (hasRich) {
+		await runRichStillImageWithAudioPipeline(payload);
+		return;
+	}
+
 	const tmpRaw = join(tmpdir(), `klipse-raw-${payload.jobId}.mp4`);
 	const tmpFinal = join(tmpdir(), `klipse-out-${payload.jobId}.mp4`);
 	try {
@@ -227,11 +423,7 @@ async function runAssemblyPipeline(
 
 		if (payload.freeTierWatermark) {
 			await withRetries("watermark", FFMPEG_ATTEMPTS, () =>
-				applyCenterWatermarkToFile(
-					tmpRaw,
-					tmpFinal,
-					payload.watermarkLabel,
-				),
+				applyCenterWatermarkToFile(tmpRaw, tmpFinal, payload.watermarkLabel),
 			);
 		}
 

@@ -24,4 +24,10 @@ export type VideoProcessorHandoffPayload = {
 	freeTierWatermark: boolean;
 	/** Shown inside the watermark (e.g. app title). */
 	watermarkLabel: string;
+	/** Content pipeline: script for future graphs; processor may fetch assets below. */
+	scriptText?: string;
+	/** HTTPS image URLs (e.g. Pollinations) — processor fetches; not stored in app R2. */
+	imageUrls?: string[];
+	/** HTTPS audio URL (e.g. Pollinations TTS GET). */
+	ttsAudioUrl?: string;
 };
