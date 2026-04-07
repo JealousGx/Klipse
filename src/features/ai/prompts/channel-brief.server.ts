@@ -3,20 +3,7 @@ import "@tanstack/react-start/server-only";
 import type { ChannelRow } from "@/features/channels/channels.service.server";
 
 import type { ChannelCreativeBrief } from "./creative-brief.types";
-
-/**
- * Neutral format descriptor for prompts — not a vendor or app name.
- * Stays stable as new publishing integrations are added.
- */
-export const DEFAULT_PUBLISHING_SURFACE_LABEL =
-	"Vertical short-form video (mobile-first, full-screen portrait)";
-
-/** Same neutral label for all platforms; `platform` reserved for future format overrides. */
-export function publishingSurfaceLabel(
-	_platform: ChannelRow["platform"],
-): string {
-	return DEFAULT_PUBLISHING_SURFACE_LABEL;
-}
+import { publishingSurfaceLabel } from "./video-format-surface";
 
 /** Maps a loaded destination row + config into shared creative brief fields. */
 export function channelToCreativeBrief(
@@ -31,7 +18,10 @@ export function channelToCreativeBrief(
 		captionStyle: channel.config.visual_identity.caption_style,
 		fontPairLabel: channel.config.visual_identity.font_pair.join(" + "),
 		primaryColorHex: channel.config.visual_identity.primary_color,
-		publishingSurfaceLabel: publishingSurfaceLabel(channel.platform),
+		publishingSurfaceLabel: publishingSurfaceLabel(
+			channel.platform,
+			channel.config.target_duration,
+		),
 		destinationDisplayName:
 			channel.externalChannelTitle?.trim() || channel.name,
 	};

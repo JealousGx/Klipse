@@ -1,6 +1,7 @@
 import "@tanstack/react-start/server-only";
 
 import type { ChannelCreativeBrief } from "./creative-brief.types";
+import { isShortFormTargetSeconds } from "./video-format-surface";
 
 export type ImagePromptIntent = {
 	brief: ChannelCreativeBrief;
@@ -15,13 +16,19 @@ export type ImagePromptIntent = {
  * Optimized for **thumbnail / hero frames**: niche-native visuals, scroll-stopping clarity,
  * and suitability for the connected publishing destination (not stock-generic).
  */
+const NEUTRAL_SURFACE_FALLBACK = "video for your audience";
+
 export function buildImageGenerationPrompt(input: ImagePromptIntent): string {
-	const { brief, subject, aspectIntent = "9:16_vertical" } = input;
+	const { brief, subject, aspectIntent } = input;
+
+	const t = brief.targetSeconds ?? 60;
+	const resolvedAspect =
+		aspectIntent ?? (isShortFormTargetSeconds(t) ? "9:16_vertical" : "16:9");
 
 	const aspect =
-		aspectIntent === "9:16_vertical"
+		resolvedAspect === "9:16_vertical"
 			? "vertical 9:16 composition, mobile-first, subject in safe zones for on-screen title and caption overlays"
-			: aspectIntent === "1:1"
+			: resolvedAspect === "1:1"
 				? "square 1:1 composition, centered focal subject"
 				: "wide 16:9 cinematic composition";
 
@@ -39,8 +46,8 @@ export function buildImageGenerationPrompt(input: ImagePromptIntent): string {
 			: "Cohesive color grade suitable for the niche.";
 
 	const dest = brief.destinationDisplayName?.trim()
-		? `Feels native to a channel about "${brief.niche}" aimed at viewers on ${brief.publishingSurfaceLabel ?? "short-form video"} (${brief.destinationDisplayName.trim()}).`
-		: `Feels native to a channel about "${brief.niche}" on ${brief.publishingSurfaceLabel ?? "short-form video"}.`;
+		? `Feels native to a channel about "${brief.niche}" aimed at viewers watching ${brief.publishingSurfaceLabel ?? NEUTRAL_SURFACE_FALLBACK} (${brief.destinationDisplayName.trim()}).`
+		: `Feels native to a channel about "${brief.niche}" for ${brief.publishingSurfaceLabel ?? NEUTRAL_SURFACE_FALLBACK}.`;
 
 	const lines = [
 		"Professional high-quality digital still, no watermark, no UI mockups, no fake app screenshots unless the brief explicitly asks.",

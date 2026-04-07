@@ -3,6 +3,7 @@ import "@tanstack/react-start/server-only";
 import { pipelineModelContextBlock } from "./config/model-routing";
 import { ScriptGenerationFailedError } from "./errors";
 import type { ChannelCreativeBrief } from "./prompts/creative-brief.types";
+import { isShortFormTargetSeconds } from "./prompts/video-format-surface";
 import {
 	generateTextGemini,
 	isGeminiConfigured,
@@ -13,9 +14,9 @@ export type ScriptGenerationContext = ChannelCreativeBrief & { idea: string };
 
 export type ScriptGenerationMode = "pollinations" | "gemini";
 
-function baseSystemPrompt(): string {
+function shortFormSystemPrompt(): string {
 	return [
-		"You are an elite short-form video strategist and scriptwriter. Your job is to produce scripts that feel native to **vertical, mobile-first feeds** (full-screen portrait, tight pacing), maximize watch-time and replays, and drive engagement on the creator's **connected publishing destination** — not generic internet content.",
+		"You are an elite **short-form** video strategist and scriptwriter. Your job is to produce scripts that feel native to **vertical, mobile-first feeds** (full-screen portrait, tight pacing), maximize watch-time and replays, and drive engagement on the creator's **connected publishing destination** — not generic internet content.",
 		"## Niche and audience",
 		"- Treat the niche as law. Every line must sound like it was written **for that audience only** — vocabulary, references, pain points, and wins belong to that niche.",
 		'- The viewer should feel: "this channel gets me." Never flatten the niche into vague advice.',
@@ -40,6 +41,39 @@ function baseSystemPrompt(): string {
 	].join("\n\n");
 }
 
+function longFormSystemPrompt(): string {
+	return [
+		"You are an elite **long-form** video scriptwriter. Your job is to produce scripts that feel native to **in-depth, main-feed or landscape video** (tutorials, explainers, essays, storytelling) — clear structure, sustained value, and a strong payoff — for the creator's **connected publishing destination**, not generic internet content.",
+		"## Niche and audience",
+		"- Treat the niche as law. Every section must sound like it was written **for that audience only** — vocabulary, examples, and stakes belong to that niche.",
+		"## Structure and pacing (long-form)",
+		"- **Opening:** a compelling hook in the first moments — problem, promise, or question — without padding.",
+		"- **Body:** logical flow (setup → insight → proof or demonstration → implications). Allow room for nuance; avoid repeating the hook.",
+		"- **Depth:** match the target duration with substantive beats — not filler lists. Prefer one clear arc over scattered hot takes.",
+		"- **Closing:** recap the takeaway, reinforce the niche promise, and one clear CTA (subscribe, comment, next step).",
+		"## Tone and brand",
+		"- Honor the requested tone (dark / educational / fun) consistently.",
+		"- Suggest **b-roll or visual beat notes** in italics where helpful (optional), not every line.",
+		"## Quality bar",
+		"- No fabricated statistics or fake studies unless clearly framed as hypothetical.",
+		"- No meta commentary about the AI. Output only the script artifact.",
+		"## Output format (markdown)",
+		"Use exactly these sections with clear headers:",
+		"- **Hook** — opening spoken lines + optional visual note.",
+		"- **Sections** — numbered sections with rough timestamps if helpful (e.g. 0:00–1:00, 1:00–4:00).",
+		"- **Key phrases** — a few memorable lines or chapter titles suitable for description or chapters.",
+		"- **Outro / CTA** — strong close tied to the niche and destination.",
+		pipelineModelContextBlock(),
+	].join("\n\n");
+}
+
+function systemPromptForBrief(ctx: ScriptGenerationContext): string {
+	const t = ctx.targetSeconds ?? 60;
+	return isShortFormTargetSeconds(t)
+		? shortFormSystemPrompt()
+		: longFormSystemPrompt();
+}
+
 function userPrompt(ctx: ScriptGenerationContext): string {
 	const lines: string[] = [
 		"## Creator brief",
@@ -53,8 +87,12 @@ function userPrompt(ctx: ScriptGenerationContext): string {
 	}
 
 	if (ctx.publishingSurfaceLabel) {
+		const t = ctx.targetSeconds ?? 60;
+		const hint = isShortFormTargetSeconds(t)
+			? "optimize hook length, pacing, and CTA for short-form."
+			: "optimize structure, depth, and payoff for long-form.";
 		lines.push(
-			`- **Publishing surface:** ${ctx.publishingSurfaceLabel} — optimize hook length, pacing, and CTA for this format.`,
+			`- **Publishing surface:** ${ctx.publishingSurfaceLabel} — ${hint}`,
 		);
 	}
 
@@ -127,7 +165,7 @@ async function runProviders(
 export async function generateVideoScript(
 	ctx: ScriptGenerationContext,
 ): Promise<{ text: string; mode: ScriptGenerationMode }> {
-	const system = baseSystemPrompt();
+	const system = systemPromptForBrief(ctx);
 	const user = userPrompt(ctx);
 	return runProviders(system, user);
 }

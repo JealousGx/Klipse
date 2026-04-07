@@ -11,7 +11,7 @@ export type ChannelCreativeBrief = {
 	postingFrequency?: "daily" | "weekly";
 	captionStyle?: "bold" | "minimal";
 	fontPairLabel?: string;
-	/** Neutral format hint for prompts (aspect / viewing context), not a platform brand name. */
+	/** Neutral format hint for prompts (short-form vs long-form, viewing context), not a platform brand name. */
 	publishingSurfaceLabel?: string;
 	destinationDisplayName?: string | null;
 	/** Brand accent for visual prompts (hex). */

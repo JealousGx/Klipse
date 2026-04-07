@@ -29,7 +29,7 @@ export function buildSoundBedPrompt(input: SoundBedPromptParams): string {
 		`Instrumental background music only, no lead vocals, no spoken words.`,
 		`Length ~${targetDurationSec} seconds feel, loop-friendly structure, smooth intro and outro for editing under voiceover.`,
 		`Mood: ${mood}. ${moodLine}`,
-		`Genre and instrumentation must match the niche: "${brief.niche}" — sound like content that performs well on ${brief.publishingSurfaceLabel ?? "short-form video"} for this audience.`,
+		`Genre and instrumentation must match the niche: "${brief.niche}" — sound like content that performs well as ${brief.publishingSurfaceLabel ?? "video for this audience"}.`,
 		`Channel: ${brief.channelName}. Destination: ${brief.destinationDisplayName ?? "connected publishing"}.`,
 		`Dynamics: leave headroom for voiceover; avoid busy melodies in the speech frequency range.`,
 	];
