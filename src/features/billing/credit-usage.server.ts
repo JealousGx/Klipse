@@ -3,11 +3,12 @@ import "@tanstack/react-start/server-only";
 import { eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
-import { creditTransactions, polarUsageSync, users } from "@/db/schema";
-import { creditTransactionId, polarUsageSyncRowId } from "@/lib/id";
+import { creditTransactions, users } from "@/db/schema";
+import { creditTransactionId } from "@/lib/id";
 
 import type { PolarUsageMetadata } from "./meter-events";
-import { schedulePolarUsageSyncProcessing } from "./polar-usage-sync-schedule.server";
+import { POLAR_USAGE_EVENT_NAME } from "./meter-events";
+import { ingestPolarUsageEvents } from "./polar-metering.server";
 
 /** Transaction handle from `getDb().transaction` — used to compose idempotent flows. */
 export type CreditUsageTx = Parameters<
@@ -83,22 +84,38 @@ export async function applyUsageDeduction(
 		},
 	});
 
-	await tx.insert(polarUsageSync).values({
-		id: polarUsageSyncRowId(),
-		userId: input.userId,
-		externalId: input.ref,
-		credits: input.credits,
-		stage: input.stage,
-		status: "pending",
-	});
-
 	return { creditsRemaining: newRemaining };
 }
 
 /**
- * Single source of truth: balance check, deduct credits, usage ledger row (`amount` negative), and
- * `polar_usage_sync` outbox — **same transaction**. Polar ingest runs later
- * via {@link schedulePolarUsageSyncProcessing} / cron; failures retry without refund.
+ * Fire-and-forget Polar metering after credits are committed. Does not block or refund on failure.
+ */
+export function firePolarUsageIngestAfterDeduction(input: {
+	userId: string;
+	credits: number;
+	stage: UsageStage;
+	ref: string;
+}): void {
+	void ingestPolarUsageEvents({
+		userId: input.userId,
+		events: [
+			{
+				name: POLAR_USAGE_EVENT_NAME,
+				externalId: input.ref,
+				metadata: {
+					credits: input.credits,
+					stage: input.stage,
+					ref: input.ref,
+				},
+			},
+		],
+	}).catch((err) => {
+		console.error("[polar_usage_ingest]", err);
+	});
+}
+
+/**
+ * Balance check, deduct credits, usage ledger row (`amount` negative), then Polar ingest (async).
  */
 export async function deductCreditsForUsage(input: {
 	userId: string;
@@ -112,6 +129,6 @@ export async function deductCreditsForUsage(input: {
 		return applyUsageDeduction(tx, input);
 	});
 
-	schedulePolarUsageSyncProcessing();
+	firePolarUsageIngestAfterDeduction(input);
 	return { creditsRemaining };
 }
