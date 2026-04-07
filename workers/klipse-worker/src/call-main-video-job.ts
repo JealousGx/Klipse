@@ -1,7 +1,10 @@
 import type { VideoJobDispatchMessage } from "@klipse/worker-contracts";
 
-import { trimTrailingSlash } from "./call-main-drain";
 import type { Env } from "./env";
+
+function trimTrailingSlash(url: string): string {
+	return url.replace(/\/+$/, "");
+}
 
 /**
  * Worker → main app: execute pipeline for a queued `video_jobs` row.

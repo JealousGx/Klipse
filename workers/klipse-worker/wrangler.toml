@@ -12,7 +12,3 @@ queue = "klipse-jobs"
 max_batch_size = 16
 max_batch_timeout = 2
 max_retries = 15
-
-# Backup drain if queue is backed up or producer missed a signal.
-[triggers]
-crons = ["*/2 * * * *"]

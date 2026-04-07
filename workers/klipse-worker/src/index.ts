@@ -1,15 +1,11 @@
 import type {
 	ExecutionContext,
 	MessageBatch,
-	ScheduledController,
 } from "@cloudflare/workers-types";
 import { isQueueMessage } from "@klipse/worker-contracts";
 
-import { callMainAppDrain } from "./call-main-drain";
 import { dispatchQueueMessage } from "./dispatch";
 import type { Env } from "./env";
-
-const CRON_DRAIN_LIMIT = 50;
 
 export default {
 	async fetch(
@@ -64,18 +60,6 @@ export default {
 				console.error("[queue] message failed", err);
 				msg.retry({ delaySeconds: 20 });
 			}
-		}
-	},
-
-	async scheduled(
-		_controller: ScheduledController,
-		env: Env,
-		_ctx: ExecutionContext,
-	): Promise<void> {
-		try {
-			await callMainAppDrain(env, CRON_DRAIN_LIMIT);
-		} catch (e) {
-			console.error("[cron] polar drain failed", e);
 		}
 	},
 };

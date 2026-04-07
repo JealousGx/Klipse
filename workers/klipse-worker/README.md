@@ -1,12 +1,12 @@
 # Klipse Cloudflare Worker
 
-Async jobs for Klipse: [Queues](https://developers.cloudflare.com/queues/) (reliable delivery) + [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/) (backup sweeps). **Heavy work stays out of the TanStack request thread**; this Worker forwards to the main app’s internal APIs (DB + Polar live on the server only).
+Async jobs for Klipse: [Queues](https://developers.cloudflare.com/queues/) for reliable delivery. **Heavy work stays out of the TanStack request thread**; this Worker forwards `video_job_dispatch` to the main app’s internal API (DB + pipelines live on the server only).
 
 ## Layout
 
-- `src/index.ts` — HTTP (`/health`, `/enqueue`) + queue consumer + `scheduled` cron.
+- `src/index.ts` — HTTP (`/health`, `/enqueue`) + queue consumer.
 - `src/dispatch.ts` — map queue bodies → handlers (add new job kinds here).
-- `src/call-main-drain.ts` — authenticated `fetch` to the main app.
+- `src/call-main-video-job.ts` — authenticated `fetch` to the main app for video dispatch.
 - Shared message shapes: `packages/worker-contracts` (workspace dependency).
 
 ## One-time Cloudflare setup
@@ -33,7 +33,7 @@ Async jobs for Klipse: [Queues](https://developers.cloudflare.com/queues/) (reli
 2. Copy `workers/klipse-worker/.dev.vars.example` → `.dev.vars` and set `WORKER_SECRET` to match the main app.
 3. Worker: `cd workers/klipse-worker && pnpm dev` (default port 8787).
 
-The main app’s `WORKER_API_URL` should be `http://127.0.0.1:8787`. Set **`ENVIRONMENT=local`** in the main app `.env.local` so that if the Worker is down, the app **falls back** to an in-process Polar outbox drain and video dispatch (dev only). With `production` (default), a failed enqueue does **not** run pipelines inline.
+The main app’s `WORKER_API_URL` should be `http://127.0.0.1:8787`. Set **`ENVIRONMENT=local`** in the main app `.env.local` so that if the Worker is down, video dispatch can still run **inline** for local dev.
 
 ## Deploy
 
