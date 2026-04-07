@@ -78,17 +78,15 @@ export const videoJobs = mysqlTable(
 			"approved",
 			"rejected",
 		]),
-		/** YouTube `videoId` after successful upload (§2.12). */
-		youtubeVideoId: varchar("youtube_video_id", { length: 32 }),
-		youtubePublishedAt: timestamp("youtube_published_at", { fsp: 3 }),
+		/** Platform-assigned video id after a successful publish (e.g. YouTube `videoId`). */
+		publishedVideoId: varchar("published_video_id", { length: 64 }),
+		publishedAt: timestamp("published_at", { fsp: 3 }),
 		/**
-		 * Set when an upload attempt is in flight so concurrent queue deliveries
-		 * do not create duplicate YouTube videos. Cleared on success or failure.
+		 * Set when a publish attempt is in flight so concurrent queue deliveries
+		 * do not create duplicate uploads. Cleared on success or failure.
 		 */
-		youtubePublishStartedAt: timestamp("youtube_publish_started_at", {
-			fsp: 3,
-		}),
-		/** Last YouTube publish error (user-visible; cleared on success). */
+		publishStartedAt: timestamp("publish_started_at", { fsp: 3 }),
+		/** Last publish error message (user-visible; cleared on success). */
 		publishLastError: text("publish_last_error"),
 		createdAt: timestamp("created_at", { fsp: 3 })
 			.default(sql`CURRENT_TIMESTAMP(3)`)
