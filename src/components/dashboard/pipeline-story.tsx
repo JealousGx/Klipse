@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { Download, RefreshCw } from "lucide-react";
+import { ArrowUpRight, Download, RefreshCw } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -18,7 +18,7 @@ import {
 } from "@/lib/format-output-retention";
 
 import { cn } from "@/lib/utils";
-import { youtubeChannelUrl } from "@/lib/youtube";
+import { youtubeChannelUrl, youtubeWatchUrl } from "@/lib/youtube";
 
 export function shortJobId(id: string): string {
 	const t = id.trim();
@@ -258,14 +258,35 @@ function JobDetailPane({
 			</div>
 			<div className="space-y-3 p-4">
 				{job.outputUrl && job.status === "completed" ? (
-					<a
-						href={job.outputUrl}
-						download
-						className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/60"
-					>
-						<Download className="size-3.5 shrink-0" aria-hidden />
-						Download MP4
-					</a>
+					<div className="flex flex-wrap gap-2">
+						<a
+							href={job.outputUrl}
+							download
+							className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/60"
+						>
+							<Download className="size-3.5 shrink-0" aria-hidden />
+							Download MP4
+						</a>
+						{job.youtubeVideoId ? (
+							<a
+								href={youtubeWatchUrl(job.youtubeVideoId)}
+								target="_blank"
+								rel="noreferrer"
+								className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/60"
+							>
+								Open on YouTube
+								<ArrowUpRight
+									className="size-3.5 shrink-0 opacity-90"
+									aria-hidden
+								/>
+							</a>
+						) : null}
+					</div>
+				) : null}
+				{job.publishLastError && job.status === "completed" ? (
+					<p className="text-xs text-destructive">
+						Publish failed: {job.publishLastError}
+					</p>
 				) : null}
 				<div>
 					<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">

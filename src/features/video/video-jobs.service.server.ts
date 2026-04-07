@@ -7,6 +7,8 @@ import { channels } from "@/db/schema/channels";
 import { expiringAssets } from "@/db/schema/expiring-assets";
 import { videoJobs } from "@/db/schema/video-jobs";
 
+import { requestYoutubePublishForJob } from "@/features/publishing/youtube/request-youtube-publish.server";
+
 import type { VideoJobListRow } from "./video-job-list.types";
 
 export type { VideoJobListRow } from "./video-job-list.types";
@@ -31,6 +33,8 @@ export async function listVideoJobsForUser(
 			outputUrl: videoJobs.outputUrl,
 			errorMessage: videoJobs.errorMessage,
 			publishApprovalStatus: videoJobs.publishApprovalStatus,
+			youtubeVideoId: videoJobs.youtubeVideoId,
+			publishLastError: videoJobs.publishLastError,
 			outputStorageExpiresAt: expiringAssets.expiresAt,
 			createdAt: videoJobs.createdAt,
 		})
@@ -54,9 +58,7 @@ export async function setPublishApprovalForUser(input: {
 	userId: string;
 	jobId: string;
 	decision: "approved" | "rejected";
-}): Promise<
-	{ ok: true } | { ok: false; code: "not_found" | "invalid_state" }
-> {
+}): Promise<{ ok: true } | { ok: false; code: "not_found" | "invalid_state" }> {
 	const db = getDb();
 	const jobId = input.jobId.trim();
 
@@ -94,6 +96,13 @@ export async function setPublishApprovalForUser(input: {
 				eq(videoJobs.publishApprovalStatus, "pending"),
 			),
 		);
+
+	if (input.decision === "approved") {
+		await requestYoutubePublishForJob({
+			jobId,
+			userId: input.userId,
+		});
+	}
 
 	return { ok: true };
 }

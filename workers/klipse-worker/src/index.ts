@@ -1,7 +1,4 @@
-import type {
-	ExecutionContext,
-	MessageBatch,
-} from "@cloudflare/workers-types";
+import type { ExecutionContext, MessageBatch } from "@cloudflare/workers-types";
 import { isQueueMessage } from "@klipse/worker-contracts";
 
 import { dispatchQueueMessage } from "./dispatch";
