@@ -4,10 +4,9 @@ import { ArrowLeft } from "lucide-react";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
 import { DashboardSection } from "@/components/dashboard/dashboard-section";
 import { Button } from "@/components/ui/button";
-
+import { DestinationAutoPostFields } from "./destination-auto-post-fields";
 import { DestinationConnectionFields } from "./destination-connection-section";
 import { DestinationDetailsFields } from "./destination-details-card";
-import { DestinationAutoPostFields } from "./destination-auto-post-fields";
 import { DestinationYoutubeChannelFields } from "./destination-youtube-channel-card";
 import type { PublishingDestinationChannel } from "./publishing-destination-channel.types";
 import { PublishingDestinationWidgets } from "./publishing-destination-widgets";
@@ -148,7 +147,7 @@ export function PublishingDestinationView({
 								disabled={!canConnectPublishing}
 								disabledReason={
 									!canConnectPublishing
-										? "Upgrade to a paid plan with YouTube publishing to choose auto-publish or ask-first for this destination."
+										? "Upgrade to a paid plan with linked publishing to choose auto-publish or ask-first for this destination."
 										: undefined
 								}
 								isSaving={isSavingAutoPost}

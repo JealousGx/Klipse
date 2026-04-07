@@ -1,5 +1,5 @@
-import { CheckCircle2, Loader2, Unplug } from "lucide-react";
 import { Link } from "@tanstack/react-router";
+import { CheckCircle2, Loader2, Unplug } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
