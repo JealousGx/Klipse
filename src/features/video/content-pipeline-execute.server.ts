@@ -38,7 +38,7 @@ export type ExecuteContentPipelineOutcome =
 	| { kind: "replay"; payload: StubGenerateIdempotencyResult };
 
 /**
- * Idempotent billing + `video_jobs` row (script → assembly) + Worker dispatch.
+ * Idempotent billing + `video_jobs` row (script → prepare → assembly) + Worker dispatch.
  * Reuses free-tier single-assembly quota with standalone assembly jobs.
  */
 export async function executeContentPipelineWithIdempotency(input: {
@@ -47,10 +47,12 @@ export async function executeContentPipelineWithIdempotency(input: {
 	idempotencyKey: string;
 	idea: string;
 }): Promise<ExecuteContentPipelineOutcome> {
-	const credits = estimateContentPipelineCredits();
 	const clientKey = input.idempotencyKey.trim();
 	const channelId = input.channelId.trim();
 	const idea = input.idea.trim();
+
+	const credits = estimateContentPipelineCredits({ idea });
+
 	const db = getDb();
 
 	if (!(await getChannelForUser(input.userId, channelId))) {
