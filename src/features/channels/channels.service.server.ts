@@ -7,13 +7,16 @@ import type { LocalDb } from "@/db/local";
 import { channels } from "@/db/schema/channels";
 import { users } from "@/db/schema/users";
 
-import { MAX_CHANNELS_BY_PLAN } from "@/features/billing/tier-config";
+import { assertChannelCapacity } from "@/features/entitlements";
 import type { MeResponse } from "@/features/user/types/me";
 
 import { channelRowId } from "@/lib/id";
 
-import { type ChannelConfig, parseChannelConfig } from "./channel-config.schema";
-import { ChannelLimitError, ChannelNotFoundError } from "./channel-errors";
+import {
+	type ChannelConfig,
+	parseChannelConfig,
+} from "./channel-config.schema";
+import { ChannelNotFoundError } from "./channel-errors";
 
 export { ChannelLimitError, ChannelNotFoundError } from "./channel-errors";
 
@@ -172,16 +175,16 @@ export async function createChannel(input: {
 	}
 
 	const plan = u.plan as MeResponse["plan"];
-	const max = MAX_CHANNELS_BY_PLAN[plan];
 
 	const [countRow] = await db
 		.select({ c: count() })
 		.from(channels)
 		.where(eq(channels.userId, input.userId));
 
-	if (Number(countRow?.c ?? 0) >= max) {
-		throw new ChannelLimitError(max, plan);
-	}
+	assertChannelCapacity({
+		plan,
+		currentChannelCount: Number(countRow?.c ?? 0),
+	});
 
 	const config = parseChannelConfig(input.config ?? {});
 
