@@ -44,13 +44,17 @@ export const channels = mysqlTable(
 		externalChannelThumbnailUrl: varchar("external_channel_thumbnail_url", {
 			length: 512,
 		}),
-		/** YouTube OAuth refresh token (server-only; never exposed to the client). */
-		youtubeRefreshToken: text("youtube_refresh_token"),
 		/**
-		 * YouTube channel id (`UC…`) bound to this publishing destination on first
-		 * successful OAuth. Never cleared on disconnect — reconnect must use the same channel.
+		 * Platform OAuth refresh token (server-only; never exposed to the client).
+		 * For YouTube, this is the Google refresh token.
 		 */
-		boundYoutubeChannelId: varchar("bound_youtube_channel_id", { length: 64 }),
+		oauthRefreshToken: text("oauth_refresh_token"),
+		/**
+		 * External account id locked to this destination on first successful OAuth.
+		 * Never cleared on disconnect — reconnect must use the same external account.
+		 * For YouTube: `UC…` channel id.
+		 */
+		boundExternalAccountId: varchar("bound_external_account_id", { length: 64 }),
 		createdAt: timestamp("created_at", { fsp: 3 })
 			.default(sql`CURRENT_TIMESTAMP(3)`)
 			.notNull(),
