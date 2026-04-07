@@ -7,7 +7,6 @@ import {
 	executeWithProviderKeyRotation,
 	throwProviderHttpError,
 } from "../lib/provider-key-execution.server";
-import { env } from "@/env";
 
 /**
  * Official: https://text.pollinations.ai/openai
@@ -15,7 +14,9 @@ import { env } from "@/env";
  */
 function chatCompletionsUrl(): string {
 	const base = env.POLLINATIONS_GEN_BASE?.replace(/\/$/, "");
-	return base ? `${base}/v1/chat/completions` : "https://text.pollinations.ai/openai";
+	return base
+		? `${base}/v1/chat/completions`
+		: "https://text.pollinations.ai/openai";
 }
 
 /**
