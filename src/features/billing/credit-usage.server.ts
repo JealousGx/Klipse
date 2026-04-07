@@ -29,6 +29,12 @@ export class InsufficientCreditsError extends Error {
 
 type UsageStage = NonNullable<PolarUsageMetadata["stage"]>;
 
+/** Balance fields from the same DB transaction after locking the user row (e.g. entitlement snapshot). */
+export type PrelockedCreditBalance = {
+	creditsRemaining: number;
+	creditsUsed: number;
+};
+
 /**
  * Ledger convention: `type: "usage"` rows use **negative** `amount` (credits removed).
  * `metadata.creditsAbs` holds the magnitude for analytics / Polar alignment.
@@ -40,27 +46,43 @@ export async function applyUsageDeduction(
 		credits: number;
 		stage: UsageStage;
 		ref: string;
+		/**
+		 * When set, skips a redundant `users` read; must match the row locked for this transaction
+		 * (e.g. `selectUserEntitlementSnapshotForUpdate`).
+		 */
+		prelockedBalance?: PrelockedCreditBalance;
 	},
 ): Promise<{ creditsRemaining: number }> {
 	if (input.credits <= 0) {
 		throw new Error("credits must be positive");
 	}
 
-	const [user] = await tx
-		.select()
-		.from(users)
-		.where(eq(users.id, input.userId))
-		.limit(1);
+	let creditsRemaining: number;
+	let creditsUsed: number;
 
-	if (!user) {
-		throw new Error("USER_NOT_FOUND");
-	}
-	if (user.creditsRemaining < input.credits) {
-		throw new InsufficientCreditsError(input.credits, user.creditsRemaining);
+	if (input.prelockedBalance) {
+		creditsRemaining = input.prelockedBalance.creditsRemaining;
+		creditsUsed = input.prelockedBalance.creditsUsed;
+	} else {
+		const [user] = await tx
+			.select()
+			.from(users)
+			.where(eq(users.id, input.userId))
+			.limit(1);
+
+		if (!user) {
+			throw new Error("USER_NOT_FOUND");
+		}
+		creditsRemaining = user.creditsRemaining;
+		creditsUsed = user.creditsUsed;
 	}
 
-	const newRemaining = user.creditsRemaining - input.credits;
-	const newUsed = user.creditsUsed + input.credits;
+	if (creditsRemaining < input.credits) {
+		throw new InsufficientCreditsError(input.credits, creditsRemaining);
+	}
+
+	const newRemaining = creditsRemaining - input.credits;
+	const newUsed = creditsUsed + input.credits;
 
 	await tx
 		.update(users)
