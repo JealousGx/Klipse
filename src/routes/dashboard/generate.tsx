@@ -37,7 +37,7 @@ function GeneratePage() {
 	const user = session.user;
 	const estimate = estimateStubGenerateCredits();
 	const assemblyEstimate = estimateVideoAssemblyCredits();
-	const contentEstimate = estimateContentPipelineCredits();
+
 	const [busy, setBusy] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -46,6 +46,8 @@ function GeneratePage() {
 	const contentIdempotencyKeyRef = useRef<string | null>(null);
 	const [channelId, setChannelId] = useState<string>("");
 	const [idea, setIdea] = useState("");
+
+	const contentEstimate = estimateContentPipelineCredits({ idea });
 
 	const channelsQuery = useQuery(channelsQueryOptions);
 
@@ -307,7 +309,7 @@ function GeneratePage() {
 					id="gen-idea"
 					rows={4}
 					placeholder="e.g. 3 surprising facts about ocean microbes for science-curious viewers…"
-					className={`${selectClass} min-h-[96px] resize-y py-2`}
+					className={`${selectClass} min-h-24 resize-y py-2`}
 					value={idea}
 					onChange={(e) => setIdea(e.target.value)}
 					disabled={busy}
