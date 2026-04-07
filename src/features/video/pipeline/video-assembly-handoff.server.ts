@@ -69,6 +69,7 @@ export async function handoffVideoAssemblyToExternalProcessor(
 			status: videoJobs.status,
 			currentStage: videoJobs.currentStage,
 			userPlan: users.plan,
+			artifacts: videoJobs.artifacts,
 		})
 		.from(videoJobs)
 		.innerJoin(users, eq(videoJobs.userId, users.id))
@@ -143,6 +144,7 @@ export async function handoffVideoAssemblyToExternalProcessor(
 	const completeWebhookUrl = `${base}/api/internal/video-processor/assembly-complete`;
 
 	const wmLabel = siteConfig.name.trim().slice(0, 128) || "Klipse";
+	const art = job.artifacts;
 	const payload: VideoProcessorHandoffPayload = {
 		jobId: id,
 		userId: job.userId,
@@ -151,6 +153,13 @@ export async function handoffVideoAssemblyToExternalProcessor(
 		completeWebhookUrl,
 		freeTierWatermark: job.userPlan === "free",
 		watermarkLabel: wmLabel,
+		...(art?.scriptText ? { scriptText: art.scriptText } : {}),
+		...(art?.prepareRefs?.imageUrls?.length
+			? { imageUrls: art.prepareRefs.imageUrls }
+			: {}),
+		...(art?.prepareRefs?.ttsAudioUrl
+			? { ttsAudioUrl: art.prepareRefs.ttsAudioUrl }
+			: {}),
 	};
 
 	try {
