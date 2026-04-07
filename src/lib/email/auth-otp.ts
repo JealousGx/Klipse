@@ -5,7 +5,7 @@ export async function sendAuthOTPEmail(data: { email: string; otp: string }) {
 		from: getTransactionEmailFrom(),
 		to: data.email,
 		template: {
-			id: "account-verification-code",
+			id: "email-verification",
 			variables: {
 				OTP: data.otp,
 				CURR_YEAR: String(new Date().getFullYear()),
