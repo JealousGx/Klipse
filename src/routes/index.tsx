@@ -139,11 +139,11 @@ const pricingTiers: readonly {
 	},
 	{
 		name: "Starter",
-		price: "$19",
+		price: "$27",
 		period: "/mo",
 		highlight: "Solo operators",
 		features: [
-			"~1,000 credits (~40 shorts)",
+			"~1,500 credits (~60 shorts)",
 			"1 channel",
 			"Max 30 sec videos",
 			"Auto-post (YouTube only)",
@@ -159,7 +159,7 @@ const pricingTiers: readonly {
 	},
 	{
 		name: "Creator",
-		price: "$49",
+		price: "$63",
 		period: "/mo",
 		highlight: "Serious volume",
 		features: [
@@ -177,7 +177,7 @@ const pricingTiers: readonly {
 	},
 	{
 		name: "Empire",
-		price: "$99",
+		price: "$123",
 		period: "/mo",
 		highlight: "Teams & networks",
 		features: [
