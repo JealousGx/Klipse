@@ -35,10 +35,6 @@ export function DestinationConnectionFields({
 	const authProvider = platformAuthProviderName(connectPlatform);
 	const oauthHref = platformOAuthStartUrl(connectPlatform, destinationId);
 
-	// const platformName = platformDisplayName(ch.platform);
-	// const authProvider = platformAuthProviderName(ch.platform);
-	// const oauthHref = platformOAuthStartUrl(ch.platform, destinationId);
-
 	const showDisconnect = Boolean(ch.externalChannelId || ch.oauthConnected);
 	const needsOAuth = !ch.oauthConnected;
 	const boundId = ch.boundExternalAccountId;
