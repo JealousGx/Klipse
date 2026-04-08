@@ -8,8 +8,11 @@ export const QUEUE_MESSAGE_KIND = {
 	 * `video_jobs.pipeline_kind` — route on this, not on publishing platform.
 	 */
 	videoJobDispatch: "video_job_dispatch",
-	/** Main app uploads a completed render to YouTube (§2.12, §2.15 publishing queue). */
-	youtubePublish: "youtube_publish",
+	/**
+	 * Upload a completed render to a publishing platform (§2.12, §2.15).
+	 * `platform` is the target; only `youtube` is wired today.
+	 */
+	platformPublish: "platform_publish",
 } as const;
 
 export type QueueMessageKind =
@@ -22,19 +25,22 @@ export type VideoJobDispatchMessage = {
 	userId: string;
 };
 
-export type YoutubePublishMessage = {
-	kind: typeof QUEUE_MESSAGE_KIND.youtubePublish;
+export type PlatformPublishMessage = {
+	kind: typeof QUEUE_MESSAGE_KIND.platformPublish;
 	jobId: string;
 	userId: string;
+	/** Publishing platform — determines which main-app endpoint the worker calls. */
+	platform: "youtube" | "tiktok" | "instagram";
 };
 
-export type QueueMessage = VideoJobDispatchMessage | YoutubePublishMessage;
+export type QueueMessage = VideoJobDispatchMessage | PlatformPublishMessage;
 
 export function isQueueMessage(body: unknown): body is QueueMessage {
 	if (typeof body !== "object" || body === null) {
 		return false;
 	}
 	const k = (body as { kind?: unknown }).kind;
+
 	if (k === QUEUE_MESSAGE_KIND.videoJobDispatch) {
 		const o = body as Partial<VideoJobDispatchMessage>;
 		return (
@@ -43,9 +49,17 @@ export function isQueueMessage(body: unknown): body is QueueMessage {
 			typeof o.pipelineKind === "string"
 		);
 	}
-	if (k === QUEUE_MESSAGE_KIND.youtubePublish) {
-		const o = body as Partial<YoutubePublishMessage>;
-		return typeof o.jobId === "string" && typeof o.userId === "string";
+
+	if (k === QUEUE_MESSAGE_KIND.platformPublish) {
+		const o = body as Partial<PlatformPublishMessage>;
+		return (
+			typeof o.jobId === "string" &&
+			typeof o.userId === "string" &&
+			(o.platform === "youtube" ||
+				o.platform === "tiktok" ||
+				o.platform === "instagram")
+		);
 	}
+
 	return false;
 }

@@ -20,11 +20,21 @@ export type VideoProcessorHandoffPayload = {
 	presignedPutUrl: string;
 	contentType: string;
 	completeWebhookUrl: string;
-	/** FEATURE_DOC §10.3 — free tier: centered watermark in the processor. */
+	/** FEATURE_DOC §10.3 — free tier: centered watermark applied by the processor. */
 	freeTierWatermark: boolean;
 	/** Shown inside the watermark (e.g. app title). */
 	watermarkLabel: string;
-	/** Content pipeline: script for future graphs; processor may fetch assets below. */
+	/**
+	 * Target video duration in seconds, clamped to the user's plan limit.
+	 * Processors should respect this; shorter content fills the remainder with silence/hold.
+	 */
+	targetDuration?: number;
+	/**
+	 * Output aspect ratio — decoupled from publishing platform so a 9:16 short can be
+	 * posted to any platform that accepts it.
+	 */
+	aspectRatio?: "16:9" | "9:16" | "1:1";
+	/** Content pipeline: script text forwarded for future encoder graphs. */
 	scriptText?: string;
 	/** HTTPS image URLs (e.g. Pollinations) — processor fetches; not stored in app R2. */
 	imageUrls?: string[];

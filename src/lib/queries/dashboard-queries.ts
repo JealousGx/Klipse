@@ -1,10 +1,50 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { getChannelFn, listChannelsFn } from "@/features/channels/channels.functions";
+import { getChannelScheduleFn } from "@/features/scheduling/scheduling.functions";
+import type { VideoJobListRow } from "@/features/video/video-job-list.types";
 import { listVideoJobsFn } from "@/features/video/video-jobs.functions";
 
-/** Shared stale time so navigations hit cache after a parent route has already loaded lists. */
-const staleMs = 30_000;
+// ---------------------------------------------------------------------------
+// Stale-time constants
+// ---------------------------------------------------------------------------
+
+/** Channels, schedules, channel details — change only on explicit user action. */
+const STALE_GENERAL_MS = 30_000;
+
+/**
+ * Job list — completed/published jobs never change, so a 2-minute stale window
+ * is fine.  Active jobs are kept live by POLL_INTERVAL_MS via refetchInterval,
+ * which fires independently of staleTime.
+ */
+const STALE_JOBS_MS = 2 * 60 * 1_000;
+
+/** How often to re-fetch the job list while at least one job is in-flight. */
+const POLL_INTERVAL_MS = 5_000;
+
+// ---------------------------------------------------------------------------
+// Job status helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Statuses that mean the job is still in-flight and the user is waiting for
+ * an update.  Typed to VideoJobListRow["status"] so TypeScript will break here
+ * if a new status is added to the union without being consciously classified.
+ */
+const ACTIVE_JOB_STATUSES = new Set<VideoJobListRow["status"]>([
+	"queued",
+	"dispatched",
+	"processing",
+]);
+
+/** True when any job in the list needs live progress updates. */
+function hasActiveJobs(jobs: VideoJobListRow[]): boolean {
+	return jobs.some((j) => ACTIVE_JOB_STATUSES.has(j.status));
+}
+
+// ---------------------------------------------------------------------------
+// Query options
+// ---------------------------------------------------------------------------
 
 export const channelsQueryOptions = queryOptions({
 	queryKey: ["channels"] as const,
@@ -13,7 +53,7 @@ export const channelsQueryOptions = queryOptions({
 		if (!r.ok) throw new Error("Unauthorized");
 		return r.channels;
 	},
-	staleTime: staleMs,
+	staleTime: STALE_GENERAL_MS,
 });
 
 export function channelQueryOptions(destinationId: string) {
@@ -24,7 +64,7 @@ export function channelQueryOptions(destinationId: string) {
 			if (!r.ok) throw new Error(r.code);
 			return r.channel;
 		},
-		staleTime: staleMs,
+		staleTime: STALE_GENERAL_MS,
 	});
 }
 
@@ -35,5 +75,21 @@ export const videoJobsQueryOptions = queryOptions({
 		if (!r.ok) throw new Error("Unauthorized");
 		return r.jobs;
 	},
-	staleTime: staleMs,
+	staleTime: STALE_JOBS_MS,
+	refetchInterval: (query) => {
+		const jobs = query.state.data;
+		return jobs && hasActiveJobs(jobs) ? POLL_INTERVAL_MS : false;
+	},
 });
+
+export function schedulingQueryOptions(channelId: string) {
+	return queryOptions({
+		queryKey: ["schedule", channelId] as const,
+		queryFn: async () => {
+			const r = await getChannelScheduleFn({ data: { channelId } });
+			if (!r.ok) throw new Error("Unauthorized");
+			return r.schedule;
+		},
+		staleTime: STALE_GENERAL_MS,
+	});
+}

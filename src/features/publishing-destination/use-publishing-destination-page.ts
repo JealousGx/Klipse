@@ -4,15 +4,26 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
-import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config";
+import {
+	planAllowsPaidPublishingConnections,
+	planAllowsScheduleFastForward,
+} from "@/features/billing/tier-config";
 import type { ChannelConfig } from "@/features/channels/channel-config.schema";
 import {
 	deleteChannelFn,
 	reconcileYoutubeOAuthFn,
 	updateChannelFn,
 } from "@/features/channels/channels.functions";
+import {
+	pauseScheduleFn,
+	resumeScheduleFn,
+	triggerScheduleNowFn,
+} from "@/features/scheduling/scheduling.functions";
 import type { MeResponse } from "@/features/user/types/me";
-import { channelQueryOptions } from "@/lib/queries/dashboard-queries";
+import {
+	channelQueryOptions,
+	schedulingQueryOptions,
+} from "@/lib/queries/dashboard-queries";
 
 import {
 	messageForPublishingConnectionErrorReason,
@@ -34,8 +45,10 @@ export function usePublishingDestinationPage(
 	const { session } = useDashboardRouteContext();
 	const userPlan = (session.user.plan ?? "free") as MeResponse["plan"];
 	const canConnectPublishing = planAllowsPaidPublishingConnections(userPlan);
+	const canTriggerNow = planAllowsScheduleFastForward(userPlan);
 
 	const channelQuery = useQuery(channelQueryOptions(destinationId));
+	const scheduleQuery = useQuery(schedulingQueryOptions(destinationId));
 	const locationHash = useRouterState({
 		select: (s) => s.location.hash,
 	});
@@ -193,6 +206,55 @@ export function usePublishingDestinationPage(
 		},
 	});
 
+	const pauseScheduleMutation = useMutation({
+		mutationFn: async () => pauseScheduleFn({ data: { channelId: destinationId } }),
+		onSuccess: (r) => {
+			if (r.ok) {
+				toast.success("Schedule paused");
+				void queryClient.invalidateQueries({ queryKey: ["schedule", destinationId] });
+				return;
+			}
+			toast.error("Sign in required.");
+		},
+		onError: () => toast.error("Something went wrong."),
+	});
+
+	const resumeScheduleMutation = useMutation({
+		mutationFn: async () => resumeScheduleFn({ data: { channelId: destinationId } }),
+		onSuccess: (r) => {
+			if (r.ok) {
+				toast.success("Schedule resumed");
+				void queryClient.invalidateQueries({ queryKey: ["schedule", destinationId] });
+				return;
+			}
+			toast.error("Sign in required.");
+		},
+		onError: () => toast.error("Something went wrong."),
+	});
+
+	const triggerNowMutation = useMutation({
+		mutationFn: async () =>
+			triggerScheduleNowFn({ data: { channelId: destinationId } }),
+		onSuccess: (r) => {
+			if (r.ok) {
+				toast.success("Video queued — check the Jobs page for progress.");
+				void queryClient.invalidateQueries({ queryKey: ["schedule", destinationId] });
+				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] });
+				return;
+			}
+			if (r.code === "insufficient_credits") {
+				toast.error("Not enough credits. Add more under Billing.");
+				return;
+			}
+			if (r.code === "plan_required") {
+				toast.error("Upgrade to Creator or higher to use this feature.");
+				return;
+			}
+			toast.error("Something went wrong. Please try again.");
+		},
+		onError: () => toast.error("Something went wrong."),
+	});
+
 	const ch = channelQuery.data;
 
 	useEffect(() => {
@@ -274,6 +336,14 @@ export function usePublishingDestinationPage(
 		onCopyChannelId: handleCopyChannelId,
 		onRemoveClick: handleRemoveClick,
 		isRemovePending: deleteMutation.isPending,
+		schedule: scheduleQuery.data ?? null,
+		onPauseSchedule: () => pauseScheduleMutation.mutate(),
+		onResumeSchedule: () => resumeScheduleMutation.mutate(),
+		isPausingSchedule: pauseScheduleMutation.isPending,
+		isResumingSchedule: resumeScheduleMutation.isPending,
+		canTriggerNow,
+		onTriggerNow: () => triggerNowMutation.mutate(),
+		isTriggeringNow: triggerNowMutation.isPending,
 	};
 
 	return { status: "ready", viewProps };

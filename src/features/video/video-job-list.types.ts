@@ -18,6 +18,11 @@ export type VideoJobListRow = {
 	publishedVideoId: string | null;
 	/** Last publish error message, if any. */
 	publishLastError: string | null;
+	/**
+	 * Number of manual retries already used. UI shows Retry button when
+	 * `status === "failed" && retryCount < MAX_MANUAL_RETRIES`.
+	 */
+	retryCount: number;
 	/** When the output video is scheduled for purge (R2 TTL), if tracked. */
 	outputStorageExpiresAt: Date | null;
 	createdAt: Date;

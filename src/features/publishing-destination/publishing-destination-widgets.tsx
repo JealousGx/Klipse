@@ -53,6 +53,12 @@ export function PublishingDestinationWidgets({
 							</a>
 						) : null}
 						<a
+							href="#posting-schedule"
+							className="font-medium text-foreground/90 underline-offset-4 hover:underline"
+						>
+							Posting schedule
+						</a>
+						<a
 							href="#destination-details"
 							className="font-medium text-foreground/90 underline-offset-4 hover:underline"
 						>

@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo } from "react";
 
+import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
 import { OverviewPipelineHero } from "@/components/dashboard/pipeline-story";
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
 import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types";
@@ -75,14 +76,18 @@ function DashboardPage() {
 			hint: "All-time",
 		},
 		{
-			label: "Publishing destinations",
+			label: "Channels",
 			value: channelValue,
-			hint: "Linked accounts (OAuth next)",
+			hint: "Connected destinations",
 		},
 	] as const;
 
 	return (
 		<div className="space-y-8">
+			{channelsQuery.data !== undefined ? (
+				<OnboardingChecklist channels={channelsQuery.data} />
+			) : null}
+
 			<div className="overflow-hidden rounded-2xl border border-border/70 bg-muted/20 dark:bg-muted/10">
 				<div className="grid grid-cols-1 divide-y divide-border/70 sm:grid-cols-2 sm:divide-x sm:divide-y-0 lg:grid-cols-4">
 					{items.map((item, i) => (
@@ -103,12 +108,11 @@ function DashboardPage() {
 			/>
 
 			<p className="max-w-2xl border-l-2 border-primary/35 pl-5 text-sm leading-relaxed text-muted-foreground">
-				Use <span className="font-medium text-foreground">Publishing</span> for
-				outbound destinations (YouTube first, more platforms later), run{" "}
-				<span className="font-medium text-foreground">Generate</span> for
-				pipeline jobs, and track{" "}
-				<span className="font-medium text-foreground">Jobs</span>. Plan and
-				credits stay aligned with billing.
+				Connect a channel under{" "}
+				<span className="font-medium text-foreground">Publishing</span>, set
+				your niche and posting schedule, and Klipse handles the rest. Use{" "}
+				<span className="font-medium text-foreground">Generate</span> to create
+				a video right now.
 			</p>
 		</div>
 	);

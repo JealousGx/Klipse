@@ -47,16 +47,38 @@ export const PIPELINE_STAGE = {
 export type PipelineStage =
 	(typeof PIPELINE_STAGE)[keyof typeof PIPELINE_STAGE];
 
-/** User-facing labels for job list / detail (extend when you add real stages). */
+/** User-facing label for a pipeline kind (job list / detail). */
 export function labelForPipelineKind(kind: string): string {
 	switch (kind) {
 		case PIPELINE_KIND.STUB_PIPELINE:
-			return "Stub pipeline";
+			return "Test run";
 		case PIPELINE_KIND.VIDEO_ASSEMBLE_V1:
-			return "Video assembly";
+			return "Assembly";
 		case PIPELINE_KIND.CONTENT_PIPELINE_V1:
-			return "Script · media · assembly";
+			return "Full video";
 		default:
 			return kind;
+	}
+}
+
+/** User-facing label for a pipeline stage shown in progress indicators. */
+export function labelForPipelineStage(stage: string | null | undefined): string {
+	switch (stage) {
+		case PIPELINE_STAGE.QUEUED:
+			return "Waiting";
+		case PIPELINE_STAGE.DISPATCH_PENDING:
+			return "Preparing";
+		case PIPELINE_STAGE.SCRIPT:
+			return "Writing script";
+		case PIPELINE_STAGE.PREPARE:
+			return "Generating media";
+		case PIPELINE_STAGE.STUB_RUN:
+			return "Processing";
+		case PIPELINE_STAGE.ASSEMBLE:
+			return "Encoding video";
+		case PIPELINE_STAGE.DONE:
+			return "Done";
+		default:
+			return stage ?? "—";
 	}
 }

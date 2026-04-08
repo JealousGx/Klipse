@@ -1,4 +1,6 @@
+import { useQuery, queryOptions } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
+import { getAnalyticsSummaryFn } from "@/features/analytics/analytics.functions";
 import {
 	ArrowUpRight,
 	Coins,
@@ -156,6 +158,23 @@ function BillingPage() {
 
 	const credits = user.creditsRemaining ?? 0;
 
+	const analyticsQuery = useQuery(
+		queryOptions({
+			queryKey: ["analytics-summary"] as const,
+			queryFn: async () => {
+				const r = await getAnalyticsSummaryFn();
+				if (!r.ok) return null;
+				return r.summary;
+			},
+			staleTime: 60_000,
+		}),
+	);
+
+	const currentMonth = new Date().toLocaleString(undefined, {
+		month: "long",
+	});
+	const videosThisMonth = analyticsQuery.data?.totalCompleted ?? null;
+
 	return (
 		<div className="space-y-12">
 			<section
@@ -201,10 +220,15 @@ function BillingPage() {
 								)}
 							>
 								<p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-									Credits available
+									Videos in {currentMonth}
 								</p>
 								<p className="mt-1 font-heading text-3xl font-bold tabular-nums tracking-tight text-foreground">
-									{credits.toLocaleString()}
+									{videosThisMonth !== null
+										? videosThisMonth.toLocaleString()
+										: "—"}
+								</p>
+								<p className="mt-1 text-xs text-muted-foreground">
+									{credits.toLocaleString()} credits remaining
 								</p>
 							</div>
 							<div

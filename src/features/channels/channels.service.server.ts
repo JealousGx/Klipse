@@ -12,6 +12,8 @@ import type { MeResponse } from "@/features/user/types/me";
 
 import { channelRowId } from "@/lib/id";
 
+import { upsertChannelSchedule } from "@/features/scheduling/scheduling.service.server";
+
 import {
 	type ChannelConfig,
 	parseChannelConfig,
@@ -212,6 +214,13 @@ export async function createChannel(input: {
 	if (!created) {
 		throw new Error("Channel insert failed.");
 	}
+
+	await upsertChannelSchedule({
+		userId: input.userId,
+		channelId: created.id,
+		frequency: config.posting_frequency,
+	});
+
 	return created;
 }
 
@@ -294,6 +303,19 @@ export async function updateChannel(input: {
 	if (!next) {
 		throw new ChannelNotFoundError();
 	}
+
+	// Sync schedule when posting_frequency changes (or create one if it doesn't exist yet).
+	if (
+		input.config !== undefined &&
+		next.config.posting_frequency !== existing.config.posting_frequency
+	) {
+		await upsertChannelSchedule({
+			userId: input.userId,
+			channelId: next.id,
+			frequency: next.config.posting_frequency,
+		});
+	}
+
 	return next;
 }
 

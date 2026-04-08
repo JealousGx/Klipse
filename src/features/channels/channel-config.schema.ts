@@ -5,7 +5,20 @@ export const channelConfigSchema = z
 	.object({
 		tone: z.enum(["dark", "educational", "fun"]).default("educational"),
 		target_duration: z.number().int().min(15).max(600).default(30),
-		posting_frequency: z.enum(["daily", "weekly"]).default("weekly"),
+		posting_frequency: z
+			.enum([
+				"daily",
+				"every_2_days",
+				"every_3_days",
+				"every_4_days",
+				"every_5_days",
+				"every_6_days",
+				"weekly",
+				"every_2_weeks",
+				"every_3_weeks",
+				"monthly",
+			])
+			.default("weekly"),
 		/**
 		 * `true` = auto-publish when the pipeline is ready; `false` = ask in dashboard
 		 * (and email on paid) before publishing.

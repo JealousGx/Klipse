@@ -7,9 +7,16 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types";
-import { labelForPipelineKind } from "@/features/video/pipeline/pipeline-kind";
+import {
+	labelForPipelineKind,
+	labelForPipelineStage,
+} from "@/features/video/pipeline/pipeline-kind";
 import type { VideoJobListRow } from "@/features/video/video-job-list.types";
-import { publishVideoJobApprovalFn } from "@/features/video/video-jobs.functions";
+import {
+	MAX_MANUAL_RETRIES,
+	publishVideoJobApprovalFn,
+	retryVideoJobFn,
+} from "@/features/video/video-jobs.functions";
 
 import {
 	formatOutputRetentionDeadlineUtc,
@@ -112,8 +119,8 @@ export function JobQueueStoryCard({
 		? [
 				...tagFromNiche(selected.channelNiche),
 				labelForPipelineKind(selected.pipelineKind),
-				selected.currentStage ?? "pipeline",
-				`${selected.costCredits} cr`,
+				labelForPipelineStage(selected.currentStage),
+				`${selected.costCredits} credits`,
 			]
 		: [];
 
@@ -226,6 +233,32 @@ function JobDetailPane({
 		},
 	});
 
+	const retryMutation = useMutation({
+		mutationFn: async () => {
+			const r = await retryVideoJobFn({ data: { jobId: job.id } });
+			return r;
+		},
+		onSuccess: (r) => {
+			if (r.ok) {
+				toast.success("Job queued for retry.");
+				onRefetch();
+				return;
+			}
+			if (r.code === "max_retries") {
+				toast.error("Maximum retries reached for this job.");
+			} else if (r.code === "not_failed") {
+				toast.error("This job is not in a failed state.");
+			} else if (r.code === "not_found") {
+				toast.error("Job not found.");
+			} else {
+				toast.error("Sign in required.");
+			}
+		},
+		onError: () => {
+			toast.error("Something went wrong. Please try again.");
+		},
+	});
+
 	const pendingApproval = job.publishApprovalStatus === "pending";
 	const retentionNote = job.outputStorageExpiresAt
 		? `This video is scheduled for removal after ${formatOutputRetentionDeadlineUtc(job.outputStorageExpiresAt)}. Approve or reject before then so you don’t lose access.`
@@ -253,7 +286,7 @@ function JobDetailPane({
 					</div>
 				)}
 				<div className="absolute bottom-2 left-2 rounded border border-border/80 bg-background px-2 py-1 font-mono text-[10px] font-medium text-foreground">
-					{job.progress}% · {job.currentStage ?? "—"}
+					{job.progress}% · {labelForPipelineStage(job.currentStage)}
 				</div>
 			</div>
 			<div className="space-y-3 p-4">
@@ -358,10 +391,30 @@ function JobDetailPane({
 							credits
 						</p>
 					</div>
-					{job.status === "failed" && job.errorMessage ? (
-						<p className="max-w-[12rem] text-right text-xs text-destructive">
-							{job.errorMessage}
-						</p>
+					{job.status === "failed" ? (
+						<div className="flex flex-col items-end gap-2">
+							{job.errorMessage ? (
+								<p className="max-w-[12rem] text-right text-xs text-destructive">
+									{job.errorMessage}
+								</p>
+							) : null}
+							{job.retryCount < MAX_MANUAL_RETRIES ? (
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="h-7 text-xs"
+									disabled={retryMutation.isPending}
+									onClick={() => retryMutation.mutate()}
+								>
+									{retryMutation.isPending ? "Retrying…" : "Retry"}
+								</Button>
+							) : (
+								<p className="text-xs text-muted-foreground">
+									Max retries reached.
+								</p>
+							)}
+						</div>
 					) : null}
 				</div>
 			</div>
@@ -466,8 +519,8 @@ function LatestJobSnapshotCard({
 	const tags = [
 		...tagFromNiche(job.channelNiche).slice(0, 2),
 		labelForPipelineKind(job.pipelineKind),
-		job.status,
-		`${job.costCredits} cr`,
+		statusLabel[job.status],
+		`${job.costCredits} credits`,
 	];
 
 	return (
@@ -512,7 +565,7 @@ function LatestJobSnapshotCard({
 						</div>
 					)}
 					<div className="absolute bottom-2 left-2 rounded border border-border/80 bg-background px-2 py-1 font-mono text-[10px] font-medium text-foreground">
-						{job.progress}% · {job.currentStage ?? "—"}
+						{job.progress}% · {labelForPipelineStage(job.currentStage)}
 					</div>
 				</div>
 				<div className="space-y-3 p-4">
