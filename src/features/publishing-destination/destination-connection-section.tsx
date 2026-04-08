@@ -2,6 +2,11 @@ import { Link } from "@tanstack/react-router";
 import { CheckCircle2, Loader2, Unplug } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+	platformAuthProviderName,
+	platformDisplayName,
+	platformOAuthStartUrl,
+} from "@/lib/platform-publishing";
 
 import type { PublishingDestinationChannel } from "./publishing-destination-channel.types";
 
@@ -14,7 +19,7 @@ type Props = {
 	isDisconnectPending: boolean;
 };
 
-/** Inner body for the Google / YouTube block (wrapped by `DashboardPanel` in the view). */
+/** Inner body for the platform connection block (wrapped by `DashboardPanel` in the view). */
 export function DestinationConnectionFields({
 	destinationId,
 	channel: ch,
@@ -22,9 +27,12 @@ export function DestinationConnectionFields({
 	onDisconnect,
 	isDisconnectPending,
 }: Props) {
-	const oauthHref = `/api/youtube/oauth/start?channelId=${encodeURIComponent(destinationId)}`;
+	const platformName = platformDisplayName(ch.platform);
+	const authProvider = platformAuthProviderName(ch.platform);
+	const oauthHref = platformOAuthStartUrl(ch.platform, destinationId);
+
 	const showDisconnect = Boolean(ch.externalChannelId || ch.oauthConnected);
-	const needsGoogleOAuth = !ch.oauthConnected;
+	const needsOAuth = !ch.oauthConnected;
 	const boundId = ch.boundExternalAccountId;
 	const mustReconnectSameChannel = Boolean(boundId && !ch.oauthConnected);
 
@@ -37,12 +45,12 @@ export function DestinationConnectionFields({
 					</div>
 					<div className="min-w-0 space-y-1">
 						<p className="text-sm font-medium text-foreground">
-							Connected with Google
+							Connected with {authProvider}
 						</p>
 						<p className="text-sm text-muted-foreground">
-							This publishing destination stays tied to that YouTube channel.
-							You can disconnect to revoke access, then reconnect with the same
-							Google account when you’re ready.
+							This publishing destination stays tied to that {platformName}{" "}
+							channel. You can disconnect to revoke access, then reconnect with
+							the same {authProvider} account when you're ready.
 						</p>
 					</div>
 				</div>
@@ -51,7 +59,7 @@ export function DestinationConnectionFields({
 			{mustReconnectSameChannel ? (
 				<p className="text-xs leading-relaxed text-muted-foreground">
 					<strong className="font-medium text-foreground">
-						Same YouTube channel only.
+						Same {platformName} channel only.
 					</strong>{" "}
 					This destination is already linked to channel{" "}
 					<code className="rounded bg-muted/70 px-1 py-0.5 font-mono text-[11px] text-foreground">
@@ -59,9 +67,9 @@ export function DestinationConnectionFields({
 					</code>
 					. Use{" "}
 					<strong className="font-medium text-foreground">
-						Connect with Google
+						Connect with {authProvider}
 					</strong>{" "}
-					and sign in with the Google account that{" "}
+					and sign in with the {authProvider} account that{" "}
 					<strong className="font-medium text-foreground">
 						owns that channel
 					</strong>
@@ -70,14 +78,25 @@ export function DestinationConnectionFields({
 			) : null}
 
 			<div className="flex flex-wrap items-center gap-2">
-				{needsGoogleOAuth ? (
-					canConnectPublishing ? (
+				{needsOAuth ? (
+					canConnectPublishing && oauthHref ? (
 						<Button type="button" className="w-fit gap-2 shadow-sm" asChild>
-							<a href={oauthHref}>Connect with Google</a>
+							<a href={oauthHref}>Connect with {authProvider}</a>
+						</Button>
+					) : canConnectPublishing && !oauthHref ? (
+						<Button
+							type="button"
+							className="w-fit gap-2 shadow-sm"
+							disabled
+							title={`${platformName} publishing is coming soon.`}
+						>
+							{platformName} — coming soon
 						</Button>
 					) : (
 						<Button type="button" className="w-fit gap-2 shadow-sm" asChild>
-							<Link to="/dashboard/billing">Upgrade to connect YouTube</Link>
+							<Link to="/dashboard/billing">
+								Upgrade to connect {platformName}
+							</Link>
 						</Button>
 					)
 				) : (
@@ -89,7 +108,7 @@ export function DestinationConnectionFields({
 						title="Already connected. Disconnect below if you need to revoke access."
 					>
 						<CheckCircle2 className="size-4 opacity-80" aria-hidden />
-						Connected with Google
+						Connected with {authProvider}
 					</Button>
 				)}
 
@@ -106,7 +125,7 @@ export function DestinationConnectionFields({
 						) : (
 							<Unplug className="size-4" aria-hidden />
 						)}
-						Disconnect YouTube
+						Disconnect {platformName}
 					</Button>
 				) : null}
 			</div>

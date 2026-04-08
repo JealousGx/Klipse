@@ -25,7 +25,11 @@ import {
 } from "@/lib/format-output-retention";
 
 import { cn } from "@/lib/utils";
-import { youtubeChannelUrl, youtubeWatchUrl } from "@/lib/youtube";
+import {
+	platformChannelUrl,
+	platformDisplayName as platformDisplayNameUtil,
+	platformVideoUrl,
+} from "@/lib/platform-publishing";
 
 export function shortJobId(id: string): string {
 	const t = id.trim();
@@ -60,16 +64,7 @@ function JobStatusPill({ status }: { status: VideoJobListRow["status"] }) {
 function platformDisplayName(
 	p: VideoJobListRow["channelPlatform"] | ChannelSnapshot["platform"],
 ): string {
-	switch (p) {
-		case "youtube":
-			return "YouTube";
-		case "tiktok":
-			return "TikTok";
-		case "instagram":
-			return "Instagram";
-		default:
-			return "Not linked";
-	}
+	return platformDisplayNameUtil(p);
 }
 
 function tagFromNiche(niche: string): string[] {
@@ -300,20 +295,28 @@ function JobDetailPane({
 							<Download className="size-3.5 shrink-0" aria-hidden />
 							Download MP4
 						</a>
-						{job.publishedVideoId && job.channelPlatform === "youtube" ? (
-							<a
-								href={youtubeWatchUrl(job.publishedVideoId)}
-								target="_blank"
-								rel="noreferrer"
-								className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/60"
-							>
-								Open on YouTube
-								<ArrowUpRight
-									className="size-3.5 shrink-0 opacity-90"
-									aria-hidden
-								/>
-							</a>
-						) : null}
+						{job.publishedVideoId
+							? (() => {
+									const url = platformVideoUrl(
+										job.channelPlatform,
+										job.publishedVideoId,
+									);
+									return url ? (
+										<a
+											href={url}
+											target="_blank"
+											rel="noreferrer"
+											className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/60"
+										>
+											Open on {platformDisplayName(job.channelPlatform)}
+											<ArrowUpRight
+												className="size-3.5 shrink-0 opacity-90"
+												aria-hidden
+											/>
+										</a>
+									) : null;
+								})()
+							: null}
 					</div>
 				) : null}
 				{job.publishLastError && job.status === "completed" && !job.publishedVideoId ? (
@@ -658,11 +661,12 @@ function ActiveDestinationSnapshotCard({
 	}
 
 	const linked =
-		channel.platform === "youtube" && Boolean(channel.externalChannelId);
+		channel.platform !== "unlinked" && Boolean(channel.externalChannelId);
+	const platformName = platformDisplayName(channel.platform);
 	const badgeLabel = channel.oauthConnected
-		? "YouTube · Google"
+		? `${platformName} · connected`
 		: linked
-			? "YouTube · linked"
+			? `${platformName} · linked`
 			: "Not connected";
 
 	const tagBits = [
@@ -743,14 +747,20 @@ function ActiveDestinationSnapshotCard({
 						<p className="mt-0.5 font-mono text-xs text-foreground break-all">
 							{channel.externalChannelId}
 						</p>
-						{channel.platform === "youtube" && channel.externalChannelId ? (
+						{channel.externalChannelId &&
+						platformChannelUrl(channel.platform, channel.externalChannelId) ? (
 							<a
-								href={youtubeChannelUrl(channel.externalChannelId)}
+								href={
+									platformChannelUrl(
+										channel.platform,
+										channel.externalChannelId,
+									) as string
+								}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="mt-2 inline-block text-xs font-semibold text-primary hover:underline"
 							>
-								Open on YouTube →
+								Open on {platformDisplayName(channel.platform)} →
 							</a>
 						) : null}
 					</div>

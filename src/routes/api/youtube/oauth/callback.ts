@@ -45,12 +45,12 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 
 				if (err) {
 					return redirectBack(
-						`/dashboard/publishing?youtube=error&reason=${encodeURIComponent(err)}`,
+						`/dashboard/publishing?oauth=error&reason=${encodeURIComponent(err)}`,
 					);
 				}
 				if (!code || !state) {
 					return redirectBack(
-						"/dashboard/publishing?youtube=error&reason=invalid",
+						"/dashboard/publishing?oauth=error&reason=invalid",
 					);
 				}
 
@@ -60,14 +60,14 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 				);
 				if (!payload) {
 					return redirectBack(
-						"/dashboard/publishing?youtube=error&reason=state",
+						"/dashboard/publishing?oauth=error&reason=state",
 					);
 				}
 
 				const session = await auth.api.getSession({ headers: request.headers });
 				if (!session?.user || session.user.id !== payload.u) {
 					return redirectBack(
-						`/dashboard/publishing/${payload.c}?youtube=error&reason=session`,
+						`/dashboard/publishing/${payload.c}?oauth=error&reason=session`,
 					);
 				}
 
@@ -80,7 +80,7 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 					});
 					if (!tokens.refresh_token) {
 						return redirectBack(
-							`/dashboard/publishing/${payload.c}?youtube=error&reason=no_refresh`,
+							`/dashboard/publishing/${payload.c}?oauth=error&reason=no_refresh`,
 						);
 					}
 
@@ -90,7 +90,7 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 					});
 					if (!youtubeOAuthGrantsAllRequiredScopes(grantedScope)) {
 						return redirectBack(
-							`/dashboard/publishing/${payload.c}?youtube=error&reason=${encodeURIComponent("youtube_scopes_incomplete")}`,
+							`/dashboard/publishing/${payload.c}?oauth=error&reason=${encodeURIComponent("youtube_scopes_incomplete")}`,
 						);
 					}
 
@@ -102,7 +102,7 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 					);
 					if (!destination) {
 						return redirectBack(
-							`/dashboard/publishing/${payload.c}?youtube=error&reason=not_found`,
+							`/dashboard/publishing/${payload.c}?oauth=error&reason=not_found`,
 						);
 					}
 
@@ -110,7 +110,7 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 						destination.boundExternalAccountId ?? destination.externalChannelId;
 					if (lockedChannelId && lockedChannelId !== yt.id) {
 						return redirectBack(
-							`/dashboard/publishing/${payload.c}?youtube=error&reason=${encodeURIComponent("wrong_youtube_channel")}`,
+							`/dashboard/publishing/${payload.c}?oauth=error&reason=${encodeURIComponent("wrong_youtube_channel")}`,
 						);
 					}
 
@@ -122,7 +122,7 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 						});
 					if (duplicateElsewhere) {
 						return redirectBack(
-							`/dashboard/publishing/${payload.c}?youtube=error&reason=${encodeURIComponent("youtube_channel_in_use")}`,
+							`/dashboard/publishing/${payload.c}?oauth=error&reason=${encodeURIComponent("youtube_channel_in_use")}`,
 						);
 					}
 
@@ -142,22 +142,22 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 								? PUBLISHING_CONNECTION_DENIAL_REASONS.PAID_PLAN_REQUIRED
 								: "destination_replacements_exhausted";
 						return redirectBack(
-							`/dashboard/publishing/${payload.c}?youtube=error&reason=${encodeURIComponent(reason)}`,
+							`/dashboard/publishing/${payload.c}?oauth=error&reason=${encodeURIComponent(reason)}`,
 						);
 					}
 
 					return redirectBack(
-						`/dashboard/publishing/${payload.c}?youtube=connected`,
+						`/dashboard/publishing/${payload.c}?oauth=connected`,
 					);
 				} catch (e) {
 					if (e instanceof ChannelNotFoundError) {
 						return redirectBack(
-							`/dashboard/publishing/${payload.c}?youtube=error&reason=not_found`,
+							`/dashboard/publishing/${payload.c}?oauth=error&reason=not_found`,
 						);
 					}
 					console.error("[youtube-oauth]", e);
 					return redirectBack(
-						`/dashboard/publishing/${payload.c}?youtube=error&reason=exchange`,
+						`/dashboard/publishing/${payload.c}?oauth=error&reason=exchange`,
 					);
 				}
 			},

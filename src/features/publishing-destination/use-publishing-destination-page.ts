@@ -80,11 +80,11 @@ export function usePublishingDestinationPage(
 	}, [destinationId, queryClient]);
 
 	useEffect(() => {
-		if (!search.youtube) {
+		if (!search.oauth) {
 			return;
 		}
-		if (search.youtube === "connected") {
-			toast.success("YouTube connected with Google.");
+		if (search.oauth === "connected") {
+			toast.success("Publishing account connected successfully.");
 		} else {
 			toast.error(messageForPublishingConnectionErrorReason(search.reason));
 		}
@@ -95,7 +95,7 @@ export function usePublishingDestinationPage(
 			hash: "connection",
 			replace: true,
 		});
-	}, [search.youtube, search.reason, destinationId, navigate]);
+	}, [search.oauth, search.reason, destinationId, navigate]);
 
 	useEffect(() => {
 		const fragment = (locationHash ?? "").replace(/^#/, "");
@@ -194,7 +194,7 @@ export function usePublishingDestinationPage(
 		onSuccess: (r, variables) => {
 			if (r.ok) {
 				if (variables.externalChannelId === null) {
-					toast.success("YouTube disconnected");
+					toast.success("Publishing account disconnected");
 				}
 				void queryClient.invalidateQueries({
 					queryKey: ["channel", destinationId],
@@ -270,7 +270,7 @@ export function usePublishingDestinationPage(
 		if (
 			typeof window !== "undefined" &&
 			!window.confirm(
-				"Disconnect YouTube from this destination? Google access is removed. You can reconnect later, but only with the same YouTube channel (first channel linked to this destination).",
+				"Disconnect this publishing account? Access is removed. You can reconnect later, but only with the same channel that was first linked to this destination.",
 			)
 		) {
 			return;

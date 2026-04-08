@@ -8,8 +8,8 @@ import type { ChannelConfig } from "@/features/channels/channel-config.schema";
 import { DestinationAutoPostFields } from "./destination-auto-post-fields";
 import { DestinationConnectionFields } from "./destination-connection-section";
 import { DestinationDetailsFields } from "./destination-details-card";
+import { DestinationExternalChannelFields } from "./destination-external-channel-card";
 import { DestinationScheduleFields } from "./destination-schedule-fields";
-import { DestinationYoutubeChannelFields } from "./destination-youtube-channel-card";
 import type { PublishingDestinationChannel } from "./publishing-destination-channel.types";
 import { PublishingDestinationWidgets } from "./publishing-destination-widgets";
 
@@ -147,10 +147,10 @@ export function PublishingDestinationView({
 							}
 						>
 							<DashboardPanel>
-								<DestinationYoutubeChannelFields
+								<DestinationExternalChannelFields
 									channel={channel}
 									onCopyChannelId={onCopyChannelId}
-									googleAccessActive={oauthConnected}
+									oauthAccessActive={oauthConnected}
 								/>
 							</DashboardPanel>
 						</DashboardSection>
