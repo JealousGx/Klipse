@@ -83,5 +83,4 @@ export const retryVideoJobFn = createServerFn({ method: "POST" })
 		return { ok: true };
 	});
 
-/** Re-exported for UI to use without importing the server-only service. */
 export { MAX_MANUAL_RETRIES };

@@ -10,7 +10,7 @@ import { enqueueVideoJobDispatch } from "@/lib/worker/enqueue.server";
 import { PIPELINE_STAGE } from "./pipeline/pipeline-kind";
 import { MAX_MANUAL_RETRIES } from "./video-job-constants";
 
-/** Maximum number of manual retries allowed per job (FEATURE_DOC §DLQ). */
+export { MAX_MANUAL_RETRIES };
 
 export type RetryFailedJobResult =
 	| { ok: true }
