@@ -25,7 +25,6 @@ import {
 } from "@/components/ui/card";
 
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
-import { getAnalyticsSummaryFn } from "@/features/analytics/analytics.functions";
 import {
 	CREDIT_ADDON_AMOUNTS,
 	MONTHLY_CREDITS_BY_PLAN,
