@@ -58,8 +58,7 @@ export function usePublishingDestinationPage(
 	const [displayName, setDisplayName] = useState("");
 	const [niche, setNiche] = useState("");
 	const [autoPost, setAutoPost] = useState(false);
-	const [frequency, setFrequency] =
-		useState<ChannelConfig["posting_frequency"]>("weekly");
+	const [frequency, setFrequency] = useState<ChannelConfig["posting_frequency"]>("weekly");
 	const [soundEnabled, setSoundEnabled] = useState(true);
 	const [soundPromptHint, setSoundPromptHint] = useState("");
 
@@ -278,6 +277,35 @@ export function usePublishingDestinationPage(
 			toast.error(r.message ?? "Could not save");
 		},
 		onError: () => toast.error("Could not save"),
+	});
+
+	const updateFrequencyMutation = useMutation({
+		mutationFn: async (newFrequency: ChannelConfig["posting_frequency"]) => {
+			const c = queryClient.getQueryData(["channel", destinationId]) as
+				| { config: ChannelConfig }
+				| undefined;
+			if (!c) {
+				throw new Error("Channel not loaded");
+			}
+			return updateChannelFn({
+				data: {
+					channelId: destinationId,
+					config: { ...c.config, posting_frequency: newFrequency },
+				},
+			});
+		},
+		onSuccess: (r, newFrequency) => {
+			if (r.ok) {
+				setFrequency(newFrequency);
+				toast.success("Posting frequency updated");
+				void queryClient.invalidateQueries({
+					queryKey: ["channel", destinationId],
+				});
+				void queryClient.invalidateQueries({ queryKey: ["schedule", destinationId] });
+				return;
+			}
+			toast.error(r.message ?? "Could not save");
+		},
 	});
 
 	const updateLinkMutation = useMutation({
