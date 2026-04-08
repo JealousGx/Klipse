@@ -129,7 +129,6 @@ const pricingTiers: readonly {
 			"1 video for lifetime",
 			"Max 30 sec",
 			"No auto-post",
-			"No download (preview only or low-res)",
 			"Expires after 24h",
 			"Queue priority: lowest",
 			"Models: cheapest only",
