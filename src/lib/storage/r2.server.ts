@@ -1,6 +1,12 @@
 import "@tanstack/react-start/server-only";
 
-import { DeleteObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+	DeleteObjectCommand,
+	DeleteObjectsCommand,
+	ListObjectsV2Command,
+	PutObjectCommand,
+	S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { env } from "@/env";
@@ -134,4 +140,57 @@ export async function presignPutVideoToR2(input: {
 		{ expiresIn: input.expiresIn ?? 900 },
 	);
 	return { url: signedUrl };
+}
+
+/**
+ * Deletes every R2 object belonging to a user in one logical operation.
+ *
+ * All user assets are stored under `{env}/u/{userId}/…` so a single
+ * `ListObjectsV2` + `DeleteObjects` sweep (up to 1 000 keys per round)
+ * clears all their data.  Pagination handles users with more than 1 000
+ * objects automatically.  Each round costs exactly 2 API calls (list +
+ * delete), so a typical user is cleaned up in 2 calls total.
+ *
+ * Safe to call even if the user has no R2 data — the list returns empty
+ * and the function exits immediately.
+ */
+export async function deleteUserR2Data(
+	userId: string,
+): Promise<{ deleted: number }> {
+	// Logical prefix (no env prefix yet — we build the full S3 key directly).
+	const prefix = `${getEnvironment()}/u/${userId}/`;
+	let deleted = 0;
+	let continuationToken: string | undefined;
+
+	do {
+		const listResult = await S3.send(
+			new ListObjectsV2Command({
+				Bucket: R2_BUCKET,
+				Prefix: prefix,
+				MaxKeys: 1_000,
+				ContinuationToken: continuationToken,
+			}),
+		);
+
+		const objects = listResult.Contents ?? [];
+		if (objects.length > 0) {
+			await S3.send(
+				new DeleteObjectsCommand({
+					Bucket: R2_BUCKET,
+					Delete: {
+						Objects: objects.map((o) => ({ Key: o.Key! })),
+						// Quiet mode: only report errors, not successes.
+						Quiet: true,
+					},
+				}),
+			);
+			deleted += objects.length;
+		}
+
+		continuationToken = listResult.IsTruncated
+			? listResult.NextContinuationToken
+			: undefined;
+	} while (continuationToken);
+
+	return { deleted };
 }

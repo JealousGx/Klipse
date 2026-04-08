@@ -32,4 +32,16 @@ export const additionalUserFields = {
 		input: false,
 		required: false,
 	},
+	/** User-controlled: email sent when video needs manual approval. */
+	notifyVideoApproval: {
+		type: "boolean",
+		input: true,
+		required: false,
+	},
+	/** User-controlled: email sent when any video finishes generating. */
+	notifyVideoReady: {
+		type: "boolean",
+		input: true,
+		required: false,
+	},
 } satisfies Record<string, DBFieldAttribute>;
