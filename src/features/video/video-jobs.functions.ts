@@ -4,7 +4,8 @@ import { z } from "zod";
 
 import { auth } from "@/lib/auth";
 
-import { MAX_MANUAL_RETRIES, retryFailedJobForUser } from "./retry-failed-job.server";
+import { retryFailedJobForUser } from "./retry-failed-job.server";
+import { MAX_MANUAL_RETRIES } from "./video-job-constants";
 import {
 	listVideoJobsForUser,
 	setPublishApprovalForUser,
