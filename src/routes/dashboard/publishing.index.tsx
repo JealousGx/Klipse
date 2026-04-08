@@ -43,7 +43,10 @@ import type { MeResponse } from "@/features/user/types/me";
 
 import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
 import { cn } from "@/lib/utils";
-import { youtubeChannelUrl } from "@/lib/youtube";
+import {
+	platformChannelUrl,
+	platformDisplayName,
+} from "@/lib/platform-publishing";
 
 export const Route = createFileRoute("/dashboard/publishing/")({
 	staticData: { dashboardTitle: "Publishing" },
@@ -80,20 +83,20 @@ function DestinationCard({
 	deletePending,
 	deleteTargetId,
 }: DestinationCardProps) {
-	const ytLinked = ch.platform === "youtube" && Boolean(ch.externalChannelId);
+	const isLinked = ch.platform !== "unlinked" && Boolean(ch.externalChannelId);
 
 	return (
 		<Card
 			className={cn(
 				"group relative flex h-full flex-col overflow-hidden border-border/80 transition-[border-color,box-shadow] duration-300",
 				"hover:border-primary/35 hover:shadow-lg hover:shadow-primary/5",
-				ytLinked && "ring-1 ring-primary/20 dark:ring-primary/25",
+				isLinked && "ring-1 ring-primary/20 dark:ring-primary/25",
 			)}
 		>
 			<div
 				className={cn(
 					"h-1.5 bg-linear-to-r",
-					ytLinked
+					isLinked
 						? "from-primary/55 via-primary/35 to-chart-2/45"
 						: "from-muted/70 to-muted/40",
 				)}
@@ -111,7 +114,7 @@ function DestinationCard({
 						}
 						size="sm"
 						className={cn(
-							ytLinked && "ring-1 ring-primary/25 dark:ring-primary/30",
+							isLinked && "ring-1 ring-primary/25 dark:ring-primary/30",
 						)}
 					/>
 					<div className="min-w-0 flex-1 space-y-1.5">
@@ -130,10 +133,10 @@ function DestinationCard({
 								</Link>
 							</CardTitle>
 							<Badge
-								variant={ytLinked ? "default" : "secondary"}
+								variant={isLinked ? "default" : "secondary"}
 								className="shrink-0 text-[10px] font-medium uppercase tracking-wide"
 							>
-								{ytLinked ? "Linked" : "Not connected"}
+								{isLinked ? "Linked" : "Not connected"}
 							</Badge>
 						</div>
 						<CardDescription className="line-clamp-2 text-xs leading-relaxed">
@@ -152,7 +155,7 @@ function DestinationCard({
 						)}
 					>
 						<p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-							YouTube channel id
+							{platformDisplayName(ch.platform)} channel id
 						</p>
 						<div className="mt-1.5 flex flex-wrap items-center gap-2">
 							<code className="min-w-0 flex-1 truncate font-mono text-[11px] text-foreground">
@@ -167,7 +170,10 @@ function DestinationCard({
 									void navigator.clipboard
 										.writeText(ch.externalChannelId as string)
 										.then(
-											() => toast.success("YouTube channel id copied"),
+											() =>
+												toast.success(
+													`${platformDisplayName(ch.platform)} channel id copied`,
+												),
 											() => toast.error("Could not copy"),
 										);
 								}}
@@ -175,15 +181,22 @@ function DestinationCard({
 								<Copy className="size-3" aria-hidden />
 								Copy
 							</Button>
-							<a
-								href={youtubeChannelUrl(ch.externalChannelId)}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-primary underline-offset-4 hover:underline"
-							>
-								<ExternalLink className="size-3" aria-hidden />
-								Open
-							</a>
+							{platformChannelUrl(ch.platform, ch.externalChannelId) ? (
+								<a
+									href={
+										platformChannelUrl(
+											ch.platform,
+											ch.externalChannelId,
+										) as string
+									}
+									target="_blank"
+									rel="noopener noreferrer"
+									className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[11px] font-medium text-primary underline-offset-4 hover:underline"
+								>
+									<ExternalLink className="size-3" aria-hidden />
+									Open
+								</a>
+							) : null}
 						</div>
 					</div>
 				) : null}
@@ -240,11 +253,11 @@ function PublishingIndexPage() {
 	const { session } = useDashboardRouteContext();
 
 	useEffect(() => {
-		if (!search.youtube) {
+		if (!search.oauth) {
 			return;
 		}
-		if (search.youtube === "connected") {
-			toast.success("YouTube connected with Google.");
+		if (search.oauth === "connected") {
+			toast.success("Publishing account connected successfully.");
 		} else {
 			toast.error(messageForPublishingConnectionErrorReason(search.reason));
 		}
@@ -253,7 +266,7 @@ function PublishingIndexPage() {
 			search: {},
 			replace: true,
 		});
-	}, [search.youtube, search.reason, navigate]);
+	}, [search.oauth, search.reason, navigate]);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -325,8 +338,8 @@ function PublishingIndexPage() {
 	const list = destinationsQuery.data ?? [];
 	const canAddDestination = list.length < maxDestinations;
 
-	const firstNeedingYoutube = list.find((c) => !c.oauthConnected);
-	const primaryDestinationId = firstNeedingYoutube?.id ?? list[0]?.id ?? null;
+	const firstNeedingOAuth = list.find((c) => !c.oauthConnected);
+	const primaryDestinationId = firstNeedingOAuth?.id ?? list[0]?.id ?? null;
 
 	const handleDelete = (channelId: string) => {
 		if (
@@ -368,9 +381,9 @@ function PublishingIndexPage() {
 								Where videos go live
 							</h2>
 							<p className="text-pretty text-sm leading-relaxed text-muted-foreground sm:text-base">
-								Connect YouTube first; more platforms follow the same pipeline.
-								Names here are Klipse labels—your public channel title appears
-								after you link Google.
+								Connect YouTube, TikTok, or Instagram—all platforms follow the
+								same pipeline. Names here are Klipse labels; your public channel
+								title appears after you link an account.
 							</p>
 						</div>
 						<div
@@ -378,7 +391,7 @@ function PublishingIndexPage() {
 								"flex w-full max-w-md shrink-0 flex-col gap-3 sm:max-w-none lg:max-w-xs",
 							)}
 						>
-							{primaryDestinationId !== null && firstNeedingYoutube ? (
+							{primaryDestinationId !== null && firstNeedingOAuth ? (
 								canConnectPublishing ? (
 									<Button
 										type="button"
@@ -389,7 +402,7 @@ function PublishingIndexPage() {
 										<a
 											href={`/api/youtube/oauth/start?channelId=${encodeURIComponent(primaryDestinationId)}`}
 										>
-											Connect YouTube
+											Connect with YouTube
 											<ArrowUpRight className="size-4 opacity-90" aria-hidden />
 										</a>
 									</Button>
@@ -401,7 +414,7 @@ function PublishingIndexPage() {
 										asChild
 									>
 										<Link to="/dashboard/billing">
-											Upgrade to connect YouTube
+											Upgrade to connect
 											<ArrowUpRight className="size-4 opacity-90" aria-hidden />
 										</Link>
 									</Button>
@@ -437,7 +450,7 @@ function PublishingIndexPage() {
 									className="h-11 w-full"
 									disabled={loading}
 								>
-									Connect YouTube
+									Add a destination
 								</Button>
 							)}
 						</div>
@@ -453,7 +466,7 @@ function PublishingIndexPage() {
 						</h3>
 						<p className="mt-1 max-w-2xl text-sm text-muted-foreground">
 							Each card is one publishing slot. Add more up to your plan limit,
-							then connect YouTube per destination.
+							then connect a platform account per destination.
 						</p>
 					</div>
 					<div className="flex flex-wrap items-center gap-3">

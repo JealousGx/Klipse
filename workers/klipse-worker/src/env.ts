@@ -2,7 +2,10 @@ import type { Queue } from "@cloudflare/workers-types";
 import type { QueueMessage } from "@klipse/worker-contracts";
 
 export interface Env {
-	klipse_jobs: Queue<QueueMessage>;
+	/** Paid users (starter / creator / empire) — higher throughput, faster retry. */
+	klipse_jobs_priority: Queue<QueueMessage>;
+	/** Free users — lower throughput, slower retry. */
+	klipse_jobs_free: Queue<QueueMessage>;
 	MAIN_APP_URL: string;
 	WORKER_SECRET: string;
 }

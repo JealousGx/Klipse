@@ -28,11 +28,20 @@ export default {
 			}
 
 			const raw: unknown = await request.json().catch(() => null);
-			if (!isQueueMessage(raw)) {
+			if (typeof raw !== "object" || raw === null) {
 				return new Response("invalid body", { status: 400 });
 			}
 
-			await env.klipse_jobs.send(raw);
+			// `isPriority` is a routing hint from the main app — strip before queue storage.
+			const { isPriority, ...message } = raw as Record<string, unknown>;
+			if (!isQueueMessage(message)) {
+				return new Response("invalid body", { status: 400 });
+			}
+
+			const queue = isPriority
+				? env.klipse_jobs_priority
+				: env.klipse_jobs_free;
+			await queue.send(message);
 			return Response.json({ ok: true as const });
 		}
 
@@ -54,8 +63,11 @@ export default {
 				await dispatchQueueMessage(msg.body, env);
 				msg.ack();
 			} catch (err) {
-				console.error("[queue] message failed", err);
-				msg.retry({ delaySeconds: 20 });
+				console.error("[queue]", batch.queue, "message failed", err);
+				// Free-tier queue backs off longer to yield capacity to priority queue.
+				msg.retry({
+					delaySeconds: batch.queue === "klipse-jobs-free" ? 30 : 20,
+				});
 			}
 		}
 	},

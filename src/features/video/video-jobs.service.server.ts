@@ -5,9 +5,10 @@ import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { channels } from "@/db/schema/channels";
 import { expiringAssets } from "@/db/schema/expiring-assets";
+import { users } from "@/db/schema/users";
 import { videoJobs } from "@/db/schema/video-jobs";
 
-import { requestYoutubePublishForJob } from "@/features/publishing/youtube/request-youtube-publish.server";
+import { requestPlatformPublishForJob } from "@/features/publishing/request-platform-publish.server";
 
 import type { VideoJobListRow } from "./video-job-list.types";
 
@@ -35,6 +36,7 @@ export async function listVideoJobsForUser(
 			publishApprovalStatus: videoJobs.publishApprovalStatus,
 			publishedVideoId: videoJobs.publishedVideoId,
 			publishLastError: videoJobs.publishLastError,
+			retryCount: videoJobs.retryCount,
 			outputStorageExpiresAt: expiringAssets.expiresAt,
 			createdAt: videoJobs.createdAt,
 		})
@@ -62,14 +64,19 @@ export async function setPublishApprovalForUser(input: {
 	const db = getDb();
 	const jobId = input.jobId.trim();
 
+	// Join channels + users in one query to get everything needed for dispatch.
 	const [row] = await db
 		.select({
 			id: videoJobs.id,
 			userId: videoJobs.userId,
 			publishApprovalStatus: videoJobs.publishApprovalStatus,
 			status: videoJobs.status,
+			channelPlatform: channels.platform,
+			userPlan: users.plan,
 		})
 		.from(videoJobs)
+		.innerJoin(channels, eq(videoJobs.channelId, channels.id))
+		.innerJoin(users, eq(videoJobs.userId, users.id))
 		.where(eq(videoJobs.id, jobId))
 		.limit(1);
 
@@ -97,10 +104,12 @@ export async function setPublishApprovalForUser(input: {
 			),
 		);
 
-	if (input.decision === "approved") {
-		await requestYoutubePublishForJob({
+	if (input.decision === "approved" && row.channelPlatform !== "unlinked") {
+		await requestPlatformPublishForJob({
 			jobId,
 			userId: input.userId,
+			// channelPlatform is "youtube" | "tiktok" | "instagram" after the unlinked guard above
+			platform: row.channelPlatform as "youtube" | "tiktok" | "instagram",
 		});
 	}
 

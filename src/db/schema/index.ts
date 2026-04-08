@@ -3,6 +3,7 @@ export * from "./channels";
 export * from "./channels-relations";
 export * from "./credit-transactions";
 export * from "./provider-api-keys";
+export * from "./schedules";
 export * from "./sessions";
 export * from "./expiring-assets";
 export * from "./usage-idempotency";

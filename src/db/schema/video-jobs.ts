@@ -88,6 +88,11 @@ export const videoJobs = mysqlTable(
 		publishStartedAt: timestamp("publish_started_at", { fsp: 3 }),
 		/** Last publish error message (user-visible; cleared on success). */
 		publishLastError: text("publish_last_error"),
+		/**
+		 * Number of times this job has been manually retried from the dashboard after
+		 * reaching `failed`. Capped at 3 (FEATURE_DOC §DLQ).
+		 */
+		retryCount: int("retry_count").notNull().default(0),
 		createdAt: timestamp("created_at", { fsp: 3 })
 			.default(sql`CURRENT_TIMESTAMP(3)`)
 			.notNull(),

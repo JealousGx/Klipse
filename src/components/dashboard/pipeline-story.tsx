@@ -7,9 +7,16 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 
 import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types";
-import { labelForPipelineKind } from "@/features/video/pipeline/pipeline-kind";
+import {
+	labelForPipelineKind,
+	labelForPipelineStage,
+} from "@/features/video/pipeline/pipeline-kind";
 import type { VideoJobListRow } from "@/features/video/video-job-list.types";
-import { publishVideoJobApprovalFn } from "@/features/video/video-jobs.functions";
+import {
+	MAX_MANUAL_RETRIES,
+	publishVideoJobApprovalFn,
+	retryVideoJobFn,
+} from "@/features/video/video-jobs.functions";
 
 import {
 	formatOutputRetentionDeadlineUtc,
@@ -18,7 +25,11 @@ import {
 } from "@/lib/format-output-retention";
 
 import { cn } from "@/lib/utils";
-import { youtubeChannelUrl, youtubeWatchUrl } from "@/lib/youtube";
+import {
+	platformChannelUrl,
+	platformDisplayName as platformDisplayNameUtil,
+	platformVideoUrl,
+} from "@/lib/platform-publishing";
 
 export function shortJobId(id: string): string {
 	const t = id.trim();
@@ -53,16 +64,7 @@ function JobStatusPill({ status }: { status: VideoJobListRow["status"] }) {
 function platformDisplayName(
 	p: VideoJobListRow["channelPlatform"] | ChannelSnapshot["platform"],
 ): string {
-	switch (p) {
-		case "youtube":
-			return "YouTube";
-		case "tiktok":
-			return "TikTok";
-		case "instagram":
-			return "Instagram";
-		default:
-			return "Not linked";
-	}
+	return platformDisplayNameUtil(p);
 }
 
 function tagFromNiche(niche: string): string[] {
@@ -112,8 +114,8 @@ export function JobQueueStoryCard({
 		? [
 				...tagFromNiche(selected.channelNiche),
 				labelForPipelineKind(selected.pipelineKind),
-				selected.currentStage ?? "pipeline",
-				`${selected.costCredits} cr`,
+				labelForPipelineStage(selected.currentStage),
+				`${selected.costCredits} credits`,
 			]
 		: [];
 
@@ -226,6 +228,32 @@ function JobDetailPane({
 		},
 	});
 
+	const retryMutation = useMutation({
+		mutationFn: async () => {
+			const r = await retryVideoJobFn({ data: { jobId: job.id } });
+			return r;
+		},
+		onSuccess: (r) => {
+			if (r.ok) {
+				toast.success("Job queued for retry.");
+				onRefetch();
+				return;
+			}
+			if (r.code === "max_retries") {
+				toast.error("Maximum retries reached for this job.");
+			} else if (r.code === "not_failed") {
+				toast.error("This job is not in a failed state.");
+			} else if (r.code === "not_found") {
+				toast.error("Job not found.");
+			} else {
+				toast.error("Sign in required.");
+			}
+		},
+		onError: () => {
+			toast.error("Something went wrong. Please try again.");
+		},
+	});
+
 	const pendingApproval = job.publishApprovalStatus === "pending";
 	const retentionNote = job.outputStorageExpiresAt
 		? `This video is scheduled for removal after ${formatOutputRetentionDeadlineUtc(job.outputStorageExpiresAt)}. Approve or reject before then so you don’t lose access.`
@@ -253,7 +281,7 @@ function JobDetailPane({
 					</div>
 				)}
 				<div className="absolute bottom-2 left-2 rounded border border-border/80 bg-background px-2 py-1 font-mono text-[10px] font-medium text-foreground">
-					{job.progress}% · {job.currentStage ?? "—"}
+					{job.progress}% · {labelForPipelineStage(job.currentStage)}
 				</div>
 			</div>
 			<div className="space-y-3 p-4">
@@ -267,20 +295,28 @@ function JobDetailPane({
 							<Download className="size-3.5 shrink-0" aria-hidden />
 							Download MP4
 						</a>
-						{job.publishedVideoId && job.channelPlatform === "youtube" ? (
-							<a
-								href={youtubeWatchUrl(job.publishedVideoId)}
-								target="_blank"
-								rel="noreferrer"
-								className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/60"
-							>
-								Open on YouTube
-								<ArrowUpRight
-									className="size-3.5 shrink-0 opacity-90"
-									aria-hidden
-								/>
-							</a>
-						) : null}
+						{job.publishedVideoId
+							? (() => {
+									const url = platformVideoUrl(
+										job.channelPlatform,
+										job.publishedVideoId,
+									);
+									return url ? (
+										<a
+											href={url}
+											target="_blank"
+											rel="noreferrer"
+											className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/60"
+										>
+											Open on {platformDisplayName(job.channelPlatform)}
+											<ArrowUpRight
+												className="size-3.5 shrink-0 opacity-90"
+												aria-hidden
+											/>
+										</a>
+									) : null;
+								})()
+							: null}
 					</div>
 				) : null}
 				{job.publishLastError && job.status === "completed" && !job.publishedVideoId ? (
@@ -358,10 +394,30 @@ function JobDetailPane({
 							credits
 						</p>
 					</div>
-					{job.status === "failed" && job.errorMessage ? (
-						<p className="max-w-[12rem] text-right text-xs text-destructive">
-							{job.errorMessage}
-						</p>
+					{job.status === "failed" ? (
+						<div className="flex flex-col items-end gap-2">
+							{job.errorMessage ? (
+								<p className="max-w-[12rem] text-right text-xs text-destructive">
+									{job.errorMessage}
+								</p>
+							) : null}
+							{job.retryCount < MAX_MANUAL_RETRIES ? (
+								<Button
+									type="button"
+									variant="outline"
+									size="sm"
+									className="h-7 text-xs"
+									disabled={retryMutation.isPending}
+									onClick={() => retryMutation.mutate()}
+								>
+									{retryMutation.isPending ? "Retrying…" : "Retry"}
+								</Button>
+							) : (
+								<p className="text-xs text-muted-foreground">
+									Max retries reached.
+								</p>
+							)}
+						</div>
 					) : null}
 				</div>
 			</div>
@@ -466,8 +522,8 @@ function LatestJobSnapshotCard({
 	const tags = [
 		...tagFromNiche(job.channelNiche).slice(0, 2),
 		labelForPipelineKind(job.pipelineKind),
-		job.status,
-		`${job.costCredits} cr`,
+		statusLabel[job.status],
+		`${job.costCredits} credits`,
 	];
 
 	return (
@@ -512,7 +568,7 @@ function LatestJobSnapshotCard({
 						</div>
 					)}
 					<div className="absolute bottom-2 left-2 rounded border border-border/80 bg-background px-2 py-1 font-mono text-[10px] font-medium text-foreground">
-						{job.progress}% · {job.currentStage ?? "—"}
+						{job.progress}% · {labelForPipelineStage(job.currentStage)}
 					</div>
 				</div>
 				<div className="space-y-3 p-4">
@@ -605,11 +661,12 @@ function ActiveDestinationSnapshotCard({
 	}
 
 	const linked =
-		channel.platform === "youtube" && Boolean(channel.externalChannelId);
+		channel.platform !== "unlinked" && Boolean(channel.externalChannelId);
+	const platformName = platformDisplayName(channel.platform);
 	const badgeLabel = channel.oauthConnected
-		? "YouTube · Google"
+		? `${platformName} · connected`
 		: linked
-			? "YouTube · linked"
+			? `${platformName} · linked`
 			: "Not connected";
 
 	const tagBits = [
@@ -690,14 +747,20 @@ function ActiveDestinationSnapshotCard({
 						<p className="mt-0.5 font-mono text-xs text-foreground break-all">
 							{channel.externalChannelId}
 						</p>
-						{channel.platform === "youtube" && channel.externalChannelId ? (
+						{channel.externalChannelId &&
+						platformChannelUrl(channel.platform, channel.externalChannelId) ? (
 							<a
-								href={youtubeChannelUrl(channel.externalChannelId)}
+								href={
+									platformChannelUrl(
+										channel.platform,
+										channel.externalChannelId,
+									) as string
+								}
 								target="_blank"
 								rel="noopener noreferrer"
 								className="mt-2 inline-block text-xs font-semibold text-primary hover:underline"
 							>
-								Open on YouTube →
+								Open on {platformDisplayName(channel.platform)} →
 							</a>
 						) : null}
 					</div>

@@ -2,14 +2,17 @@ import "@tanstack/react-start/server-only";
 
 import {
 	QUEUE_MESSAGE_KIND,
+	type PlatformPublishMessage,
 	type VideoJobDispatchMessage,
-	type YoutubePublishMessage,
 } from "@klipse/worker-contracts";
 
+import { getDb } from "@/db";
+import { users } from "@/db/schema/users";
 import { env } from "@/env";
 import { runYoutubePublishForJob } from "@/features/publishing/youtube/run-youtube-publish-for-job.server";
 import { markVideoJobFailed } from "@/features/video/pipeline/process-stub-pipeline.server";
 import { dispatchPipelineForJob } from "@/features/video/pipeline/process-video-job-dispatch.server";
+import { eq } from "drizzle-orm";
 
 /** Thrown when `WORKER_API_URL` enqueue fails and inline fallback is disabled (non-`local`). */
 export class WorkerEnqueueFailedError extends Error {
@@ -27,6 +30,44 @@ function isWorkerEnqueueInlineFallbackEnabled(): boolean {
 	return env.ENVIRONMENT === "local";
 }
 
+/** Paid plans get the high-throughput queue; free tier waits in the low-priority queue. */
+function isPriorityPlan(plan: string): boolean {
+	return plan !== "free";
+}
+
+async function resolveUserPlan(userId: string): Promise<string> {
+	const db = getDb();
+	const [row] = await db
+		.select({ plan: users.plan })
+		.from(users)
+		.where(eq(users.id, userId))
+		.limit(1);
+	return row?.plan ?? "free";
+}
+
+async function postToWorkerEnqueue(
+	body: Record<string, unknown>,
+): Promise<void> {
+	const base = env.WORKER_API_URL.replace(/\/$/, "");
+	const res = await fetch(`${base}/enqueue`, {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${env.WORKER_SECRET}`,
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify(body),
+		signal: AbortSignal.timeout(8000),
+	});
+
+	if (!res.ok) {
+		throw new Error(`enqueue ${res.status}: ${await res.text()}`);
+	}
+}
+
+// ---------------------------------------------------------------------------
+// Video job dispatch
+// ---------------------------------------------------------------------------
+
 export type EnqueueVideoJobDispatchInput = {
 	jobId: string;
 	userId: string;
@@ -35,15 +76,13 @@ export type EnqueueVideoJobDispatchInput = {
 
 /**
  * Enqueue a `video_jobs` row for the Worker to dispatch back to this app.
- * When `ENVIRONMENT=local` and enqueue fails, runs {@link dispatchPipelineForJob} inline.
+ * Resolves the user's plan to route to the priority or free-tier queue.
+ * When `ENVIRONMENT=local` and the Worker is unreachable, runs inline as fallback.
  */
 export async function enqueueVideoJobDispatch(
 	input: EnqueueVideoJobDispatchInput,
 ): Promise<void> {
-	const base = env.WORKER_API_URL.replace(/\/$/, "");
-	const url = `${base}/enqueue`;
-
-	const body: VideoJobDispatchMessage = {
+	const message: VideoJobDispatchMessage = {
 		kind: QUEUE_MESSAGE_KIND.videoJobDispatch,
 		jobId: input.jobId.trim(),
 		userId: input.userId.trim(),
@@ -51,19 +90,8 @@ export async function enqueueVideoJobDispatch(
 	};
 
 	try {
-		const res = await fetch(url, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${env.WORKER_SECRET}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(body),
-			signal: AbortSignal.timeout(8000),
-		});
-
-		if (!res.ok) {
-			throw new Error(`enqueue ${res.status}: ${await res.text()}`);
-		}
+		const plan = await resolveUserPlan(input.userId);
+		await postToWorkerEnqueue({ ...message, isPriority: isPriorityPlan(plan) });
 	} catch (err) {
 		if (isWorkerEnqueueInlineFallbackEnabled()) {
 			console.warn(
@@ -76,10 +104,7 @@ export async function enqueueVideoJobDispatch(
 				const message =
 					e instanceof Error ? e.message : "video_pipeline_inline_failed";
 				console.error("[video_job_dispatch] inline fallback failed", e);
-				await markVideoJobFailed({
-					jobId: input.jobId,
-					message,
-				});
+				await markVideoJobFailed({ jobId: input.jobId, message });
 			}
 			return;
 		}
@@ -96,53 +121,56 @@ export async function enqueueVideoJobDispatch(
 	}
 }
 
-export type EnqueueYoutubePublishInput = {
+// ---------------------------------------------------------------------------
+// Platform publish
+// ---------------------------------------------------------------------------
+
+export type EnqueuePlatformPublishInput = {
 	jobId: string;
 	userId: string;
+	platform: PlatformPublishMessage["platform"];
 };
 
 /**
- * Enqueue YouTube upload (§2.15 publishing queue). Heavy work runs on the main app via Worker callback.
- * When `ENVIRONMENT=local` and enqueue fails, runs {@link runYoutubePublishForJob} inline.
+ * Enqueue a completed render for publishing to the given platform.
+ * When `ENVIRONMENT=local` and the Worker is unreachable, runs inline (YouTube only for now).
  */
-export async function enqueueYoutubePublish(
-	input: EnqueueYoutubePublishInput,
+export async function enqueuePlatformPublish(
+	input: EnqueuePlatformPublishInput,
 ): Promise<void> {
-	const base = env.WORKER_API_URL.replace(/\/$/, "");
-	const url = `${base}/enqueue`;
-
-	const body: YoutubePublishMessage = {
-		kind: QUEUE_MESSAGE_KIND.youtubePublish,
+	const message: PlatformPublishMessage = {
+		kind: QUEUE_MESSAGE_KIND.platformPublish,
 		jobId: input.jobId.trim(),
 		userId: input.userId.trim(),
+		platform: input.platform,
 	};
 
 	try {
-		const res = await fetch(url, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${env.WORKER_SECRET}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(body),
-			signal: AbortSignal.timeout(8000),
-		});
-
-		if (!res.ok) {
-			throw new Error(`enqueue ${res.status}: ${await res.text()}`);
-		}
+		const plan = await resolveUserPlan(input.userId);
+		await postToWorkerEnqueue({ ...message, isPriority: isPriorityPlan(plan) });
 	} catch (err) {
 		if (isWorkerEnqueueInlineFallbackEnabled()) {
 			console.warn(
-				"[enqueue] worker unreachable, running youtube_publish inline",
+				"[enqueue] worker unreachable, running platform_publish inline",
 				err,
 			);
-			await runYoutubePublishForJob(input);
+			if (input.platform === "youtube") {
+				await runYoutubePublishForJob({
+					jobId: input.jobId,
+					userId: input.userId,
+				});
+			} else {
+				console.info(
+					"[enqueue] inline fallback not implemented for platform",
+					input.platform,
+				);
+			}
 			return;
 		}
 		console.error(
-			"[enqueue] youtube_publish worker unreachable (inline fallback disabled; set ENVIRONMENT=local for dev)",
+			"[enqueue] platform_publish worker unreachable (inline fallback disabled; set ENVIRONMENT=local for dev)",
 			err,
 		);
+		throw new WorkerEnqueueFailedError(err);
 	}
 }

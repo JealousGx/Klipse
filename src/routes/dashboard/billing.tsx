@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	ArrowUpRight,
@@ -12,7 +13,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,6 +24,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
+import { analyticsQueryOptions } from "@/lib/queries/dashboard-queries";
 import {
 	CREDIT_ADDON_AMOUNTS,
 	MONTHLY_CREDITS_BY_PLAN,
@@ -156,6 +157,13 @@ function BillingPage() {
 
 	const credits = user.creditsRemaining ?? 0;
 
+	const analyticsQuery = useQuery(analyticsQueryOptions);
+
+	const currentMonth = new Date().toLocaleString(undefined, {
+		month: "long",
+	});
+	const videosThisMonth = analyticsQuery.data?.totalCompleted ?? null;
+
 	return (
 		<div className="space-y-12">
 			<section
@@ -201,10 +209,15 @@ function BillingPage() {
 								)}
 							>
 								<p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-									Credits available
+									Videos in {currentMonth}
 								</p>
 								<p className="mt-1 font-heading text-3xl font-bold tabular-nums tracking-tight text-foreground">
-									{credits.toLocaleString()}
+									{videosThisMonth !== null
+										? videosThisMonth.toLocaleString()
+										: "—"}
+								</p>
+								<p className="mt-1 text-xs text-muted-foreground">
+									{credits.toLocaleString()} credits remaining
 								</p>
 							</div>
 							<div

@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 
-import { and, asc, count, eq } from "drizzle-orm";
+import { and, asc, count, eq, isNull, lt, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { providerApiKeys } from "@/db/schema/provider-api-keys";
@@ -91,35 +91,73 @@ async function ensureEnvProviderKeysMaterialized(
 	}
 }
 
+const KEY_SELECT = {
+	id: providerApiKeys.id,
+	secret: providerApiKeys.secret,
+	quotaResetAt: providerApiKeys.quotaResetAt,
+} as const;
+
+const KEY_ORDER = [
+	asc(providerApiKeys.sortOrder),
+	asc(providerApiKeys.id),
+] as const;
+
+function toCredential(r: {
+	id: string;
+	secret: string;
+	quotaResetAt: Date | null;
+}): ProviderApiKeyCredential {
+	return { id: r.id, secret: r.secret.trim(), quotaResetAt: r.quotaResetAt ?? null };
+}
+
 /**
  * Enabled keys for the provider, ordered. Env keys are materialized into the table first
  * when there are no rows for that provider.
+ *
+ * Two-query pattern to avoid N per-key cooldown roundtrips in the execution loop:
+ * 1. Active keys (cooldownUntil IS NULL OR cooldownUntil < NOW()) — return these when any exist.
+ * 2. Fallback: all non-disabled keys when everything is cooled down (let them try — they will
+ *    fail gracefully and cooldown state will be updated).
  */
 export async function listProviderApiKeyCredentials(
 	provider: AiProviderKind,
 ): Promise<ProviderApiKeyCredential[]> {
 	await ensureEnvProviderKeysMaterialized(provider);
 
-	const rows = await getDb()
-		.select({
-			id: providerApiKeys.id,
-			secret: providerApiKeys.secret,
-			quotaResetAt: providerApiKeys.quotaResetAt,
-		})
+	const db = getDb();
+	const baseWhere = and(
+		eq(providerApiKeys.provider, provider),
+		eq(providerApiKeys.disabled, false),
+	);
+
+	// Query 1: keys not in cooldown.
+	const activeRows = await db
+		.select(KEY_SELECT)
 		.from(providerApiKeys)
 		.where(
 			and(
-				eq(providerApiKeys.provider, provider),
-				eq(providerApiKeys.disabled, false),
+				baseWhere,
+				or(
+					isNull(providerApiKeys.cooldownUntil),
+					lt(providerApiKeys.cooldownUntil, sql`NOW(3)`),
+				),
 			),
 		)
-		.orderBy(asc(providerApiKeys.sortOrder), asc(providerApiKeys.id));
+		.orderBy(...KEY_ORDER);
 
-	return rows.map((r) => ({
-		id: r.id,
-		secret: r.secret.trim(),
-		quotaResetAt: r.quotaResetAt ?? null,
-	}));
+	if (activeRows.length > 0) {
+		return activeRows.map(toCredential);
+	}
+
+	// Query 2: everything is cooled down — return all so we attempt anyway.
+	// The execution layer will record the next failure and advance the cooldown window.
+	const allRows = await db
+		.select(KEY_SELECT)
+		.from(providerApiKeys)
+		.where(baseWhere)
+		.orderBy(...KEY_ORDER);
+
+	return allRows.map(toCredential);
 }
 
 /**

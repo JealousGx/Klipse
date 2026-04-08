@@ -51,6 +51,16 @@ export const MONTHLY_CREDITS_BY_PLAN = {
 	empire: 15000,
 } as const;
 
+/**
+ * Fast-forward (trigger schedule immediately) is gated to Creator+ plans.
+ * Free/Starter users must wait for the next scheduled run.
+ */
+export function planAllowsScheduleFastForward(
+	plan: MeResponse["plan"],
+): boolean {
+	return plan === "creator" || plan === "empire";
+}
+
 /** One-time credit packs (FEATURE_DOC §10.4). */
 export const CREDIT_ADDON_AMOUNTS = {
 	small: 750,

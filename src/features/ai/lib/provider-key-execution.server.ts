@@ -3,7 +3,6 @@ import "@tanstack/react-start/server-only";
 import { RoundRobinPool } from "./api-key-pool.server";
 import {
 	clearCooldownAfterSuccessfulUse,
-	isProviderKeyInCooldown,
 	recordProviderKeyFailure,
 } from "./provider-api-key-state.server";
 import {
@@ -50,10 +49,8 @@ export async function executeWithProviderKeyRotation<T>(
 			continue;
 		}
 
-		if (await isProviderKeyInCooldown(credential)) {
-			lastError = new Error(`${label}_key_in_cooldown`);
-			continue;
-		}
+		// Cooldown filtering is done at DB query level in listProviderApiKeyCredentials.
+		// No per-key roundtrip needed here.
 
 		const backoffMs = Math.min(100 * 2 ** i, 8000);
 		if (backoffMs > 0) {

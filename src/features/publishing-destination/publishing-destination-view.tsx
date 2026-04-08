@@ -4,10 +4,12 @@ import { ArrowLeft } from "lucide-react";
 import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
 import { DashboardSection } from "@/components/dashboard/dashboard-section";
 import { Button } from "@/components/ui/button";
+import type { ChannelConfig } from "@/features/channels/channel-config.schema";
 import { DestinationAutoPostFields } from "./destination-auto-post-fields";
 import { DestinationConnectionFields } from "./destination-connection-section";
 import { DestinationDetailsFields } from "./destination-details-card";
-import { DestinationYoutubeChannelFields } from "./destination-youtube-channel-card";
+import { DestinationExternalChannelFields } from "./destination-external-channel-card";
+import { DestinationScheduleFields } from "./destination-schedule-fields";
 import type { PublishingDestinationChannel } from "./publishing-destination-channel.types";
 import { PublishingDestinationWidgets } from "./publishing-destination-widgets";
 
@@ -30,6 +32,18 @@ export type PublishingDestinationViewProps = {
 	onCopyChannelId: () => void;
 	onRemoveClick: () => void;
 	isRemovePending: boolean;
+	schedule: {
+		nextRunAt: Date;
+		frequency: ChannelConfig["posting_frequency"];
+		enabled: boolean;
+	} | null;
+	onPauseSchedule: () => void;
+	onResumeSchedule: () => void;
+	isPausingSchedule: boolean;
+	isResumingSchedule: boolean;
+	canTriggerNow: boolean;
+	onTriggerNow: () => void;
+	isTriggeringNow: boolean;
 };
 
 export function PublishingDestinationView({
@@ -50,6 +64,14 @@ export function PublishingDestinationView({
 	onCopyChannelId,
 	onRemoveClick,
 	isRemovePending,
+	schedule,
+	onPauseSchedule,
+	onResumeSchedule,
+	isPausingSchedule,
+	isResumingSchedule,
+	canTriggerNow,
+	onTriggerNow,
+	isTriggeringNow,
 }: PublishingDestinationViewProps) {
 	const oauthConnected = channel.oauthConnected;
 	const showConnectedChannelSection = Boolean(
@@ -125,10 +147,10 @@ export function PublishingDestinationView({
 							}
 						>
 							<DashboardPanel>
-								<DestinationYoutubeChannelFields
+								<DestinationExternalChannelFields
 									channel={channel}
 									onCopyChannelId={onCopyChannelId}
-									googleAccessActive={oauthConnected}
+									oauthAccessActive={oauthConnected}
 								/>
 							</DashboardPanel>
 						</DashboardSection>
@@ -151,6 +173,26 @@ export function PublishingDestinationView({
 										: undefined
 								}
 								isSaving={isSavingAutoPost}
+							/>
+						</DashboardPanel>
+					</DashboardSection>
+
+					<DashboardSection
+						id="posting-schedule"
+						titleId="posting-schedule-heading"
+						title="Posting schedule"
+						description="Klipse generates a video automatically for this channel based on the schedule below. Pause at any time — your channel niche is used as the topic."
+					>
+						<DashboardPanel>
+							<DestinationScheduleFields
+								schedule={schedule}
+								onPause={onPauseSchedule}
+								onResume={onResumeSchedule}
+								isPausing={isPausingSchedule}
+								isResuming={isResumingSchedule}
+								canTriggerNow={canTriggerNow}
+								onTriggerNow={onTriggerNow}
+								isTriggeringNow={isTriggeringNow}
 							/>
 						</DashboardPanel>
 					</DashboardSection>

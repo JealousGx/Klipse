@@ -25,13 +25,8 @@ function JobsPage() {
 					Video jobs
 				</h2>
 				<p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-					Pipeline runs for each destination: status, pipeline kind, credits,
-					and errors. The current stub advances in one request; heavier video jobs
-					will stay queued longer once workers consume{" "}
-					<code className="rounded bg-muted px-1 py-0.5 font-mono text-[11px]">
-						video_job_dispatch
-					</code>{" "}
-					messages.
+					Each video your channels generate appears here. Track status, download
+					finished videos, or retry if something went wrong.
 				</p>
 			</div>
 

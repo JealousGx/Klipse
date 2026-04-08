@@ -54,6 +54,8 @@ const ID_PREFIXES = {
 	usageIdempotency: "uim",
 	/** `expiring_assets` PK — R2 object tracked for TTL purge. */
 	expiringAsset: "sfb",
+	/** `schedules` PK — one row per channel driving the automated generation loop. */
+	schedule: "sch",
 } as const;
 
 export function userId() {
@@ -152,4 +154,9 @@ export function usageIdempotencyRowId() {
 
 export function expiringAssetRowId() {
 	return prefixedId(ID_PREFIXES.expiringAsset);
+}
+
+/** `schedules` table PK. */
+export function scheduleRowId() {
+	return prefixedId(ID_PREFIXES.schedule);
 }

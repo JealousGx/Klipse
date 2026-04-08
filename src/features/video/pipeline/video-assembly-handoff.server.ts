@@ -8,9 +8,13 @@ import { and, eq, isNull, or } from "drizzle-orm";
 
 import { siteConfig } from "@/config/site";
 import { getDb } from "@/db";
+import { channels } from "@/db/schema/channels";
 import { users } from "@/db/schema/users";
 import { videoJobs } from "@/db/schema/video-jobs";
 import { env } from "@/env";
+import { parseChannelConfig } from "@/features/channels/channel-config.schema";
+import { clampTargetDuration } from "@/features/entitlements";
+import type { MeResponse } from "@/features/user/types/me";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
 import { presignPutVideoToR2 } from "@/lib/storage/r2.server";
 import { getAppPublicBaseUrl } from "@/lib/video-processor/app-base-url.server";
@@ -70,9 +74,11 @@ export async function handoffVideoAssemblyToExternalProcessor(
 			currentStage: videoJobs.currentStage,
 			userPlan: users.plan,
 			artifacts: videoJobs.artifacts,
+			channelConfig: channels.config,
 		})
 		.from(videoJobs)
 		.innerJoin(users, eq(videoJobs.userId, users.id))
+		.innerJoin(channels, eq(videoJobs.channelId, channels.id))
 		.where(eq(videoJobs.id, id))
 		.limit(1);
 
@@ -133,26 +139,35 @@ export async function handoffVideoAssemblyToExternalProcessor(
 		presignedPutUrl = presigned.url;
 	} catch (e) {
 		console.error("[video-assembly-handoff] presign failed", e);
-		await markVideoJobFailed({
-			jobId: id,
-			message: "presign_failed",
-		});
+		await markVideoJobFailed({ jobId: id, message: "presign_failed" });
 		return;
 	}
 
 	const base = getAppPublicBaseUrl();
 	const completeWebhookUrl = `${base}/api/internal/video-processor/assembly-complete`;
 
+	// Resolve channel config to get duration + aspect ratio; clamp to plan limits.
+	const channelConfig = parseChannelConfig(job.channelConfig);
+	const plan = job.userPlan as MeResponse["plan"];
+	const targetDuration = clampTargetDuration(
+		channelConfig.target_duration,
+		plan,
+	);
+	const aspectRatio = channelConfig.aspect_ratio;
+
 	const wmLabel = siteConfig.name.trim().slice(0, 128) || "Klipse";
 	const art = job.artifacts;
+
 	const payload: VideoProcessorHandoffPayload = {
 		jobId: id,
 		userId: job.userId,
 		presignedPutUrl,
 		contentType: "video/mp4",
 		completeWebhookUrl,
-		freeTierWatermark: job.userPlan === "free",
+		freeTierWatermark: plan === "free",
 		watermarkLabel: wmLabel,
+		targetDuration,
+		aspectRatio,
 		...(art?.scriptText ? { scriptText: art.scriptText } : {}),
 		...(art?.prepareRefs?.imageUrls?.length
 			? { imageUrls: art.prepareRefs.imageUrls }
