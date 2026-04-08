@@ -1,6 +1,5 @@
 import { useQuery, queryOptions } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { getAnalyticsSummaryFn } from "@/features/analytics/analytics.functions";
 import {
 	ArrowUpRight,
 	Coins,
@@ -14,7 +13,6 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -26,6 +24,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
+import { getAnalyticsSummaryFn } from "@/features/analytics/analytics.functions";
 import {
 	CREDIT_ADDON_AMOUNTS,
 	MONTHLY_CREDITS_BY_PLAN,
@@ -66,9 +65,9 @@ const subscriptionSlugs = [
 	{
 		slug: "starter" as const,
 		title: "Starter",
-		price: "$19",
+		price: "$27",
 		period: "/mo",
-		blurb: "~40 shorts / mo internal budget.",
+		blurb: "~60 shorts / mo internal budget.",
 		icon: Sparkles,
 		accent: "from-chart-1/25 to-chart-1/5",
 		iconClass: "text-chart-1",
@@ -76,7 +75,7 @@ const subscriptionSlugs = [
 	{
 		slug: "creator" as const,
 		title: "Creator",
-		price: "$49",
+		price: "$63",
 		period: "/mo",
 		blurb: "~200 shorts / mo internal budget.",
 		icon: Zap,
@@ -87,7 +86,7 @@ const subscriptionSlugs = [
 	{
 		slug: "empire" as const,
 		title: "Empire",
-		price: "$99",
+		price: "$123",
 		period: "/mo",
 		blurb: "Highest tier; long-form & priority (when shipped).",
 		icon: Crown,
