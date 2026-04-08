@@ -171,5 +171,6 @@ export async function enqueuePlatformPublish(
 			"[enqueue] platform_publish worker unreachable (inline fallback disabled; set ENVIRONMENT=local for dev)",
 			err,
 		);
+		throw new WorkerEnqueueFailedError(err);
 	}
 }

@@ -1,4 +1,4 @@
-import { useQuery, queryOptions } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	ArrowUpRight,
@@ -24,7 +24,7 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
-import { getAnalyticsSummaryFn } from "@/features/analytics/analytics.functions";
+import { analyticsQueryOptions } from "@/lib/queries/dashboard-queries";
 import {
 	CREDIT_ADDON_AMOUNTS,
 	MONTHLY_CREDITS_BY_PLAN,
@@ -157,17 +157,7 @@ function BillingPage() {
 
 	const credits = user.creditsRemaining ?? 0;
 
-	const analyticsQuery = useQuery(
-		queryOptions({
-			queryKey: ["analytics-summary"] as const,
-			queryFn: async () => {
-				const r = await getAnalyticsSummaryFn();
-				if (!r.ok) return null;
-				return r.summary;
-			},
-			staleTime: 60_000,
-		}),
-	);
+	const analyticsQuery = useQuery(analyticsQueryOptions);
 
 	const currentMonth = new Date().toLocaleString(undefined, {
 		month: "long",

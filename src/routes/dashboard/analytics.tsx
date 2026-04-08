@@ -1,4 +1,4 @@
-import { useQuery, queryOptions } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	BarChart2,
@@ -9,18 +9,8 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { getAnalyticsSummaryFn } from "@/features/analytics/analytics.functions";
 import { cn } from "@/lib/utils";
-
-const analyticsQueryOptions = queryOptions({
-	queryKey: ["analytics-summary"] as const,
-	queryFn: async () => {
-		const r = await getAnalyticsSummaryFn();
-		if (!r.ok) throw new Error("Unauthorized");
-		return r.summary;
-	},
-	staleTime: 60_000,
-});
+import { analyticsQueryOptions } from "@/lib/queries/dashboard-queries";
 
 export const Route = createFileRoute("/dashboard/analytics")({
 	staticData: { dashboardTitle: "Analytics" },

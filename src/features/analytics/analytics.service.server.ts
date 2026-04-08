@@ -101,8 +101,11 @@ export async function getAnalyticsSummaryForUser(
 		channelMap.set(row.channelId, existing);
 	}
 
+	// Denominator is terminal jobs only — active jobs (queued/processing) are excluded
+	// so the success rate doesn't fluctuate downward while a pipeline is in flight.
+	const terminalJobs = totalCompleted + totalFailed;
 	const successRate =
-		totalJobs > 0 ? Math.round((totalCompleted / totalJobs) * 100) : 0;
+		terminalJobs > 0 ? Math.round((totalCompleted / terminalJobs) * 100) : 0;
 
 	const byChannel = Array.from(channelMap.entries()).map(
 		([channelId, data]) => ({ channelId, ...data }),

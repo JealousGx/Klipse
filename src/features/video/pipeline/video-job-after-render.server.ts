@@ -13,6 +13,7 @@ import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-con
 import { getChannelForUser } from "@/features/channels/channels.service.server";
 import { dispatchPlatformPublishAfterRender } from "@/features/publishing/publish-dispatch.server";
 import type { MeResponse } from "@/features/user/types/me";
+import { WorkerEnqueueFailedError } from "@/lib/worker/enqueue.server";
 
 import { getTransactionEmailFrom, sendEmail } from "@/lib/email";
 import {
@@ -144,10 +145,27 @@ export async function runAfterVideoRenderComplete(input: {
 		});
 	}
 
-	await dispatchPlatformPublishAfterRender({
-		jobId,
-		userId,
-		channel,
-		plan,
-	});
+	try {
+		await dispatchPlatformPublishAfterRender({
+			jobId,
+			userId,
+			channel,
+			plan,
+		});
+	} catch (e) {
+		if (e instanceof WorkerEnqueueFailedError) {
+			// Record the failure on the job so the user can see it and retry manually.
+			// The job stays `completed` (render succeeded); only the publish enqueue failed.
+			console.error("[after-render] publish enqueue failed", jobId, e);
+			await db
+				.update(videoJobs)
+				.set({
+					publishLastError: "publish_enqueue_failed",
+					updatedAt: new Date(),
+				})
+				.where(and(eq(videoJobs.id, jobId), eq(videoJobs.userId, userId)));
+			return;
+		}
+		throw e;
+	}
 }

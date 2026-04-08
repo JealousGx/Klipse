@@ -1,5 +1,6 @@
 import { queryOptions } from "@tanstack/react-query";
 
+import { getAnalyticsSummaryFn } from "@/features/analytics/analytics.functions";
 import { getChannelFn, listChannelsFn } from "@/features/channels/channels.functions";
 import { getChannelScheduleFn } from "@/features/scheduling/scheduling.functions";
 import type { VideoJobListRow } from "@/features/video/video-job-list.types";
@@ -42,6 +43,9 @@ function hasActiveJobs(jobs: VideoJobListRow[]): boolean {
 	return jobs.some((j) => ACTIVE_JOB_STATUSES.has(j.status));
 }
 
+/** Stale time for analytics — aggregate stats, fine to cache for 1 minute. */
+const STALE_ANALYTICS_MS = 60_000;
+
 // ---------------------------------------------------------------------------
 // Query options
 // ---------------------------------------------------------------------------
@@ -80,6 +84,21 @@ export const videoJobsQueryOptions = queryOptions({
 		const jobs = query.state.data;
 		return jobs && hasActiveJobs(jobs) ? POLL_INTERVAL_MS : false;
 	},
+});
+
+/**
+ * Analytics summary — shared between the Analytics page and Billing page hero metric.
+ * Single queryKey so both pages read from the same cache slot.
+ * queryFn throws on unauthorized so TanStack Query surfaces it as an error state.
+ */
+export const analyticsQueryOptions = queryOptions({
+	queryKey: ["analytics-summary"] as const,
+	queryFn: async () => {
+		const r = await getAnalyticsSummaryFn();
+		if (!r.ok) throw new Error("Unauthorized");
+		return r.summary;
+	},
+	staleTime: STALE_ANALYTICS_MS,
 });
 
 export function schedulingQueryOptions(channelId: string) {

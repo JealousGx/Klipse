@@ -61,8 +61,12 @@ export const schedules = mysqlTable(
 	(t) => [
 		unique("schedules_channelId_unique").on(t.channelId),
 		index("schedules_userId_idx").on(t.userId),
-		/** Cron query: WHERE enabled = 1 AND nextRunAt <= ? */
-		index("schedules_nextRunAt_enabled_idx").on(t.nextRunAt, t.enabled),
+		/**
+		 * Cron query: WHERE enabled = 1 AND nextRunAt <= ?
+		 * Leading with the equality column (enabled) narrows to active schedules first,
+		 * then range-scans nextRunAt — far fewer rows than leading with the range column.
+		 */
+		index("schedules_enabled_nextRunAt_idx").on(t.enabled, t.nextRunAt),
 	],
 );
 
