@@ -178,7 +178,7 @@ export async function deleteUserR2Data(
 				new DeleteObjectsCommand({
 					Bucket: R2_BUCKET,
 					Delete: {
-						Objects: objects.map((o) => ({ Key: o.Key! })),
+						Objects: objects.map((o) => ({ Key: o.Key })),
 						// Quiet mode: only report errors, not successes.
 						Quiet: true,
 					},

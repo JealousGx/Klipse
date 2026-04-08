@@ -80,7 +80,9 @@ export const deleteUserAccountFn = createServerFn({ method: "POST" }).handler(
 		// Step 1 — purge R2 (best-effort; don't fail account deletion if R2 is down)
 		try {
 			const { deleted } = await deleteUserR2Data(userId);
-			console.info(`[account-deletion] R2 purged ${deleted} object(s) for user ${userId}`);
+			console.info(
+				`[account-deletion] R2 purged ${deleted} object(s) for user ${userId}`,
+			);
 		} catch (e) {
 			console.error(
 				`[account-deletion] R2 purge failed for user ${userId} — proceeding with DB deletion`,
@@ -93,11 +95,15 @@ export const deleteUserAccountFn = createServerFn({ method: "POST" }).handler(
 			const db = getDb();
 			await db.delete(users).where(eq(users.id, userId));
 		} catch (e) {
-			console.error(`[account-deletion] DB deletion failed for user ${userId}`, e);
+			console.error(
+				`[account-deletion] DB deletion failed for user ${userId}`,
+				e,
+			);
 			return {
 				ok: false,
 				code: "error",
-				message: "Account deletion failed. Please try again or contact support.",
+				message:
+					"Account deletion failed. Please try again or contact support.",
 			};
 		}
 
