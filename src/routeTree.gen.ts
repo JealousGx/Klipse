@@ -23,6 +23,7 @@ import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
 import { Route as DashboardPublishingIndexRouteImport } from './routes/dashboard/publishing.index'
 import { Route as DashboardPublishingDestinationIdRouteImport } from './routes/dashboard/publishing.$destinationId'
+import { Route as ApiCronTriggerScheduledJobsRouteImport } from './routes/api/cron/trigger-scheduled-jobs'
 import { Route as ApiCronPurgeExpiringAssetsRouteImport } from './routes/api/cron/purge-expiring-assets'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiYoutubeOauthStartRouteImport } from './routes/api/youtube/oauth/start'
@@ -103,6 +104,12 @@ const DashboardPublishingDestinationIdRoute =
     path: '/$destinationId',
     getParentRoute: () => DashboardPublishingRoute,
   } as any)
+const ApiCronTriggerScheduledJobsRoute =
+  ApiCronTriggerScheduledJobsRouteImport.update({
+    id: '/api/cron/trigger-scheduled-jobs',
+    path: '/api/cron/trigger-scheduled-jobs',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiCronPurgeExpiringAssetsRoute =
   ApiCronPurgeExpiringAssetsRouteImport.update({
     id: '/api/cron/purge-expiring-assets',
@@ -158,6 +165,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
+  '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -179,6 +187,7 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
+  '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -203,6 +212,7 @@ export interface FileRoutesById {
   '/dashboard/': typeof DashboardIndexRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
+  '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -228,6 +238,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/api/auth/$'
     | '/api/cron/purge-expiring-assets'
+    | '/api/cron/trigger-scheduled-jobs'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
@@ -249,6 +260,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/api/auth/$'
     | '/api/cron/purge-expiring-assets'
+    | '/api/cron/trigger-scheduled-jobs'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing'
     | '/api/internal/video-processor/assembly-complete'
@@ -272,6 +284,7 @@ export interface FileRouteTypes {
     | '/dashboard/'
     | '/api/auth/$'
     | '/api/cron/purge-expiring-assets'
+    | '/api/cron/trigger-scheduled-jobs'
     | '/dashboard/publishing/$destinationId'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
@@ -289,6 +302,7 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronPurgeExpiringAssetsRoute: typeof ApiCronPurgeExpiringAssetsRoute
+  ApiCronTriggerScheduledJobsRoute: typeof ApiCronTriggerScheduledJobsRoute
   ApiInternalVideoProcessorAssemblyCompleteRoute: typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   ApiInternalWorkerYoutubePublishRoute: typeof ApiInternalWorkerYoutubePublishRoute
   ApiYoutubeOauthCallbackRoute: typeof ApiYoutubeOauthCallbackRoute
@@ -396,6 +410,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardPublishingDestinationIdRouteImport
       parentRoute: typeof DashboardPublishingRoute
     }
+    '/api/cron/trigger-scheduled-jobs': {
+      id: '/api/cron/trigger-scheduled-jobs'
+      path: '/api/cron/trigger-scheduled-jobs'
+      fullPath: '/api/cron/trigger-scheduled-jobs'
+      preLoaderRoute: typeof ApiCronTriggerScheduledJobsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/cron/purge-expiring-assets': {
       id: '/api/cron/purge-expiring-assets'
       path: '/api/cron/purge-expiring-assets'
@@ -493,6 +514,7 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronPurgeExpiringAssetsRoute: ApiCronPurgeExpiringAssetsRoute,
+  ApiCronTriggerScheduledJobsRoute: ApiCronTriggerScheduledJobsRoute,
   ApiInternalVideoProcessorAssemblyCompleteRoute:
     ApiInternalVideoProcessorAssemblyCompleteRoute,
   ApiInternalWorkerYoutubePublishRoute: ApiInternalWorkerYoutubePublishRoute,
