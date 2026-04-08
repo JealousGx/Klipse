@@ -27,9 +27,13 @@ export function DestinationConnectionFields({
 	onDisconnect,
 	isDisconnectPending,
 }: Props) {
-	const platformName = platformDisplayName(ch.platform);
-	const authProvider = platformAuthProviderName(ch.platform);
-	const oauthHref = platformOAuthStartUrl(ch.platform, destinationId);
+	// An unlinked channel has no platform yet — default to YouTube since it's the
+	// only implemented OAuth flow. Replace with a platform picker when TikTok /
+	// Instagram OAuth lands.
+	const connectPlatform = ch.platform === "unlinked" ? "youtube" : ch.platform;
+	const platformName = platformDisplayName(connectPlatform);
+	const authProvider = platformAuthProviderName(connectPlatform);
+	const oauthHref = platformOAuthStartUrl(connectPlatform, destinationId);
 
 	const showDisconnect = Boolean(ch.externalChannelId || ch.oauthConnected);
 	const needsOAuth = !ch.oauthConnected;
