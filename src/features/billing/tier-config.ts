@@ -46,7 +46,7 @@ export function planAllowsPaidPublishingConnections(
  * UI should emphasize videos/month; credits stay server-side for metering.
  */
 export const MONTHLY_CREDITS_BY_PLAN = {
-	starter: 3000,
+	starter: 1500,
 	creator: 8000,
 	empire: 18000,
 } as const;
