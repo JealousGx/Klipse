@@ -29,6 +29,14 @@ export const users = mysqlTable("users", {
 	destinationReplacementsUsed: int("destination_replacements_used")
 		.default(0)
 		.notNull(),
+	/**
+	 * Email notification preferences.
+	 * `notifyVideoApproval` — fires when a video is ready and the channel is in
+	 *   “ask-first” mode (user must approve before publishing).
+	 * `notifyVideoReady`   — fires whenever any video finishes generating.
+	 */
+	notifyVideoApproval: boolean("notify_video_approval").default(true).notNull(),
+	notifyVideoReady: boolean("notify_video_ready").default(true).notNull(),
 	createdAt: timestamp("created_at", { fsp: 3 })
 		.default(sql`CURRENT_TIMESTAMP(3)`)
 		.notNull(),
