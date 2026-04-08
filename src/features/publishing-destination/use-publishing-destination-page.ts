@@ -56,6 +56,8 @@ export function usePublishingDestinationPage(
 	const [displayName, setDisplayName] = useState("");
 	const [niche, setNiche] = useState("");
 	const [autoPost, setAutoPost] = useState(false);
+	const [frequency, setFrequency] =
+		useState<ChannelConfig["posting_frequency"]>("weekly");
 
 	useEffect(() => {
 		let cancelled = false;
@@ -177,6 +179,37 @@ export function usePublishingDestinationPage(
 		},
 	});
 
+	const updateFrequencyMutation = useMutation({
+		mutationFn: async (newFrequency: ChannelConfig["posting_frequency"]) => {
+			const c = queryClient.getQueryData(["channel", destinationId]) as
+				| { config: ChannelConfig }
+				| undefined;
+			if (!c) {
+				throw new Error("Channel not loaded");
+			}
+			return updateChannelFn({
+				data: {
+					channelId: destinationId,
+					config: { ...c.config, posting_frequency: newFrequency },
+				},
+			});
+		},
+		onSuccess: (r, newFrequency) => {
+			if (r.ok) {
+				setFrequency(newFrequency);
+				toast.success("Posting frequency updated");
+				void queryClient.invalidateQueries({
+					queryKey: ["channel", destinationId],
+				});
+				void queryClient.invalidateQueries({
+					queryKey: ["schedule", destinationId],
+				});
+				return;
+			}
+			toast.error(r.message ?? "Could not save");
+		},
+	});
+
 	const updateLinkMutation = useMutation({
 		mutationFn: async (payload: {
 			platform: "unlinked" | "youtube";
@@ -207,11 +240,14 @@ export function usePublishingDestinationPage(
 	});
 
 	const pauseScheduleMutation = useMutation({
-		mutationFn: async () => pauseScheduleFn({ data: { channelId: destinationId } }),
+		mutationFn: async () =>
+			pauseScheduleFn({ data: { channelId: destinationId } }),
 		onSuccess: (r) => {
 			if (r.ok) {
 				toast.success("Schedule paused");
-				void queryClient.invalidateQueries({ queryKey: ["schedule", destinationId] });
+				void queryClient.invalidateQueries({
+					queryKey: ["schedule", destinationId],
+				});
 				return;
 			}
 			toast.error("Sign in required.");
@@ -220,11 +256,14 @@ export function usePublishingDestinationPage(
 	});
 
 	const resumeScheduleMutation = useMutation({
-		mutationFn: async () => resumeScheduleFn({ data: { channelId: destinationId } }),
+		mutationFn: async () =>
+			resumeScheduleFn({ data: { channelId: destinationId } }),
 		onSuccess: (r) => {
 			if (r.ok) {
 				toast.success("Schedule resumed");
-				void queryClient.invalidateQueries({ queryKey: ["schedule", destinationId] });
+				void queryClient.invalidateQueries({
+					queryKey: ["schedule", destinationId],
+				});
 				return;
 			}
 			toast.error("Sign in required.");
@@ -238,7 +277,9 @@ export function usePublishingDestinationPage(
 		onSuccess: (r) => {
 			if (r.ok) {
 				toast.success("Video queued — check the Jobs page for progress.");
-				void queryClient.invalidateQueries({ queryKey: ["schedule", destinationId] });
+				void queryClient.invalidateQueries({
+					queryKey: ["schedule", destinationId],
+				});
 				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] });
 				return;
 			}
@@ -264,6 +305,7 @@ export function usePublishingDestinationPage(
 		setDisplayName(ch.name);
 		setNiche(ch.niche);
 		setAutoPost(ch.config.auto_post);
+		setFrequency(ch.config.posting_frequency);
 	}, [ch]);
 
 	const handleDisconnect = useCallback(() => {
@@ -337,6 +379,9 @@ export function usePublishingDestinationPage(
 		onRemoveClick: handleRemoveClick,
 		isRemovePending: deleteMutation.isPending,
 		schedule: scheduleQuery.data ?? null,
+		frequency,
+		onFrequencyChange: (value) => updateFrequencyMutation.mutate(value),
+		isChangingFrequency: updateFrequencyMutation.isPending,
 		onPauseSchedule: () => pauseScheduleMutation.mutate(),
 		onResumeSchedule: () => resumeScheduleMutation.mutate(),
 		isPausingSchedule: pauseScheduleMutation.isPending,

@@ -37,6 +37,9 @@ export type PublishingDestinationViewProps = {
 		frequency: ChannelConfig["posting_frequency"];
 		enabled: boolean;
 	} | null;
+	frequency: ChannelConfig["posting_frequency"];
+	onFrequencyChange: (value: ChannelConfig["posting_frequency"]) => void;
+	isChangingFrequency: boolean;
 	onPauseSchedule: () => void;
 	onResumeSchedule: () => void;
 	isPausingSchedule: boolean;
@@ -65,6 +68,9 @@ export function PublishingDestinationView({
 	onRemoveClick,
 	isRemovePending,
 	schedule,
+	frequency,
+	onFrequencyChange,
+	isChangingFrequency,
 	onPauseSchedule,
 	onResumeSchedule,
 	isPausingSchedule,
@@ -186,6 +192,9 @@ export function PublishingDestinationView({
 						<DashboardPanel>
 							<DestinationScheduleFields
 								schedule={schedule}
+								frequency={frequency}
+								onFrequencyChange={onFrequencyChange}
+								isChangingFrequency={isChangingFrequency}
 								onPause={onPauseSchedule}
 								onResume={onResumeSchedule}
 								isPausing={isPausingSchedule}

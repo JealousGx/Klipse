@@ -8,7 +8,7 @@ export type ChannelCreativeBrief = {
 	/** Channel tone from config (`dark` | `educational` | `fun`) */
 	tone: string;
 	targetSeconds?: number;
-	postingFrequency?: "daily" | "weekly";
+	postingFrequency?: string;
 	captionStyle?: "bold" | "minimal";
 	fontPairLabel?: string;
 	/** Neutral format hint for prompts (short-form vs long-form, viewing context), not a platform brand name. */
