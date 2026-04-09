@@ -57,16 +57,28 @@ export const env = createEnv({
 		 */
 		APP_PUBLIC_URL: z.url().optional(),
 
+		/**
+		 * Comma-separated OpenRouter API keys (https://openrouter.io).
+		 * Primary script provider — OpenAI-compatible API at openrouter.ai/api/v1.
+		 */
+		OPENROUTER_API_KEYS: z.string().optional(),
+		/**
+		 * OpenRouter model ID for script generation.
+		 * @default openrouter/free
+		 * Other good free options: arceeai/arcee-trinity-large-preview:free, openai/gpt-oss-120b:free
+		 */
+		OPENROUTER_SCRIPT_MODEL: z.string().min(1).default("openrouter/free"),
+
 		/** Pollinations Gen API (text/image/audio). Keys from https://enter.pollinations.ai */
 		POLLINATIONS_GEN_BASE: z.url().optional(),
 		POLLINATIONS_API_KEY: z.string().min(1).optional(),
 		/** Text model id for `POST /v1/chat/completions` (e.g. mistral, claude-fast). */
 		POLLINATIONS_TEXT_MODEL: z.string().min(1).optional(),
 
-		/** Comma-separated Google AI Studio keys for Gemini (primary script provider). */
+		/** Comma-separated Google AI Studio keys for Gemini (secondary script provider). */
 		GEMINI_API_KEYS: z.string().optional(),
-		/** @default gemini-2.0-flash */
-		GEMINI_SCRIPT_MODEL: z.string().min(1).default("gemini-2.0-flash"),
+		/** @default gemini-2.5-flash-lite */
+		GEMINI_SCRIPT_MODEL: z.string().min(1).default("gemini-2.5-flash-lite"),
 
 		/** Comma-separated Google Cloud API keys for Text-to-Speech (primary audio provider). */
 		GOOGLE_TTS_API_KEYS: z.string().optional(),
