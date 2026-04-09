@@ -13,6 +13,7 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as RefundRouteImport } from './routes/refund'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
+import { Route as AuthedRouteRouteImport } from './routes/_authed/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
 import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
@@ -21,11 +22,17 @@ import { Route as DashboardJobsRouteImport } from './routes/dashboard/jobs'
 import { Route as DashboardGenerateRouteImport } from './routes/dashboard/generate'
 import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing'
 import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
+import { Route as AuthedAdminRouteRouteImport } from './routes/_authed/admin/route'
 import { Route as DashboardPublishingIndexRouteImport } from './routes/dashboard/publishing.index'
+import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
 import { Route as DashboardPublishingDestinationIdRouteImport } from './routes/dashboard/publishing.$destinationId'
 import { Route as ApiCronTriggerScheduledJobsRouteImport } from './routes/api/cron/trigger-scheduled-jobs'
 import { Route as ApiCronPurgeExpiringAssetsRouteImport } from './routes/api/cron/purge-expiring-assets'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthedAdminUsersRouteImport } from './routes/_authed/admin/users'
+import { Route as AuthedAdminSystemRouteImport } from './routes/_authed/admin/system'
+import { Route as AuthedAdminKeysRouteImport } from './routes/_authed/admin/keys'
+import { Route as AuthedAdminJobsRouteImport } from './routes/_authed/admin/jobs'
 import { Route as ApiYoutubeOauthStartRouteImport } from './routes/api/youtube/oauth/start'
 import { Route as ApiYoutubeOauthCallbackRouteImport } from './routes/api/youtube/oauth/callback'
 import { Route as ApiInternalWorkerYoutubePublishRouteImport } from './routes/api/internal/worker/youtube-publish'
@@ -50,6 +57,10 @@ const PrivacyRoute = PrivacyRouteImport.update({
 const DashboardRouteRoute = DashboardRouteRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedRouteRoute = AuthedRouteRouteImport.update({
+  id: '/_authed',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -92,12 +103,22 @@ const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => DashboardRouteRoute,
 } as any)
+const AuthedAdminRouteRoute = AuthedAdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => AuthedRouteRoute,
+} as any)
 const DashboardPublishingIndexRoute =
   DashboardPublishingIndexRouteImport.update({
     id: '/',
     path: '/',
     getParentRoute: () => DashboardPublishingRoute,
   } as any)
+const AuthedAdminIndexRoute = AuthedAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
 const DashboardPublishingDestinationIdRoute =
   DashboardPublishingDestinationIdRouteImport.update({
     id: '/$destinationId',
@@ -120,6 +141,26 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const AuthedAdminUsersRoute = AuthedAdminUsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const AuthedAdminSystemRoute = AuthedAdminSystemRouteImport.update({
+  id: '/system',
+  path: '/system',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const AuthedAdminKeysRoute = AuthedAdminKeysRouteImport.update({
+  id: '/keys',
+  path: '/keys',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
+const AuthedAdminJobsRoute = AuthedAdminJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => AuthedAdminRouteRoute,
 } as any)
 const ApiYoutubeOauthStartRoute = ApiYoutubeOauthStartRouteImport.update({
   id: '/api/youtube/oauth/start',
@@ -156,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
+  '/admin': typeof AuthedAdminRouteRouteWithChildren
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/generate': typeof DashboardGenerateRoute
@@ -163,10 +205,15 @@ export interface FileRoutesByFullPath {
   '/dashboard/publishing': typeof DashboardPublishingRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/admin/jobs': typeof AuthedAdminJobsRoute
+  '/admin/keys': typeof AuthedAdminKeysRoute
+  '/admin/system': typeof AuthedAdminSystemRoute
+  '/admin/users': typeof AuthedAdminUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
+  '/admin/': typeof AuthedAdminIndexRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
@@ -185,10 +232,15 @@ export interface FileRoutesByTo {
   '/dashboard/jobs': typeof DashboardJobsRoute
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard': typeof DashboardIndexRoute
+  '/admin/jobs': typeof AuthedAdminJobsRoute
+  '/admin/keys': typeof AuthedAdminKeysRoute
+  '/admin/system': typeof AuthedAdminSystemRoute
+  '/admin/users': typeof AuthedAdminUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
+  '/admin': typeof AuthedAdminIndexRoute
   '/dashboard/publishing': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
@@ -199,10 +251,12 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authed': typeof AuthedRouteRouteWithChildren
   '/dashboard': typeof DashboardRouteRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
+  '/_authed/admin': typeof AuthedAdminRouteRouteWithChildren
   '/dashboard/analytics': typeof DashboardAnalyticsRoute
   '/dashboard/billing': typeof DashboardBillingRoute
   '/dashboard/generate': typeof DashboardGenerateRoute
@@ -210,10 +264,15 @@ export interface FileRoutesById {
   '/dashboard/publishing': typeof DashboardPublishingRouteWithChildren
   '/dashboard/settings': typeof DashboardSettingsRoute
   '/dashboard/': typeof DashboardIndexRoute
+  '/_authed/admin/jobs': typeof AuthedAdminJobsRoute
+  '/_authed/admin/keys': typeof AuthedAdminKeysRoute
+  '/_authed/admin/system': typeof AuthedAdminSystemRoute
+  '/_authed/admin/users': typeof AuthedAdminUsersRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
   '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
+  '/_authed/admin/': typeof AuthedAdminIndexRoute
   '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
@@ -229,6 +288,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refund'
     | '/terms'
+    | '/admin'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/generate'
@@ -236,10 +296,15 @@ export interface FileRouteTypes {
     | '/dashboard/publishing'
     | '/dashboard/settings'
     | '/dashboard/'
+    | '/admin/jobs'
+    | '/admin/keys'
+    | '/admin/system'
+    | '/admin/users'
     | '/api/auth/$'
     | '/api/cron/purge-expiring-assets'
     | '/api/cron/trigger-scheduled-jobs'
     | '/dashboard/publishing/$destinationId'
+    | '/admin/'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
     | '/api/internal/worker/youtube-publish'
@@ -258,10 +323,15 @@ export interface FileRouteTypes {
     | '/dashboard/jobs'
     | '/dashboard/settings'
     | '/dashboard'
+    | '/admin/jobs'
+    | '/admin/keys'
+    | '/admin/system'
+    | '/admin/users'
     | '/api/auth/$'
     | '/api/cron/purge-expiring-assets'
     | '/api/cron/trigger-scheduled-jobs'
     | '/dashboard/publishing/$destinationId'
+    | '/admin'
     | '/dashboard/publishing'
     | '/api/internal/video-processor/assembly-complete'
     | '/api/internal/worker/youtube-publish'
@@ -271,10 +341,12 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/_authed'
     | '/dashboard'
     | '/privacy'
     | '/refund'
     | '/terms'
+    | '/_authed/admin'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/generate'
@@ -282,10 +354,15 @@ export interface FileRouteTypes {
     | '/dashboard/publishing'
     | '/dashboard/settings'
     | '/dashboard/'
+    | '/_authed/admin/jobs'
+    | '/_authed/admin/keys'
+    | '/_authed/admin/system'
+    | '/_authed/admin/users'
     | '/api/auth/$'
     | '/api/cron/purge-expiring-assets'
     | '/api/cron/trigger-scheduled-jobs'
     | '/dashboard/publishing/$destinationId'
+    | '/_authed/admin/'
     | '/dashboard/publishing/'
     | '/api/internal/video-processor/assembly-complete'
     | '/api/internal/worker/youtube-publish'
@@ -296,6 +373,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthedRouteRoute: typeof AuthedRouteRouteWithChildren
   DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RefundRoute: typeof RefundRoute
@@ -338,6 +416,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof DashboardRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authed': {
+      id: '/_authed'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthedRouteRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -396,12 +481,26 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardAnalyticsRouteImport
       parentRoute: typeof DashboardRouteRoute
     }
+    '/_authed/admin': {
+      id: '/_authed/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AuthedAdminRouteRouteImport
+      parentRoute: typeof AuthedRouteRoute
+    }
     '/dashboard/publishing/': {
       id: '/dashboard/publishing/'
       path: '/'
       fullPath: '/dashboard/publishing/'
       preLoaderRoute: typeof DashboardPublishingIndexRouteImport
       parentRoute: typeof DashboardPublishingRoute
+    }
+    '/_authed/admin/': {
+      id: '/_authed/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AuthedAdminIndexRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
     }
     '/dashboard/publishing/$destinationId': {
       id: '/dashboard/publishing/$destinationId'
@@ -430,6 +529,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/admin/users': {
+      id: '/_authed/admin/users'
+      path: '/users'
+      fullPath: '/admin/users'
+      preLoaderRoute: typeof AuthedAdminUsersRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_authed/admin/system': {
+      id: '/_authed/admin/system'
+      path: '/system'
+      fullPath: '/admin/system'
+      preLoaderRoute: typeof AuthedAdminSystemRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_authed/admin/keys': {
+      id: '/_authed/admin/keys'
+      path: '/keys'
+      fullPath: '/admin/keys'
+      preLoaderRoute: typeof AuthedAdminKeysRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
+    '/_authed/admin/jobs': {
+      id: '/_authed/admin/jobs'
+      path: '/jobs'
+      fullPath: '/admin/jobs'
+      preLoaderRoute: typeof AuthedAdminJobsRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
     }
     '/api/youtube/oauth/start': {
       id: '/api/youtube/oauth/start'
@@ -468,6 +595,37 @@ declare module '@tanstack/react-router' {
     }
   }
 }
+
+interface AuthedAdminRouteRouteChildren {
+  AuthedAdminJobsRoute: typeof AuthedAdminJobsRoute
+  AuthedAdminKeysRoute: typeof AuthedAdminKeysRoute
+  AuthedAdminSystemRoute: typeof AuthedAdminSystemRoute
+  AuthedAdminUsersRoute: typeof AuthedAdminUsersRoute
+  AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
+}
+
+const AuthedAdminRouteRouteChildren: AuthedAdminRouteRouteChildren = {
+  AuthedAdminJobsRoute: AuthedAdminJobsRoute,
+  AuthedAdminKeysRoute: AuthedAdminKeysRoute,
+  AuthedAdminSystemRoute: AuthedAdminSystemRoute,
+  AuthedAdminUsersRoute: AuthedAdminUsersRoute,
+  AuthedAdminIndexRoute: AuthedAdminIndexRoute,
+}
+
+const AuthedAdminRouteRouteWithChildren =
+  AuthedAdminRouteRoute._addFileChildren(AuthedAdminRouteRouteChildren)
+
+interface AuthedRouteRouteChildren {
+  AuthedAdminRouteRoute: typeof AuthedAdminRouteRouteWithChildren
+}
+
+const AuthedRouteRouteChildren: AuthedRouteRouteChildren = {
+  AuthedAdminRouteRoute: AuthedAdminRouteRouteWithChildren,
+}
+
+const AuthedRouteRouteWithChildren = AuthedRouteRoute._addFileChildren(
+  AuthedRouteRouteChildren,
+)
 
 interface DashboardPublishingRouteChildren {
   DashboardPublishingDestinationIdRoute: typeof DashboardPublishingDestinationIdRoute
@@ -508,6 +666,7 @@ const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthedRouteRoute: AuthedRouteRouteWithChildren,
   DashboardRouteRoute: DashboardRouteRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RefundRoute: RefundRoute,
