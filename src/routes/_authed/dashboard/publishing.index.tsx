@@ -41,14 +41,14 @@ import {
 } from "@/features/publishing-destination/publishing-destination-search.schema";
 import type { MeResponse } from "@/features/user/types/me";
 
-import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
-import { cn } from "@/lib/utils";
 import {
 	platformChannelUrl,
 	platformDisplayName,
 } from "@/lib/platform-publishing";
+import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
+import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/dashboard/publishing/")({
+export const Route = createFileRoute("/_authed/dashboard/publishing/")({
 	staticData: { dashboardTitle: "Publishing" },
 	validateSearch: (raw: Record<string, unknown>) => {
 		const p = publishingDestinationSearchSchema.safeParse(raw);
@@ -175,7 +175,7 @@ function DestinationCard({
 													`${platformDisplayName(ch.platform)} channel id copied`,
 												),
 											() => toast.error("Could not copy"),
-										);
+										)
 								}}
 							>
 								<Copy className="size-3" aria-hidden />
@@ -243,7 +243,7 @@ function DestinationCard({
 				</Button>
 			</CardFooter>
 		</Card>
-	);
+	)
 }
 
 function PublishingIndexPage() {
@@ -254,7 +254,7 @@ function PublishingIndexPage() {
 
 	useEffect(() => {
 		if (!search.oauth) {
-			return;
+			return
 		}
 		if (search.oauth === "connected") {
 			toast.success("Publishing account connected successfully.");
@@ -265,26 +265,26 @@ function PublishingIndexPage() {
 			to: "/dashboard/publishing",
 			search: {},
 			replace: true,
-		});
+		})
 	}, [search.oauth, search.reason, navigate]);
 
 	useEffect(() => {
 		let cancelled = false;
 		void reconcileYoutubeOAuthFn({ data: {} }).then((r) => {
 			if (cancelled || !r.ok || r.revokedChannelIds.length === 0) {
-				return;
+				return
 			}
 			toast.warning(
 				r.revokedChannelIds.length === 1
 					? "Google access for one publishing destination was revoked or expired. Open it and reconnect with Google."
 					: "Google access for some publishing destinations was revoked or expired. Reconnect each one under Publishing.",
 				{ id: "youtube-oauth-revoked-list" },
-			);
+			)
 			void queryClient.invalidateQueries({ queryKey: ["channels"] });
-		});
+		})
 		return () => {
 			cancelled = true;
-		};
+		}
 	}, [queryClient]);
 
 	const userPlan = (session.user.plan ?? "free") as MeResponse["plan"];
@@ -301,7 +301,7 @@ function PublishingIndexPage() {
 					name: `Publishing destination ${n}`,
 					niche: DEFAULT_NEW_DESTINATION_NICHE,
 				},
-			});
+			})
 		},
 		onSuccess: async (r) => {
 			if (r.ok) {
@@ -310,16 +310,16 @@ function PublishingIndexPage() {
 				void navigate({
 					to: "/dashboard/publishing/$destinationId",
 					params: { destinationId: r.channel.id },
-				});
-				return;
+				})
+				return
 			}
 			if (r.code === "channel_limit") {
 				toast.error(r.message ?? "Destination limit reached for your plan.");
-				return;
+				return
 			}
 			toast.error("Could not create destination");
 		},
-	});
+	})
 
 	const deleteMutation = useMutation({
 		mutationFn: (channelId: string) => deleteChannelFn({ data: { channelId } }),
@@ -328,11 +328,11 @@ function PublishingIndexPage() {
 				toast.success("Destination removed");
 				void queryClient.invalidateQueries({ queryKey: ["channels"] });
 				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] });
-				return;
+				return
 			}
 			toast.error("Couldn’t remove destination");
 		},
-	});
+	})
 
 	const loading = destinationsQuery.isPending;
 	const list = destinationsQuery.data ?? [];
@@ -348,10 +348,10 @@ function PublishingIndexPage() {
 				"Remove this publishing destination? Associated video jobs may be deleted.",
 			)
 		) {
-			return;
+			return
 		}
 		deleteMutation.mutate(channelId);
-	};
+	}
 
 	return (
 		<div className="space-y-12">
@@ -532,5 +532,5 @@ function PublishingIndexPage() {
 				)}
 			</section>
 		</div>
-	);
+	)
 }

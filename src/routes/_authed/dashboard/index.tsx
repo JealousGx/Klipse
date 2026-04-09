@@ -13,7 +13,7 @@ import {
 } from "@/lib/queries/dashboard-queries";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/dashboard/")({
+export const Route = createFileRoute("/_authed/dashboard/")({
 	staticData: { dashboardTitle: "Overview" },
 	component: DashboardPage,
 });
@@ -52,7 +52,7 @@ function DashboardPage() {
 			platform: c.platform,
 			externalChannelId: c.externalChannelId,
 			oauthConnected: c.oauthConnected,
-		};
+		}
 	}, [channelsQuery.data]);
 
 	const channelValue = channelsQuery.isPending
@@ -115,7 +115,7 @@ function DashboardPage() {
 				a video right now.
 			</p>
 		</div>
-	);
+	)
 }
 
 function Metric({
@@ -152,5 +152,5 @@ function Metric({
 				) : null}
 			</div>
 		</div>
-	);
+	)
 }

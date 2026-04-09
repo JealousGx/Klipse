@@ -8,14 +8,14 @@ import {
 	videoJobsQueryOptions,
 } from "@/lib/queries/dashboard-queries";
 
-export const Route = createFileRoute("/dashboard")({
+export const Route = createFileRoute("/_authed/dashboard")({
 	beforeLoad: async ({ context }) => {
 		const { session } = context;
 		if (!session?.user) {
 			throw redirect({
 				to: "/",
 				search: { auth: "login" },
-			});
+			})
 		}
 
 		/** Await so SSR output matches client hydration (same query state as `useQuery`). */
@@ -33,5 +33,5 @@ function DashboardLayout() {
 			<PolarCheckoutIntent />
 			<DashboardShell />
 		</React.Fragment>
-	);
+	)
 }
