@@ -15,6 +15,8 @@ import { getRootSession } from "@/features/auth/get-root-session";
 
 import { rootSearchSchema } from "@/lib/routes/root-search";
 
+import { ErrorPage } from "../components/error-page";
+import { NotFoundPage } from "../components/not-found-page";
 import { RootChrome } from "../components/root-chrome";
 import { Toaster } from "../components/ui/sonner";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
@@ -39,6 +41,8 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 
 		return { session };
 	},
+	notFoundComponent: () => <NotFoundPage />,
+	errorComponent: ({ error, reset }) => <ErrorPage error={error} reset={reset} />,
 	head: () => ({
 		meta: [
 			{

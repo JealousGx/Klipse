@@ -2,18 +2,34 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import {
 	Ban,
-	ChevronDown,
 	CreditCard,
+	MoreHorizontal,
 	RefreshCw,
 	Search,
 	ShieldCheck,
+	ShieldOff,
 	Users,
 	X,
 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuLabel,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
 	type AdminUserRow,
 	adjustUserCreditsFn,
@@ -60,7 +76,7 @@ function PlanBadge({ plan }: { plan: string }) {
 		>
 			{plan}
 		</span>
-	)
+	);
 }
 
 function RoleBadge({ role }: { role: string | null }) {
@@ -70,7 +86,7 @@ function RoleBadge({ role }: { role: string | null }) {
 				<ShieldCheck className="size-3" />
 				Admin
 			</span>
-		)
+		);
 	}
 	return <span className="text-xs text-zinc-500">User</span>;
 }
@@ -83,7 +99,7 @@ function StatCard({ label, value }: { label: string; value: number }) {
 			</p>
 			<p className="mt-1 text-3xl font-bold text-zinc-100">{value}</p>
 		</div>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -108,7 +124,7 @@ function AdjustCreditsModal({
 			if (result.ok) {
 				toast.success(`Credits adjusted. New balance: ${result.newCredits}`);
 				queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-				onClose()
+				onClose();
 			} else if (result.code === "below_zero") {
 				toast.error("This adjustment would result in negative credits.");
 			} else {
@@ -116,7 +132,7 @@ function AdjustCreditsModal({
 			}
 		},
 		onError: () => toast.error("Failed to adjust credits."),
-	})
+	});
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -207,7 +223,7 @@ function AdjustCreditsModal({
 				</div>
 			</div>
 		</div>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -230,13 +246,13 @@ function ChangePlanModal({
 			if (result.ok) {
 				toast.success(`Plan changed to ${plan}.`);
 				queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-				onClose()
+				onClose();
 			} else {
 				toast.error("Failed to change plan.");
 			}
 		},
 		onError: () => toast.error("Failed to change plan."),
-	})
+	});
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -265,19 +281,22 @@ function ChangePlanModal({
 						>
 							Plan
 						</label>
-						<select
-							id="plan"
-							name="plan"
-							className={fieldClass}
-							value={plan}
-							onChange={(e) => setPlan(e.target.value as Plan)}
+
+						<Select
+							defaultValue={plan}
+							onValueChange={(val) => setPlan(val as Plan)}
 						>
-							{PLANS.map((p) => (
-								<option key={p} value={p}>
-									{p}
-								</option>
-							))}
-						</select>
+							<SelectTrigger className="w-55">
+								<SelectValue placeholder="Select Plan" />
+							</SelectTrigger>
+							<SelectContent>
+								{PLANS.map((p) => (
+									<SelectItem key={p} value={p}>
+										{p.charAt(0).toUpperCase() + p.slice(1)}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					</div>
 				</div>
 
@@ -300,7 +319,7 @@ function ChangePlanModal({
 				</div>
 			</div>
 		</div>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -326,7 +345,7 @@ function BanModal({
 			if (result.ok) {
 				toast.success("User banned.");
 				queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-				onClose()
+				onClose();
 			} else if (result.code === "cannot_ban_admin") {
 				toast.error("Cannot ban another admin.");
 			} else {
@@ -334,7 +353,7 @@ function BanModal({
 			}
 		},
 		onError: () => toast.error("Failed to ban user."),
-	})
+	});
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -390,7 +409,7 @@ function BanModal({
 				</div>
 			</div>
 		</div>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -411,18 +430,6 @@ function RowActions({
 	onOpenModal: (modal: ActiveModal) => void;
 }) {
 	const queryClient = useQueryClient();
-	const [open, setOpen] = useState(false);
-	const ref = useRef<HTMLDivElement>(null);
-
-	useEffect(() => {
-		function handleClick(e: MouseEvent) {
-			if (ref.current && !ref.current.contains(e.target as Node)) {
-				setOpen(false);
-			}
-		}
-		document.addEventListener("mousedown", handleClick);
-		return () => document.removeEventListener("mousedown", handleClick);
-	}, []);
 
 	const roleMutation = useMutation({
 		mutationFn: (role: "admin" | "user") =>
@@ -436,10 +443,9 @@ function RowActions({
 			} else {
 				toast.error("Failed to update role.");
 			}
-			setOpen(false);
 		},
 		onError: () => toast.error("Failed to update role."),
-	})
+	});
 
 	const unbanMutation = useMutation({
 		mutationFn: () => unbanUserFn({ data: { userId: row.id } }),
@@ -450,84 +456,85 @@ function RowActions({
 			} else {
 				toast.error("Failed to unban user.");
 			}
-			setOpen(false);
 		},
 		onError: () => toast.error("Failed to unban user."),
-	})
+	});
 
 	const isAdmin = row.role === "admin";
 	const isBanned = row.banned ?? false;
 
-	function menuItem(
-		label: string,
-		icon: React.ReactNode,
-		onClick: () => void,
-		danger = false,
-	) {
-		return (
-			<button
-				type="button"
-				onClick={() => {
-					setOpen(false)
-					onClick()
-				}}
-				className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors hover:bg-zinc-800 ${danger ? "text-red-400 hover:text-red-300" : "text-zinc-300 hover:text-zinc-100"}`}
-			>
-				{icon}
-				{label}
-			</button>
-		)
-	}
-
 	return (
-		<div className="relative" ref={ref}>
-			<button
-				type="button"
-				onClick={() => setOpen((v) => !v)}
-				className="rounded-lg px-2 py-1.5 text-xs font-medium text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-			>
-				<ChevronDown className="size-4" />
-			</button>
-
-			{open && (
-				<div className="absolute right-0 top-full z-10 mt-1 w-48 overflow-hidden rounded-xl border border-zinc-700 bg-zinc-900 py-1 shadow-2xl">
-					{menuItem("Adjust Credits", <CreditCard className="size-3.5" />, () =>
-						onOpenModal({ type: "credits", user: row }),
+		<DropdownMenu>
+			<DropdownMenuTrigger asChild>
+				<button
+					type="button"
+					className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
+				>
+					<MoreHorizontal className="size-4" />
+				</button>
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" className="w-48">
+				<DropdownMenuLabel className="text-xs text-zinc-500">
+					{row.email}
+				</DropdownMenuLabel>
+				<DropdownMenuSeparator />
+				<DropdownMenuItem
+					onClick={() => onOpenModal({ type: "credits", user: row })}
+				>
+					<CreditCard className="size-3.5" />
+					Adjust Credits
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={() => onOpenModal({ type: "plan", user: row })}
+				>
+					<Search className="size-3.5" />
+					Change Plan
+				</DropdownMenuItem>
+				<DropdownMenuItem
+					onClick={() => {
+						const newRole = isAdmin ? "user" : "admin";
+						if (
+							window.confirm(
+								`${isAdmin ? "Revoke admin from" : "Grant admin to"} ${row.email}?`,
+							)
+						) {
+							roleMutation.mutate(newRole);
+						}
+					}}
+					disabled={roleMutation.isPending}
+				>
+					{isAdmin ? (
+						<ShieldOff className="size-3.5" />
+					) : (
+						<ShieldCheck className="size-3.5" />
 					)}
-					{menuItem("Change Plan", <ChevronDown className="size-3.5" />, () =>
-						onOpenModal({ type: "plan", user: row }),
-					)}
-					{menuItem(
-						isAdmin ? "Revoke Admin" : "Grant Admin",
-						<ShieldCheck className="size-3.5" />,
-						() => {
-							const newRole = isAdmin ? "user" : "admin";
-							if (
-								window.confirm(
-									`${isAdmin ? "Revoke admin from" : "Grant admin to"} ${row.email}?`,
-								)
-							) {
-								roleMutation.mutate(newRole);
+					{isAdmin ? "Revoke Admin" : "Grant Admin"}
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				{isBanned ? (
+					<DropdownMenuItem
+						onClick={() => {
+							if (window.confirm(`Unban ${row.email}?`)) {
+								unbanMutation.mutate();
 							}
-						},
-					)}
-					<div className="my-1 border-t border-zinc-800" />
-					{isBanned
-						? menuItem("Unban User", <Ban className="size-3.5" />, () => {
-								if (window.confirm(`Unban ${row.email}?`)) {
-									unbanMutation.mutate()
-								}
-							})
-						: menuItem(
-								"Ban User",
-								<Ban className="size-3.5" />,
-								() => onOpenModal({ type: "ban", user: row }),
-								true,
-							)}
-				</div>
-			)}
-		</div>
-	)
+						}}
+						disabled={unbanMutation.isPending}
+					>
+						<Ban className="size-3.5" />
+						Unban User
+					</DropdownMenuItem>
+				) : (
+					<DropdownMenuItem
+						variant="destructive"
+						onClick={() => onOpenModal({ type: "ban", user: row })}
+					>
+						<Ban className="size-3.5" />
+						Ban User
+					</DropdownMenuItem>
+				)}
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -559,7 +566,8 @@ function AdminUsersPage() {
 					offset: page * PAGE_SIZE,
 				},
 			}),
-	})
+		staleTime: 30_000,
+	});
 
 	const users: AdminUserRow[] = data?.ok ? data.users : [];
 	const total = data?.ok ? data.total : 0;
@@ -759,5 +767,5 @@ function AdminUsersPage() {
 				/>
 			)}
 		</div>
-	)
+	);
 }

@@ -39,6 +39,7 @@
     "@klipse/worker-contracts": "workspace:*",
     "@polar-sh/better-auth": "^1.8.3",
     "@polar-sh/sdk": "^0.47.0",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/react-devtools": "latest",

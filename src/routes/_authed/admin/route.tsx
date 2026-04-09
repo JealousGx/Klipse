@@ -19,6 +19,7 @@ import {
 import { useState } from "react";
 import { toast } from "sonner";
 
+import { BrandLogo } from "@/components/shared/BrandLogo";
 import { checkAndPromoteAdminFn } from "@/features/admin/admin-promote.functions";
 import { authClient } from "@/lib/auth/client";
 
@@ -85,7 +86,7 @@ function AdminLayout() {
 	const userName = session.user.name || session.user.email;
 
 	return (
-		<div className="flex min-h-dvh bg-zinc-950 text-zinc-100">
+		<div className="dark flex min-h-dvh bg-zinc-950 text-zinc-100">
 			{/* ── Sidebar ─────────────────────────────────────────────────────── */}
 			<aside
 				className={[
@@ -95,16 +96,12 @@ function AdminLayout() {
 			>
 				{/* Logo / brand */}
 				<div className="flex h-16 shrink-0 items-center gap-3 border-b border-zinc-800/80 px-6">
-					<div className="flex size-8 items-center justify-center rounded-lg bg-primary/20 ring-1 ring-primary/40">
-						<Shield className="size-4 text-primary" />
-					</div>
-					<div>
-						<p className="text-sm font-semibold tracking-tight text-zinc-100">
-							Klipse Admin
-						</p>
-						<p className="text-[10px] font-medium uppercase tracking-widest text-primary/80">
-							Internal Panel
-						</p>
+					<BrandLogo size="sm" withText />
+					<div className="flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5">
+						<Shield className="size-2.5 text-primary" />
+						<span className="text-[9px] font-semibold uppercase tracking-widest text-primary/80">
+							Admin
+						</span>
 					</div>
 				</div>
 
@@ -202,12 +199,7 @@ function AdminLayout() {
 					>
 						<Activity className="size-5" />
 					</button>
-					<div className="flex items-center gap-2">
-						<Shield className="size-4 text-primary" />
-						<span className="text-sm font-semibold text-zinc-100">
-							Klipse Admin
-						</span>
-					</div>
+					<BrandLogo size="sm" withText />
 				</header>
 
 				{/* Page area */}

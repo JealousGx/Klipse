@@ -1,10 +1,18 @@
 import { CalendarClock, FastForward, Pause, Play } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 import type { ChannelConfig } from "@/features/channels/channel-config.schema";
 
-import { publishingDestinationFieldClass } from "./publishing-destination-field-class";
+const publishingDestinationFieldClass =
+	"w-full text-sm text-foreground transition";
 
 type ScheduleInfo = {
 	nextRunAt: Date;
@@ -85,23 +93,24 @@ export function DestinationScheduleFields({
 			<label className="text-sm font-medium" htmlFor="posting-frequency">
 				Posting frequency
 			</label>
-			<select
-				id="posting-frequency"
-				value={frequency}
-				disabled={isChangingFrequency}
-				onChange={(e) =>
-					onFrequencyChange(
-						e.target.value as ChannelConfig["posting_frequency"],
-					)
+			<Select
+				defaultValue={frequency}
+				onValueChange={(val) =>
+					onFrequencyChange(val as ChannelConfig["posting_frequency"])
 				}
-				className={publishingDestinationFieldClass}
+				disabled={isChangingFrequency}
 			>
-				{FREQUENCY_OPTIONS.map((opt) => (
-					<option key={opt.value} value={opt.value}>
-						{opt.label}
-					</option>
-				))}
-			</select>
+				<SelectTrigger className={publishingDestinationFieldClass}>
+					<SelectValue placeholder="Select frequency" />
+				</SelectTrigger>
+				<SelectContent>
+					{FREQUENCY_OPTIONS.map((opt) => (
+						<SelectItem key={opt.value} value={opt.value}>
+							{opt.label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 			<p className="text-xs text-muted-foreground">
 				Klipse generates a new video for this channel at this interval. Changing
 				the frequency resets the next scheduled run.

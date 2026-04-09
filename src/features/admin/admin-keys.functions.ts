@@ -194,7 +194,7 @@ export const toggleAdminKeyFn = createServerFn({ method: "POST" })
 			.set({ disabled: data.disabled, updatedAt: new Date() })
 			.where(eq(providerApiKeys.id, data.id));
 
-		if (!result.rowsAffected) return { ok: false, code: "not_found" };
+		if (!result[0].affectedRows) return { ok: false, code: "not_found" };
 		return { ok: true };
 	});
 
@@ -228,7 +228,7 @@ export const resetAdminKeyCooldownFn = createServerFn({ method: "POST" })
 			})
 			.where(eq(providerApiKeys.id, data.id));
 
-		if (!result.rowsAffected) return { ok: false, code: "not_found" };
+		if (!result[0].affectedRows) return { ok: false, code: "not_found" };
 		return { ok: true };
 	});
 
@@ -255,6 +255,6 @@ export const deleteAdminKeyFn = createServerFn({ method: "POST" })
 			.delete(providerApiKeys)
 			.where(eq(providerApiKeys.id, data.id));
 
-		if (!result.rowsAffected) return { ok: false, code: "not_found" };
+		if (!result[0].affectedRows) return { ok: false, code: "not_found" };
 		return { ok: true };
 	});

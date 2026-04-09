@@ -26,6 +26,9 @@ importers:
       '@polar-sh/sdk':
         specifier: ^0.47.0
         version: 0.47.0
+      '@radix-ui/react-dropdown-menu':
+        specifier: ^2.1.16
+        version: 2.1.16(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
       '@t3-oss/env-core':
         specifier: ^0.13.10
         version: 0.13.11(typescript@5.9.3)(zod@4.3.6)

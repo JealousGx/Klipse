@@ -150,8 +150,9 @@ function AdminSystemPage() {
 		useQuery({
 			queryKey: ["admin-system"],
 			queryFn: () => getSystemStatsFn(),
+			staleTime: 15_000,
 			refetchInterval: 30_000,
-		})
+		});
 
 	const stats: SystemStats | null = data?.ok ? data.stats : null;
 
