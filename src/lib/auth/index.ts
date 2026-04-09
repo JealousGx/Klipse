@@ -2,7 +2,7 @@ import "@tanstack/react-start/server-only";
 
 import { betterAuth, type GenericEndpointContext } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { emailOTP } from "better-auth/plugins";
+import { admin, emailOTP } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 import { getDb } from "@/db";
@@ -13,6 +13,8 @@ import { createPolarBillingPlugin } from "@/features/billing/polar-plugin.server
 import { additionalUserFields } from "@/lib/auth/additional-user-fields";
 import { sendAuthOTPEmail } from "@/lib/email/auth-otp";
 import { accountId, sessionId, userId, verificationId } from "@/lib/id";
+
+import { ac, adminRoles } from "./admin-access-control";
 
 const OTP_LENGTH = 6;
 const OTP_EXPIRATION_SECONDS = 600;
@@ -50,6 +52,17 @@ export const auth = betterAuth({
 				}
 			: undefined,
 	plugins: [
+		admin({
+			// Only the "admin" role gets access to admin endpoints.
+			// The "user" role is the default for all new accounts.
+			defaultRole: "user",
+			adminRoles: ["admin"],
+			// Custom RBAC — lets us define fine-grained permissions per role
+			// as we add more team members in the future.
+			ac,
+			roles: adminRoles,
+		}),
+
 		emailOTP({
 			otpLength: OTP_LENGTH,
 			expiresIn: OTP_EXPIRATION_SECONDS,
