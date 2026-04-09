@@ -78,7 +78,7 @@ function StatusBadge({
 				<span className="size-1.5 rounded-full bg-emerald-400" />
 				Active
 			</span>
-		)
+		);
 	}
 	if (status === "cooling") {
 		return (
@@ -86,14 +86,14 @@ function StatusBadge({
 				<Clock className="size-3" />
 				Cooling {formatCooldownUntil(cooldownUntil)}
 			</span>
-		)
+		);
 	}
 	return (
 		<span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-600/50 bg-zinc-700/50 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
 			<ShieldOff className="size-3" />
 			Disabled
 		</span>
-	)
+	);
 }
 
 function ProviderBadge({ provider }: { provider: string }) {
@@ -103,7 +103,7 @@ function ProviderBadge({ provider }: { provider: string }) {
 			<span className={`size-2 rounded-full ${dotColor}`} />
 			{provider}
 		</span>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -133,7 +133,7 @@ function StatCard({
 			</p>
 			<p className={`mt-1 text-3xl font-bold ${valueClass}`}>{value}</p>
 		</div>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -209,7 +209,7 @@ function DeleteDialog({
 				</div>
 			</div>
 		</div>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -242,7 +242,7 @@ function AddKeyModal({
 			if (result.ok) {
 				toast.success("API key added successfully.");
 				queryClient.invalidateQueries({ queryKey: ["admin-keys"] });
-				onSuccess()
+				onSuccess();
 			} else if (result.code === "duplicate") {
 				toast.error(result.message ?? "Duplicate key.");
 			} else {
@@ -252,7 +252,7 @@ function AddKeyModal({
 		onError: () => {
 			toast.error("Failed to add key.");
 		},
-	})
+	});
 
 	const isValid = secret.length >= 8;
 
@@ -264,7 +264,7 @@ function AddKeyModal({
 			secret,
 			ownerEmail: ownerEmail.trim() || undefined,
 			sortOrder,
-		})
+		});
 	}
 
 	return (
@@ -393,7 +393,7 @@ function AddKeyModal({
 				</form>
 			</div>
 		</div>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -408,6 +408,7 @@ function KeyRowActions({ row }: { row: AdminKeyRow }) {
 		mutationFn: (vars: { id: string; disabled: boolean }) =>
 			toggleAdminKeyFn({ data: vars }),
 		onSuccess: (result) => {
+			console.log({ result });
 			if (result.ok) {
 				toast.success(result ? "Key updated." : "Key updated.");
 				queryClient.invalidateQueries({ queryKey: ["admin-keys"] });
@@ -416,7 +417,7 @@ function KeyRowActions({ row }: { row: AdminKeyRow }) {
 			}
 		},
 		onError: () => toast.error("Failed to update key."),
-	})
+	});
 
 	const cooldownMutation = useMutation({
 		mutationFn: (id: string) => resetAdminKeyCooldownFn({ data: { id } }),
@@ -429,7 +430,7 @@ function KeyRowActions({ row }: { row: AdminKeyRow }) {
 			}
 		},
 		onError: () => toast.error("Failed to reset cooldown."),
-	})
+	});
 
 	const deleteMutation = useMutation({
 		mutationFn: (id: string) => deleteAdminKeyFn({ data: { id } }),
@@ -443,7 +444,7 @@ function KeyRowActions({ row }: { row: AdminKeyRow }) {
 			}
 		},
 		onError: () => toast.error("Failed to delete key."),
-	})
+	});
 
 	const isDisabled = row.status === "disabled";
 
@@ -500,7 +501,7 @@ function KeyRowActions({ row }: { row: AdminKeyRow }) {
 				/>
 			)}
 		</>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -514,7 +515,7 @@ function AdminKeysPage() {
 		queryKey: ["admin-keys"],
 		queryFn: () => listAdminKeysFn(),
 		refetchInterval: 30_000,
-	})
+	});
 
 	const keys: AdminKeyRow[] = data?.ok ? data.keys : [];
 
@@ -678,5 +679,5 @@ function AdminKeysPage() {
 				/>
 			)}
 		</div>
-	)
+	);
 }
