@@ -49,10 +49,14 @@ export const Route = createFileRoute("/_authed/admin/keys")({
 // Constants
 // ---------------------------------------------------------------------------
 
+// Active providers first, legacy/future at bottom.
 const PROVIDERS = [
 	"openrouter",
-	"gemini",
 	"google_tts",
+	"replicate",
+	"unreal_speech",
+	"elevenlabs",
+	"gemini",
 	"pollinations",
 	"openai",
 	"kling",
@@ -63,15 +67,31 @@ type Provider = (typeof PROVIDERS)[number];
 
 const PROVIDER_DOT_COLOR: Record<Provider, string> = {
 	openrouter: "bg-violet-400",
-	gemini: "bg-blue-400",
 	google_tts: "bg-emerald-400",
-	openai: "bg-purple-400",
-	pollinations: "bg-orange-400",
-	kling: "bg-pink-400",
-	luma: "bg-cyan-400",
+	replicate: "bg-blue-400",
+	unreal_speech: "bg-sky-400",
+	elevenlabs: "bg-yellow-400",
+	gemini: "bg-zinc-500",
+	pollinations: "bg-zinc-500",
+	openai: "bg-zinc-500",
+	kling: "bg-zinc-500",
+	luma: "bg-zinc-500",
 };
 
-const TASK_TYPES = ["any", "script", "image", "tts", "voice"] as const;
+const PROVIDER_LABEL: Record<Provider, string> = {
+	openrouter: "OpenRouter",
+	google_tts: "Google TTS",
+	replicate: "Replicate",
+	unreal_speech: "Unreal Speech",
+	elevenlabs: "ElevenLabs",
+	gemini: "Gemini (legacy)",
+	pollinations: "Pollinations (legacy)",
+	openai: "OpenAI",
+	kling: "Kling",
+	luma: "Luma",
+};
+
+const TASK_TYPES = ["any", "script", "image", "tts", "voice", "sound"] as const;
 type TaskType = (typeof TASK_TYPES)[number];
 
 const TASK_TYPE_LABEL: Record<TaskType, string> = {
@@ -80,6 +100,7 @@ const TASK_TYPE_LABEL: Record<TaskType, string> = {
 	image: "Image",
 	tts: "TTS",
 	voice: "Voice",
+	sound: "Sound",
 };
 
 const fieldClass =
@@ -128,10 +149,11 @@ function StatusBadge({
 
 function ProviderBadge({ provider }: { provider: string }) {
 	const dotColor = PROVIDER_DOT_COLOR[provider as Provider] ?? "bg-zinc-400";
+	const label = PROVIDER_LABEL[provider as Provider] ?? provider;
 	return (
 		<span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300">
 			<span className={`size-2 rounded-full ${dotColor}`} />
-			{provider}
+			{label}
 		</span>
 	);
 }
@@ -339,7 +361,7 @@ function AddKeyModal({
 							<SelectContent>
 								{PROVIDERS.map((p) => (
 									<SelectItem key={p} value={p}>
-										{p.charAt(0).toUpperCase() + p.slice(1)}
+										{PROVIDER_LABEL[p]}
 									</SelectItem>
 								))}
 							</SelectContent>

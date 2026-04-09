@@ -93,9 +93,14 @@ export const listAdminKeysFn = createServerFn({ method: "GET" }).handler(
 
 const addKeyInput = z.object({
 	provider: z.enum([
+		// Active providers
 		"openrouter",
-		"gemini",
 		"google_tts",
+		"replicate",
+		"unreal_speech",
+		"elevenlabs",
+		// Legacy / reserved
+		"gemini",
 		"pollinations",
 		"openai",
 		"kling",
@@ -106,7 +111,9 @@ const addKeyInput = z.object({
 	sortOrder: z.number().int().min(0).default(0),
 	label: z.string().max(128).optional(),
 	modelId: z.string().max(255).optional(),
-	taskType: z.enum(["any", "script", "image", "tts", "voice"]).default("any"),
+	taskType: z
+		.enum(["any", "script", "image", "tts", "voice", "sound"])
+		.default("any"),
 });
 
 export type AddAdminKeyResult =

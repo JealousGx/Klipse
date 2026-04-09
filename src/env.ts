@@ -123,6 +123,19 @@ export const env = createEnv({
 		 */
 		UNREAL_SPEECH_VOICE: z.string().min(1).default("Scarlett"),
 
+		// -------------------------------------------------------------------------
+		// ElevenLabs — sound effects (Creator+ only, 10K credits/month free)
+		// https://elevenlabs.io/docs/api-reference/sound-generation
+		// -------------------------------------------------------------------------
+
+		/** Comma-separated ElevenLabs API keys (rotated via provider-key-execution). */
+		ELEVENLABS_API_KEYS: z.string().optional(),
+		/**
+		 * Default duration (seconds) for generated sound effects.
+		 * @default 5  Range: 0.5–22
+		 */
+		ELEVENLABS_SOUND_DURATION_SECONDS: z.coerce.number().min(0.5).max(22).default(5),
+
 		/**
 		 * Better Auth `session.cookieCache.maxAge` (seconds). After Polar checkout we
 		 * bypass cache once via `?checkout=success` on billing; keep this high to avoid
