@@ -84,6 +84,9 @@ export const env = createEnv({
 			.min(60)
 			.max(604800)
 			.default(604800),
+
+		// Comma-separated list of emails that should be auto-promoted to admin on login. Only used if the `admin` plugin is enabled.
+		ADMIN_EMAILS: z.string().optional(),
 	},
 
 	/**
