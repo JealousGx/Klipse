@@ -6,12 +6,15 @@ import {
 	isGoogleTtsConfigured,
 	synthesizeGoogleTts,
 } from "./google-tts.server";
-import { fetchPollinationsSpeech } from "./pollinations-tts.server";
+import {
+	isUnrealSpeechConfigured,
+	synthesizeUnrealSpeech,
+} from "./unreal-speech-tts.server";
 
-export type AudioGenerationSource = "google" | "pollinations";
+export type AudioGenerationSource = "google" | "unreal_speech";
 
 export type SynthesizeSpeechInput =
-	| { kind: "raw"; text: string; voice?: string }
+	| { kind: "raw"; text: string; voice?: string; targetSeconds?: number }
 	| {
 			kind: "brief";
 			brief: ChannelCreativeBrief;
@@ -21,33 +24,39 @@ export type SynthesizeSpeechInput =
 
 function resolveTtsText(input: SynthesizeSpeechInput): {
 	text: string;
-	pollinationsVoice: string;
+	unrealVoice: string;
+	targetSeconds: number;
 } {
 	if (input.kind === "raw") {
-		return { text: input.text, pollinationsVoice: input.voice ?? "alloy" };
+		return {
+			text: input.text,
+			unrealVoice: input.voice ?? "Scarlett",
+			targetSeconds: input.targetSeconds ?? 30,
+		};
 	}
-	const { plainText, voice } = buildVoiceoverTtsPayload(
+	const { plainText, voice, targetSeconds } = buildVoiceoverTtsPayload(
 		input.brief,
 		input.scriptMarkdown,
 		input.voiceOverride,
 	);
-	return { text: plainText, pollinationsVoice: voice };
+	return { text: plainText, unrealVoice: voice, targetSeconds };
 }
 
 /**
- * TTS: **Google Cloud TTS** (primary, free 4M chars/month) → **Pollinations Audio** (fallback, free).
- * Always returns `ArrayBuffer` regardless of which provider succeeded.
+ * TTS chain:
+ *   1. Google Cloud TTS (1M Neural2 chars/month free) — primary
+ *   2. Unreal Speech (250K chars/month free) — fallback
  *
- * Google TTS voice is controlled by `GOOGLE_TTS_VOICE_NAME` env var (default: en-US-Neural2-A).
- * Pollinations voice is tone-mapped from channel brief.
+ * Always returns ArrayBuffer (MP3/WAV) regardless of which provider succeeded.
  */
 export async function synthesizeSpeechWithFallback(
 	input: SynthesizeSpeechInput,
 ): Promise<{ source: AudioGenerationSource; buffer: ArrayBuffer }> {
-	const { text, pollinationsVoice } = resolveTtsText(input);
+	const { text, unrealVoice } = resolveTtsText(input);
+	const errors: string[] = [];
 
+	// 1. Google Cloud TTS (primary)
 	if (await isGoogleTtsConfigured()) {
-		console.log("Attempting to synthesize speech with Google TTS...");
 		try {
 			const { audioContentBase64 } = await synthesizeGoogleTts({ text });
 			const buf = Buffer.from(audioContentBase64, "base64");
@@ -58,14 +67,24 @@ export async function synthesizeSpeechWithFallback(
 					buf.byteOffset + buf.byteLength,
 				) as ArrayBuffer,
 			};
-		} catch {
-			// fall through to Pollinations
+		} catch (e) {
+			errors.push(`google_tts: ${e instanceof Error ? e.message : String(e)}`);
 		}
 	}
 
-	const buffer = await fetchPollinationsSpeech({
-		text,
-		voice: pollinationsVoice,
-	});
-	return { source: "pollinations", buffer };
+	// 2. Unreal Speech (fallback)
+	if (await isUnrealSpeechConfigured()) {
+		try {
+			const buffer = await synthesizeUnrealSpeech({ text, voice: unrealVoice });
+			return { source: "unreal_speech", buffer };
+		} catch (e) {
+			errors.push(
+				`unreal_speech: ${e instanceof Error ? e.message : String(e)}`,
+			);
+		}
+	}
+
+	throw new Error(
+		`tts_all_failed: ${errors.join(" | ") || "no TTS providers configured"}`,
+	);
 }

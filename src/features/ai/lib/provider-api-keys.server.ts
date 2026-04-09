@@ -4,8 +4,8 @@ import { and, asc, count, eq, isNull, lt, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import {
-	providerApiKeys,
 	type ProviderApiKeyTask,
+	providerApiKeys,
 } from "@/db/schema/provider-api-keys";
 import { env } from "@/env";
 import { providerApiKeyRowId } from "@/lib/id";
@@ -13,10 +13,11 @@ import { providerApiKeyRowId } from "@/lib/id";
 import { secretFingerprint } from "./provider-key-fingerprint.server";
 
 export type AiProviderKind =
-	| "gemini"
-	| "google_tts"
-	| "pollinations"
-	| "openrouter";
+	| "openrouter" // script (LLM) + images (FLUX.2)
+	| "google_tts" // TTS primary (1M Neural2 chars/month free)
+	| "replicate" // image fallback (FLUX Schnell ~$0.003/img)
+	| "unreal_speech" // TTS fallback (250K chars/month free)
+	| "elevenlabs"; // sound effects (Creator+ only, 10K credits/month free)
 
 /** One row in `provider_api_keys` (manually created or materialized from env). */
 export type ProviderApiKeyCredential = {
@@ -42,14 +43,14 @@ function envFallbackKeys(provider: AiProviderKind): string[] {
 	switch (provider) {
 		case "openrouter":
 			return parseCommaEnv(env.OPENROUTER_API_KEYS);
-		case "gemini":
-			return parseCommaEnv(env.GEMINI_API_KEYS);
 		case "google_tts":
 			return parseCommaEnv(env.GOOGLE_TTS_API_KEYS);
-		case "pollinations": {
-			const k = env.POLLINATIONS_API_KEY?.trim();
-			return k ? [k] : [];
-		}
+		case "replicate":
+			return parseCommaEnv(env.REPLICATE_API_KEYS);
+		case "unreal_speech":
+			return parseCommaEnv(env.UNREAL_SPEECH_API_KEYS);
+		case "elevenlabs":
+			return parseCommaEnv(env.ELEVENLABS_API_KEYS);
 		default: {
 			const _exhaustive: never = provider;
 			return _exhaustive;

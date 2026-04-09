@@ -2,7 +2,7 @@ import "@tanstack/react-start/server-only";
 
 import { env } from "@/env";
 
-import { DEFAULT_MODEL_IDS } from "../config/model-routing";
+import { buildOpenRouterModelChain } from "../config/model-routing";
 import { getProviderApiKeys } from "../lib/provider-api-keys.server";
 import {
 	executeWithProviderKeyRotation,
@@ -12,39 +12,38 @@ import {
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
 /**
- * OpenRouter chat completions (OpenAI-compatible).
- * Supports free frontier models: nvidia/nemotron-3-super:free,
- * arceeai/arcee-trinity-large-preview:free, openai/gpt-oss-120b:free, etc.
+ * OpenRouter chat completions for script (text) generation.
  *
- * Per-key `modelId` in the DB overrides the global OPENROUTER_SCRIPT_MODEL env var,
- * so different keys can target different models from the same pool.
+ * Uses OpenRouter's native `models[]` array so OpenRouter handles provider
+ * fallback server-side — no custom retry chain needed on our end.
  *
- * @see https://openrouter.ai/docs
+ * Chain: OPENROUTER_SCRIPT_MODEL → OPENROUTER_SCRIPT_FALLBACK_MODELS
+ * (all configured via env; per-key `modelId` in DB overrides the primary model)
+ *
+ * @see https://openrouter.ai/docs/features/model-routing
  */
 export async function generateTextOpenRouter(input: {
 	system: string;
 	user: string;
 }): Promise<string> {
-	const globalModel =
-		env.OPENROUTER_SCRIPT_MODEL?.trim() || DEFAULT_MODEL_IDS.openRouterScript;
-
 	return executeWithProviderKeyRotation(
 		"openrouter",
 		async (credential) => {
-			// Per-key modelId takes precedence over the global env/default.
-			const model = credential.modelId?.trim() || globalModel;
+			// Per-key modelId overrides the primary model for this key.
+			const models = buildOpenRouterModelChain(credential.modelId);
 
 			const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 					Authorization: `Bearer ${credential.secret}`,
-					// Required by OpenRouter to identify your app in their dashboard.
 					"HTTP-Referer": env.SERVER_URL ?? "https://klipse.ai",
 					"X-Title": "Klipse",
 				},
 				body: JSON.stringify({
-					model,
+					// OpenRouter tries each model in order if prior ones fail.
+					models,
+					provider: { allow_fallbacks: true },
 					temperature: 0.7,
 					max_tokens: 8192,
 					messages: [
@@ -66,19 +65,17 @@ export async function generateTextOpenRouter(input: {
 			}
 
 			const json = (await res.json()) as {
+				model?: string;
 				choices?: { message?: { content?: string } }[];
 				error?: { message?: string };
 			};
 
-			// OpenRouter sometimes returns 200 with an error body.
 			if (json.error?.message) {
 				throw new Error(`openrouter_api_error: ${json.error.message}`);
 			}
 
 			const content = json.choices?.[0]?.message?.content?.trim();
-			if (!content) {
-				throw new Error("openrouter_empty_response");
-			}
+			if (!content) throw new Error("openrouter_empty_response");
 			return content;
 		},
 		{ providerLabel: "openrouter", taskType: "script" },

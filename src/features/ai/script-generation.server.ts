@@ -5,18 +5,16 @@ import { ScriptGenerationFailedError } from "./errors";
 import type { ChannelCreativeBrief } from "./prompts/creative-brief.types";
 import { isShortFormTargetSeconds } from "./prompts/video-format-surface";
 import {
-	generateTextGemini,
-	isGeminiConfigured,
-} from "./providers/gemini-text.server";
-import {
 	generateTextOpenRouter,
 	isOpenRouterConfigured,
 } from "./providers/openrouter-text.server";
-import { generateTextPollinationsOpenAi } from "./providers/pollinations-text.server";
 
 export type ScriptGenerationContext = ChannelCreativeBrief & { idea: string };
+export type ScriptGenerationMode = "openrouter";
 
-export type ScriptGenerationMode = "openrouter" | "gemini" | "pollinations";
+// ---------------------------------------------------------------------------
+// System prompts
+// ---------------------------------------------------------------------------
 
 function shortFormSystemPrompt(): string {
 	return [
@@ -33,7 +31,7 @@ function shortFormSystemPrompt(): string {
 		"- Honor the requested tone (dark / educational / fun) consistently.",
 		"- If caption style is bold, suggest punchy on-screen phrases; if minimal, suggest fewer, sharper lines.",
 		"## Quality bar",
-		'- No fabricated statistics, fake studies, or misleading claims unless the brief explicitly requires them and they are clearly framed.',
+		"- No fabricated statistics, fake studies, or misleading claims unless the brief explicitly requires them and they are clearly framed.",
 		'- No meta commentary about the AI, the prompt, or "as an AI". Output only the script artifact.',
 		"## Output format (markdown)",
 		"Use exactly these sections with clear headers:",
@@ -89,7 +87,6 @@ function userPrompt(ctx: ScriptGenerationContext): string {
 			`- **Linked destination (when published):** ${ctx.destinationDisplayName.trim()}`,
 		);
 	}
-
 	if (ctx.publishingSurfaceLabel) {
 		const t = ctx.targetSeconds ?? 60;
 		const hint = isShortFormTargetSeconds(t)
@@ -103,7 +100,7 @@ function userPrompt(ctx: ScriptGenerationContext): string {
 	lines.push(
 		`- **Niche / positioning:** ${ctx.niche}`,
 		`- **Tone:** ${ctx.tone}`,
-		`- **Target spoken length:** ~${ctx.targetSeconds ?? 60} seconds total (voiceover must fit).`,
+		`- **Target spoken length:** ~${ctx.targetSeconds ?? 30} seconds total (voiceover must fit in this duration exactly — keep it concise).`,
 	);
 
 	if (ctx.postingFrequency) {
@@ -111,13 +108,11 @@ function userPrompt(ctx: ScriptGenerationContext): string {
 			`- **Posting cadence:** ${ctx.postingFrequency} — match energy (e.g. daily = tighter hooks; weekly = slightly more "event" feel).`,
 		);
 	}
-
 	if (ctx.captionStyle) {
 		lines.push(
 			`- **On-screen caption style:** ${ctx.captionStyle} — reflect this in suggested key phrases.`,
 		);
 	}
-
 	if (ctx.fontPairLabel?.trim()) {
 		lines.push(
 			`- **Brand typography hint (for captions):** ${ctx.fontPairLabel.trim()}`,
@@ -129,54 +124,28 @@ function userPrompt(ctx: ScriptGenerationContext): string {
 	return lines.join("\n");
 }
 
-async function runProviders(
-	system: string,
-	user: string,
-): Promise<{ text: string; mode: ScriptGenerationMode }> {
-	const attempts: string[] = [];
-
-	// 1. OpenRouter (primary): free frontier models via OPENROUTER_API_KEYS.
-	if (await isOpenRouterConfigured()) {
-		try {
-			const text = await generateTextOpenRouter({ system, user });
-			return { text, mode: "openrouter" };
-		} catch (e) {
-			attempts.push(`openrouter:${e instanceof Error ? e.message : String(e)}`);
-		}
-	}
-
-	// 2. Gemini (secondary): free tier (1500 req/day) via GEMINI_API_KEYS.
-	if (await isGeminiConfigured()) {
-		try {
-			const text = await generateTextGemini({ system, user });
-			return { text, mode: "gemini" };
-		} catch (e) {
-			attempts.push(`gemini:${e instanceof Error ? e.message : String(e)}`);
-		}
-	}
-
-	// 3. Pollinations (last resort): no key required.
-	try {
-		const text = await generateTextPollinationsOpenAi({ system, user });
-		return { text, mode: "pollinations" };
-	} catch (e) {
-		attempts.push(`pollinations:${e instanceof Error ? e.message : String(e)}`);
-	}
-
-	throw new ScriptGenerationFailedError(
-		`Script generation failed after ${attempts.length} attempt(s). Check OPENROUTER_API_KEYS, GEMINI_API_KEYS, and provider quotas.`,
-		attempts,
-	);
-}
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
 
 /**
- * Script generation: **Gemini 2.0 Flash** (primary) → **Pollinations** (fallback).
- * Prompts are tuned for niche fit, retention, and engagement on the connected destination.
+ * Script generation via OpenRouter.
+ * OpenRouter handles model fallbacks internally via the `models[]` array
+ * (primary → OPENROUTER_SCRIPT_FALLBACK_MODELS) — no manual retry chain needed.
  */
 export async function generateVideoScript(
 	ctx: ScriptGenerationContext,
 ): Promise<{ text: string; mode: ScriptGenerationMode }> {
 	const system = systemPromptForBrief(ctx);
 	const user = userPrompt(ctx);
-	return runProviders(system, user);
+
+	if (!(await isOpenRouterConfigured())) {
+		throw new ScriptGenerationFailedError(
+			"Script generation failed: no OpenRouter API keys configured. Add keys via the admin panel.",
+			["openrouter_not_configured"],
+		);
+	}
+
+	const text = await generateTextOpenRouter({ system, user });
+	return { text, mode: "openrouter" };
 }
