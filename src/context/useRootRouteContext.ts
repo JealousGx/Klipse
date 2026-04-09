@@ -1,5 +1,5 @@
-import { useRouteContext } from "@tanstack/react-router";
+import { Route } from "@/routes/__root";
 
 export const useRootRouteContext = () => {
-	return useRouteContext({ from: "/" });
+	return Route.useRouteContext();
 };
