@@ -57,32 +57,71 @@ export const env = createEnv({
 		 */
 		APP_PUBLIC_URL: z.url().optional(),
 
+		// -------------------------------------------------------------------------
+		// OpenRouter — script (LLM) + images (FLUX.2)
+		// https://openrouter.ai/docs
+		// -------------------------------------------------------------------------
+
 		/**
-		 * Comma-separated OpenRouter API keys (https://openrouter.io).
-		 * Primary script provider — OpenAI-compatible API at openrouter.ai/api/v1.
+		 * Comma-separated OpenRouter API keys.
+		 * Used for both script generation (LLM) and image generation (FLUX.2).
+		 * OpenRouter handles provider fallback internally via the `models[]` array.
 		 */
 		OPENROUTER_API_KEYS: z.string().optional(),
 		/**
-		 * OpenRouter model ID for script generation.
-		 * @default openrouter/free
-		 * Other good free options: arceeai/arcee-trinity-large-preview:free, openai/gpt-oss-120b:free
+		 * Primary model for script generation.
+		 * @default openrouter/auto — auto-selects best available free model
+		 * Other options: google/gemini-2.5-flash, meta-llama/llama-4-scout:free, openai/gpt-oss-120b:free
 		 */
-		OPENROUTER_SCRIPT_MODEL: z.string().min(1).default("openrouter/free"),
+		OPENROUTER_SCRIPT_MODEL: z.string().min(1).default("openrouter/auto"),
+		/**
+		 * Comma-separated fallback model IDs passed in OpenRouter's `models[]` array.
+		 * OpenRouter tries them in order if the primary model fails.
+		 * @default google/gemini-2.5-flash,meta-llama/llama-4-scout:free
+		 */
+		OPENROUTER_SCRIPT_FALLBACK_MODELS: z
+			.string()
+			.min(1)
+			.default("google/gemini-2.5-flash,meta-llama/llama-4-scout:free"),
+		/**
+		 * Image generation model via OpenRouter (free FLUX.2 variants).
+		 * @default black-forest-labs/flux.2-pro
+		 */
+		OPENROUTER_IMAGE_MODEL: z
+			.string()
+			.min(1)
+			.default("black-forest-labs/flux.2-pro"),
 
-		/** Pollinations Gen API (text/image/audio). Keys from https://enter.pollinations.ai */
-		POLLINATIONS_GEN_BASE: z.url().optional(),
-		POLLINATIONS_API_KEY: z.string().min(1).optional(),
-		/** Text model id for `POST /v1/chat/completions` (e.g. mistral, claude-fast). */
-		POLLINATIONS_TEXT_MODEL: z.string().min(1).optional(),
+		// -------------------------------------------------------------------------
+		// Google Cloud TTS — primary TTS (1M Neural2 chars/month free)
+		// https://cloud.google.com/text-to-speech
+		// -------------------------------------------------------------------------
 
-		/** Comma-separated Google AI Studio keys for Gemini (secondary script provider). */
-		GEMINI_API_KEYS: z.string().optional(),
-		/** @default gemini-2.5-flash-lite */
-		GEMINI_SCRIPT_MODEL: z.string().min(1).default("gemini-2.5-flash-lite"),
-
-		/** Comma-separated Google Cloud API keys for Text-to-Speech (primary audio provider). */
+		/** Comma-separated Google Cloud API keys for Text-to-Speech. */
 		GOOGLE_TTS_API_KEYS: z.string().optional(),
+		/** @default en-US-Chirp-HD-F */
 		GOOGLE_TTS_VOICE_NAME: z.string().min(1).optional(),
+
+		// -------------------------------------------------------------------------
+		// Replicate — image fallback (FLUX Schnell ~$0.003/image)
+		// https://replicate.com
+		// -------------------------------------------------------------------------
+
+		/** Comma-separated Replicate API tokens. */
+		REPLICATE_API_KEYS: z.string().optional(),
+
+		// -------------------------------------------------------------------------
+		// Unreal Speech — TTS fallback (250K chars/month free)
+		// https://unrealspeech.com
+		// -------------------------------------------------------------------------
+
+		/** Comma-separated Unreal Speech API keys. */
+		UNREAL_SPEECH_API_KEYS: z.string().optional(),
+		/**
+		 * Default voice for Unreal Speech TTS.
+		 * @default Scarlett  Options: Scarlett | Dan | Liv | Will | Amy
+		 */
+		UNREAL_SPEECH_VOICE: z.string().min(1).default("Scarlett"),
 
 		/**
 		 * Better Auth `session.cookieCache.maxAge` (seconds). After Polar checkout we
