@@ -8,13 +8,15 @@ type RootChromeProps = {
 };
 
 /**
- * Marketing site uses header + footer; app routes (`/dashboard`) use their own shell.
+ * Marketing site uses header + footer; app routes (`/dashboard`, `/admin`) use their own shell.
  */
 export function RootChrome({ children }: RootChromeProps) {
 	const pathname = useRouterState({
 		select: (s) => s.location.pathname,
 	});
-	const isApp = pathname.startsWith("/dashboard");
+	const isApp = ["/dashboard", "/admin"].some((prefix) =>
+		pathname.startsWith(prefix),
+	);
 
 	if (isApp) {
 		return <>{children}</>;
