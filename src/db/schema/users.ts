@@ -15,6 +15,19 @@ export const users = mysqlTable("users", {
 	email: varchar("email", { length: 255 }).notNull().unique(),
 	emailVerified: boolean("email_verified").default(false).notNull(),
 	image: text("image"),
+	// ── Better Auth admin plugin fields ───────────────────────────────────
+	/**
+	 * Account role string. "user" (default) or "admin".
+	 * Managed by the Better Auth admin plugin; arbitrary roles supported.
+	 * Bootstrapped via ADMIN_EMAILS env var on first admin sign-in.
+	 */
+	role: varchar("role", { length: 64 }).default("user"),
+	/** Set to true when an admin bans this account. */
+	banned: boolean("banned").default(false),
+	/** Human-readable reason for the ban. */
+	banReason: text("ban_reason"),
+	/** If set, the ban lifts automatically at this timestamp. */
+	banExpires: timestamp("ban_expires", { fsp: 3 }),
 	plan: mysqlEnum("plan", ["free", "starter", "creator", "empire"])
 		.default("free")
 		.notNull(),

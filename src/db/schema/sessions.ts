@@ -26,6 +26,8 @@ export const sessions = mysqlTable(
 		userId: varchar("user_id", { length: 64 })
 			.notNull()
 			.references(() => users.id, { onDelete: "cascade" }),
+		/** Set when an admin is impersonating this session. Stores the admin's user ID. */
+		impersonatedBy: varchar("impersonated_by", { length: 64 }),
 	},
 	(table) => [index("sessions_userId_idx").on(table.userId)],
 );
