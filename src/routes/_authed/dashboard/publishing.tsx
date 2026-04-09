@@ -5,7 +5,7 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
  * index list (`publishing.index.tsx`) and destination detail
  * (`publishing.$destinationId.tsx`) actually mount.
  */
-export const Route = createFileRoute("/dashboard/publishing")({
+export const Route = createFileRoute("/_authed/dashboard/publishing")({
 	component: PublishingLayout,
 });
 

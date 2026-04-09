@@ -125,6 +125,9 @@ export function usePublishingDestinationPage(
 			}
 			toast.error("Couldn’t remove destination");
 		},
+		onError: (_err) => {
+			toast.error("Couldn’t remove destination");
+		},
 	});
 
 	const updateProfileMutation = useMutation({
@@ -146,7 +149,18 @@ export function usePublishingDestinationPage(
 				void queryClient.invalidateQueries({ queryKey: ["channels"] });
 				return;
 			}
+			console.log("r in onSuccess in updateProfileMutation", r);
 			toast.error(r.message ?? "Could not save");
+		},
+		onError: (err) => {
+			console.error("Error in updateProfileMutation", err);
+
+			const errorMessage =
+				Array.isArray(err) && err[0]
+					? (err[0] as { message?: string })?.message
+					: null;
+
+			toast.error(errorMessage ?? "Could not save");
 		},
 	});
 
@@ -176,6 +190,13 @@ export function usePublishingDestinationPage(
 				return;
 			}
 			toast.error(r.message ?? "Could not save");
+		},
+		onError: (err) => {
+			const errorMessage =
+				Array.isArray(err) && err[0]
+					? (err[0] as { message?: string })?.message
+					: null;
+			toast.error(errorMessage ?? "Could not save");
 		},
 	});
 
@@ -208,6 +229,13 @@ export function usePublishingDestinationPage(
 			}
 			toast.error(r.message ?? "Could not save");
 		},
+		onError: (err) => {
+			const errorMessage =
+				Array.isArray(err) && err[0]
+					? (err[0] as { message?: string })?.message
+					: null;
+			toast.error(errorMessage ?? "Could not save");
+		},
 	});
 
 	const updateLinkMutation = useMutation({
@@ -236,6 +264,13 @@ export function usePublishingDestinationPage(
 				return;
 			}
 			toast.error(r.message ?? "Could not save");
+		},
+		onError: (err) => {
+			const errorMessage =
+				Array.isArray(err) && err[0]
+					? (err[0] as { message?: string })?.message
+					: null;
+			toast.error(errorMessage ?? "Could not save");
 		},
 	});
 

@@ -9,10 +9,10 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 
-import { cn } from "@/lib/utils";
 import { analyticsQueryOptions } from "@/lib/queries/dashboard-queries";
+import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/dashboard/analytics")({
+export const Route = createFileRoute("/_authed/dashboard/analytics")({
 	staticData: { dashboardTitle: "Analytics" },
 	beforeLoad: ({ context }) => {
 		void context.queryClient.ensureQueryData(analyticsQueryOptions);
@@ -27,7 +27,7 @@ function AnalyticsPage() {
 	const currentMonth = new Date().toLocaleString(undefined, {
 		month: "long",
 		year: "numeric",
-	});
+	})
 
 	return (
 		<div className="space-y-8">
@@ -105,9 +105,7 @@ function AnalyticsPage() {
 								{data.byChannel.map((ch) => {
 									const total = ch.completed + ch.failed;
 									const rate =
-										total > 0
-											? Math.round((ch.completed / total) * 100)
-											: 0;
+										total > 0 ? Math.round((ch.completed / total) * 100) : 0;
 									return (
 										<tr
 											key={ch.channelId}
@@ -133,7 +131,7 @@ function AnalyticsPage() {
 												{rate}%
 											</td>
 										</tr>
-									);
+									)
 								})}
 							</tbody>
 						</table>
@@ -169,7 +167,7 @@ function AnalyticsPage() {
 				</div>
 			</div>
 		</div>
-	);
+	)
 }
 
 function GlassMetric({
@@ -182,7 +180,7 @@ function GlassMetric({
 	value: string;
 }) {
 	return (
-		<div className="flex min-w-[9rem] items-start gap-3 rounded-xl border border-border/60 bg-background/80 px-4 py-3.5 shadow-sm backdrop-blur-sm">
+		<div className="flex min-w-36 items-start gap-3 rounded-xl border border-border/60 bg-background/80 px-4 py-3.5 shadow-sm backdrop-blur-sm">
 			<div className="mt-0.5 shrink-0">{icon}</div>
 			<div>
 				<p className="text-xs text-muted-foreground">{label}</p>
@@ -191,14 +189,10 @@ function GlassMetric({
 				</p>
 			</div>
 		</div>
-	);
+	)
 }
 
-function MiniBarChart({
-	rows,
-}: {
-	rows: { date: string; count: number }[];
-}) {
+function MiniBarChart({ rows }: { rows: { date: string; count: number }[] }) {
 	const max = Math.max(...rows.map((r) => r.count), 1);
 
 	return (
@@ -210,7 +204,7 @@ function MiniBarChart({
 						className="group relative flex flex-1 flex-col items-center justify-end"
 					>
 						<div
-							className="w-full min-h-[2px] rounded-t-sm bg-primary/70 transition-colors group-hover:bg-primary"
+							className="w-full min-h-0.5 rounded-t-sm bg-primary/70 transition-colors group-hover:bg-primary"
 							style={{ height: `${(r.count / max) * 100}%` }}
 							title={`${r.date}: ${r.count} video${r.count !== 1 ? "s" : ""}`}
 						/>
@@ -222,7 +216,7 @@ function MiniBarChart({
 				<span>{rows[rows.length - 1]?.date ?? ""}</span>
 			</div>
 		</div>
-	);
+	)
 }
 
 function SkeletonTable() {
@@ -236,5 +230,5 @@ function SkeletonTable() {
 				</div>
 			))}
 		</div>
-	);
+	)
 }

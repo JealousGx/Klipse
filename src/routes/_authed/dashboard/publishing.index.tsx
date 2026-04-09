@@ -41,14 +41,14 @@ import {
 } from "@/features/publishing-destination/publishing-destination-search.schema";
 import type { MeResponse } from "@/features/user/types/me";
 
-import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
-import { cn } from "@/lib/utils";
 import {
 	platformChannelUrl,
 	platformDisplayName,
 } from "@/lib/platform-publishing";
+import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
+import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/dashboard/publishing/")({
+export const Route = createFileRoute("/_authed/dashboard/publishing/")({
 	staticData: { dashboardTitle: "Publishing" },
 	validateSearch: (raw: Record<string, unknown>) => {
 		const p = publishingDestinationSearchSchema.safeParse(raw);
@@ -317,6 +317,9 @@ function PublishingIndexPage() {
 				toast.error(r.message ?? "Destination limit reached for your plan.");
 				return;
 			}
+			toast.error("Could not create destination");
+		},
+		onError: (_err) => {
 			toast.error("Could not create destination");
 		},
 	});

@@ -4,7 +4,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { JobQueueStoryCard } from "@/components/dashboard/pipeline-story";
 import { videoJobsQueryOptions } from "@/lib/queries/dashboard-queries";
 
-export const Route = createFileRoute("/dashboard/jobs")({
+export const Route = createFileRoute("/_authed/dashboard/jobs")({
 	staticData: { dashboardTitle: "Jobs" },
 	beforeLoad: ({ context }) => {
 		void context.queryClient.ensureQueryData(videoJobsQueryOptions);
@@ -50,5 +50,5 @@ function JobsPage() {
 				/>
 			)}
 		</div>
-	);
+	)
 }

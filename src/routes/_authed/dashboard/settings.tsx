@@ -15,7 +15,7 @@ import {
 } from "@/features/user/user-settings.functions";
 import { authClient } from "@/lib/auth/client";
 
-export const Route = createFileRoute("/dashboard/settings")({
+export const Route = createFileRoute("/_authed/dashboard/settings")({
 	staticData: { dashboardTitle: "Settings" },
 	component: SettingsPage,
 });
@@ -52,7 +52,7 @@ function SettingsPage() {
 		} finally {
 			setIsSavingName(false);
 		}
-	};
+	}
 
 	const handleSignOut = async () => {
 		setIsSigningOut(true);
@@ -63,7 +63,7 @@ function SettingsPage() {
 			toast.error("Sign out failed. Please try again.");
 			setIsSigningOut(false);
 		}
-	};
+	}
 
 	// ── Notification prefs — seeded from session, saved via authClient ────────
 	// Better Auth syncs these to the DB via `additionalUserFields` (input: true).
@@ -86,7 +86,7 @@ function SettingsPage() {
 		try {
 			await authClient.updateUser({ [key]: next } as Parameters<
 				typeof authClient.updateUser
-			>[0]);
+			>[0])
 			await refetchSession({ query: { disableCookieCache: true } });
 		} catch {
 			// Roll back optimistic update
@@ -96,7 +96,7 @@ function SettingsPage() {
 		} finally {
 			setIsSavingNotifs(false);
 		}
-	};
+	}
 
 	return (
 		<div className="w-full space-y-8 pb-4 lg:space-y-10">
@@ -272,7 +272,7 @@ function SettingsPage() {
 				</DashboardPanel>
 			</DashboardSection>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -285,22 +285,22 @@ function PasswordSection({ email }: { email: string }) {
 		queryFn: async () => {
 			const r = await hasPasswordAccountFn();
 			if (!r.ok) throw new Error("unauthorized");
-			return r;
+			return r
 		},
 		staleTime: 5 * 60 * 1_000,
-	});
+	})
 
 	if (isPending) {
 		return (
 			<p className="text-sm text-muted-foreground">Loading security info…</p>
-		);
+		)
 	}
 
 	return data?.hasPassword ? (
 		<ChangePasswordForm />
 	) : (
 		<SetPasswordForm email={email} />
-	);
+	)
 }
 
 // ── Change password (user already has one) ──────────────────────────────────
@@ -328,10 +328,10 @@ function ChangePasswordForm() {
 				currentPassword,
 				newPassword,
 				revokeOtherSessions: true,
-			});
+			})
 			if (result.error) {
 				toast.error(result.error.message ?? "Could not change password.");
-				return;
+				return
 			}
 			toast.success("Password changed. Other sessions have been signed out.");
 			setCurrentPassword("");
@@ -342,7 +342,7 @@ function ChangePasswordForm() {
 		} finally {
 			setIsSaving(false);
 		}
-	};
+	}
 
 	return (
 		<form className="space-y-4" onSubmit={(e) => void handleSubmit(e)}>
@@ -444,7 +444,7 @@ function ChangePasswordForm() {
 				{isSaving ? "Saving…" : "Change password"}
 			</Button>
 		</form>
-	);
+	)
 }
 
 // ── Set password (user signed up via Google / OTP, no password yet) ─────────
@@ -477,10 +477,10 @@ function SetPasswordForm({ email }: { email: string }) {
 			const result = await authClient.emailOtp.sendVerificationOtp({
 				email,
 				type: "forget-password",
-			});
+			})
 			if (result.error) {
 				toast.error(result.error.message ?? "Could not send code.");
-				return;
+				return
 			}
 			setStep("otp-sent");
 			toast.success(`Verification code sent to ${email}`);
@@ -489,7 +489,7 @@ function SetPasswordForm({ email }: { email: string }) {
 		} finally {
 			setIsBusy(false);
 		}
-	};
+	}
 
 	const handleSetPassword = async (e: React.FormEvent) => {
 		e.preventDefault();
@@ -501,10 +501,10 @@ function SetPasswordForm({ email }: { email: string }) {
 				email,
 				otp,
 				password: newPassword,
-			});
+			})
 			if (result.error) {
 				toast.error(result.error.message ?? "Could not set password.");
-				return;
+				return
 			}
 			toast.success("Password set. You can now sign in with email + password.");
 			// Reset form — next query refresh will show ChangePasswordForm
@@ -517,7 +517,7 @@ function SetPasswordForm({ email }: { email: string }) {
 		} finally {
 			setIsBusy(false);
 		}
-	};
+	}
 
 	if (step === "idle") {
 		return (
@@ -540,22 +540,21 @@ function SetPasswordForm({ email }: { email: string }) {
 					{isBusy ? "Sending…" : "Send verification code"}
 				</Button>
 			</div>
-		);
+		)
 	}
 
 	return (
-		<form className="space-y-4" onSubmit={(e) => void handleSetPassword(e)}>
-			<div className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <form className="space-y-4" onSubmit={(e) => void handleSetPassword(e)}>
+            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
 				<KeyRound className="size-4 text-muted-foreground" />
 				Set a password
 			</div>
-			<p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground">
 				A 6-digit code was sent to{" "}
 				<span className="font-medium text-foreground">{email}</span>. Enter it
 				below along with your new password.
 			</p>
-
-			<div className="space-y-2">
+            <div className="space-y-2">
 				<label htmlFor="set-otp" className="text-sm text-muted-foreground">
 					Verification code
 				</label>
@@ -574,8 +573,7 @@ function SetPasswordForm({ email }: { email: string }) {
 					required
 				/>
 			</div>
-
-			<div className="space-y-2">
+            <div className="space-y-2">
 				<label htmlFor="set-new-pw" className="text-sm text-muted-foreground">
 					New password
 					<span className="ml-1 text-xs text-muted-foreground/70">
@@ -609,8 +607,7 @@ function SetPasswordForm({ email }: { email: string }) {
 					</button>
 				</div>
 			</div>
-
-			<div className="space-y-2">
+            <div className="space-y-2">
 				<label
 					htmlFor="set-confirm-pw"
 					className="text-sm text-muted-foreground"
@@ -631,8 +628,7 @@ function SetPasswordForm({ email }: { email: string }) {
 					<p className="text-xs text-destructive">Passwords do not match.</p>
 				)}
 			</div>
-
-			<div className="flex gap-3">
+            <div className="flex gap-3">
 				<Button type="submit" size="sm" disabled={!isValid || isBusy}>
 					{isBusy ? "Setting…" : "Set password"}
 				</Button>
@@ -646,8 +642,8 @@ function SetPasswordForm({ email }: { email: string }) {
 					Resend code
 				</Button>
 			</div>
-		</form>
-	);
+        </form>
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -702,7 +698,7 @@ function NotificationRow({
 				/>
 			</button>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -727,7 +723,7 @@ function DeleteAccountSection({ email }: { email: string }) {
 	const handleCancel = () => {
 		setShowConfirm(false);
 		setTypedEmail("");
-	};
+	}
 
 	const handleDelete = async () => {
 		if (!canDelete) return;
@@ -737,9 +733,9 @@ function DeleteAccountSection({ email }: { email: string }) {
 			if (!result.ok) {
 				toast.error(
 					result.message ?? "Account deletion failed. Please contact support.",
-				);
+				)
 				setIsDeleting(false);
-				return;
+				return
 			}
 			// Success — sign out and redirect
 			toast.success("Your account has been deleted.");
@@ -749,7 +745,7 @@ function DeleteAccountSection({ email }: { email: string }) {
 			toast.error("Something went wrong. Please try again or contact support.");
 			setIsDeleting(false);
 		}
-	};
+	}
 
 	if (!showConfirm) {
 		return (
@@ -771,7 +767,7 @@ function DeleteAccountSection({ email }: { email: string }) {
 					Delete account
 				</Button>
 			</div>
-		);
+		)
 	}
 
 	return (
@@ -829,5 +825,5 @@ function DeleteAccountSection({ email }: { email: string }) {
 				</Button>
 			</div>
 		</div>
-	);
+	)
 }

@@ -22,7 +22,7 @@ import {
 import { authClient } from "@/lib/auth/client";
 import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
 
-export const Route = createFileRoute("/dashboard/generate")({
+export const Route = createFileRoute("/_authed/dashboard/generate")({
 	staticData: { dashboardTitle: "Generate" },
 	beforeLoad: ({ context }) => {
 		void context.queryClient.ensureQueryData(channelsQueryOptions);

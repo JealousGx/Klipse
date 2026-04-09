@@ -12,31 +12,31 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as RefundRouteImport } from './routes/refund'
 import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as DashboardRouteRouteImport } from './routes/dashboard/route'
 import { Route as AuthedRouteRouteImport } from './routes/_authed/route'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DashboardIndexRouteImport } from './routes/dashboard/index'
-import { Route as DashboardSettingsRouteImport } from './routes/dashboard/settings'
-import { Route as DashboardPublishingRouteImport } from './routes/dashboard/publishing'
-import { Route as DashboardJobsRouteImport } from './routes/dashboard/jobs'
-import { Route as DashboardGenerateRouteImport } from './routes/dashboard/generate'
-import { Route as DashboardBillingRouteImport } from './routes/dashboard/billing'
-import { Route as DashboardAnalyticsRouteImport } from './routes/dashboard/analytics'
+import { Route as AuthedDashboardRouteRouteImport } from './routes/_authed/dashboard/route'
 import { Route as AuthedAdminRouteRouteImport } from './routes/_authed/admin/route'
-import { Route as DashboardPublishingIndexRouteImport } from './routes/dashboard/publishing.index'
+import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashboard/index'
 import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
-import { Route as DashboardPublishingDestinationIdRouteImport } from './routes/dashboard/publishing.$destinationId'
 import { Route as ApiCronTriggerScheduledJobsRouteImport } from './routes/api/cron/trigger-scheduled-jobs'
 import { Route as ApiCronPurgeExpiringAssetsRouteImport } from './routes/api/cron/purge-expiring-assets'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as AuthedDashboardSettingsRouteImport } from './routes/_authed/dashboard/settings'
+import { Route as AuthedDashboardPublishingRouteImport } from './routes/_authed/dashboard/publishing'
+import { Route as AuthedDashboardJobsRouteImport } from './routes/_authed/dashboard/jobs'
+import { Route as AuthedDashboardGenerateRouteImport } from './routes/_authed/dashboard/generate'
+import { Route as AuthedDashboardBillingRouteImport } from './routes/_authed/dashboard/billing'
+import { Route as AuthedDashboardAnalyticsRouteImport } from './routes/_authed/dashboard/analytics'
 import { Route as AuthedAdminUsersRouteImport } from './routes/_authed/admin/users'
 import { Route as AuthedAdminSystemRouteImport } from './routes/_authed/admin/system'
 import { Route as AuthedAdminKeysRouteImport } from './routes/_authed/admin/keys'
 import { Route as AuthedAdminJobsRouteImport } from './routes/_authed/admin/jobs'
+import { Route as AuthedDashboardPublishingIndexRouteImport } from './routes/_authed/dashboard/publishing.index'
 import { Route as ApiYoutubeOauthStartRouteImport } from './routes/api/youtube/oauth/start'
 import { Route as ApiYoutubeOauthCallbackRouteImport } from './routes/api/youtube/oauth/callback'
 import { Route as ApiInternalWorkerYoutubePublishRouteImport } from './routes/api/internal/worker/youtube-publish'
 import { Route as ApiInternalVideoProcessorAssemblyCompleteRouteImport } from './routes/api/internal/video-processor/assembly-complete'
+import { Route as AuthedDashboardPublishingDestinationIdRouteImport } from './routes/_authed/dashboard/publishing.$destinationId'
 import { Route as ApiInternalWorkerVideoJobsDispatchRouteImport } from './routes/api/internal/worker/video-jobs/dispatch'
 
 const TermsRoute = TermsRouteImport.update({
@@ -54,11 +54,6 @@ const PrivacyRoute = PrivacyRouteImport.update({
   path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardRouteRoute = DashboardRouteRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const AuthedRouteRoute = AuthedRouteRouteImport.update({
   id: '/_authed',
   getParentRoute: () => rootRouteImport,
@@ -68,63 +63,26 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DashboardIndexRoute = DashboardIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
-const DashboardSettingsRoute = DashboardSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
-const DashboardPublishingRoute = DashboardPublishingRouteImport.update({
-  id: '/publishing',
-  path: '/publishing',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
-const DashboardJobsRoute = DashboardJobsRouteImport.update({
-  id: '/jobs',
-  path: '/jobs',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
-const DashboardGenerateRoute = DashboardGenerateRouteImport.update({
-  id: '/generate',
-  path: '/generate',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
-const DashboardBillingRoute = DashboardBillingRouteImport.update({
-  id: '/billing',
-  path: '/billing',
-  getParentRoute: () => DashboardRouteRoute,
-} as any)
-const DashboardAnalyticsRoute = DashboardAnalyticsRouteImport.update({
-  id: '/analytics',
-  path: '/analytics',
-  getParentRoute: () => DashboardRouteRoute,
+const AuthedDashboardRouteRoute = AuthedDashboardRouteRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthedRouteRoute,
 } as any)
 const AuthedAdminRouteRoute = AuthedAdminRouteRouteImport.update({
   id: '/admin',
   path: '/admin',
   getParentRoute: () => AuthedRouteRoute,
 } as any)
-const DashboardPublishingIndexRoute =
-  DashboardPublishingIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => DashboardPublishingRoute,
-  } as any)
+const AuthedDashboardIndexRoute = AuthedDashboardIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AuthedDashboardRouteRoute,
+} as any)
 const AuthedAdminIndexRoute = AuthedAdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AuthedAdminRouteRoute,
 } as any)
-const DashboardPublishingDestinationIdRoute =
-  DashboardPublishingDestinationIdRouteImport.update({
-    id: '/$destinationId',
-    path: '/$destinationId',
-    getParentRoute: () => DashboardPublishingRoute,
-  } as any)
 const ApiCronTriggerScheduledJobsRoute =
   ApiCronTriggerScheduledJobsRouteImport.update({
     id: '/api/cron/trigger-scheduled-jobs',
@@ -142,6 +100,38 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthedDashboardSettingsRoute = AuthedDashboardSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthedDashboardRouteRoute,
+} as any)
+const AuthedDashboardPublishingRoute =
+  AuthedDashboardPublishingRouteImport.update({
+    id: '/publishing',
+    path: '/publishing',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
+const AuthedDashboardJobsRoute = AuthedDashboardJobsRouteImport.update({
+  id: '/jobs',
+  path: '/jobs',
+  getParentRoute: () => AuthedDashboardRouteRoute,
+} as any)
+const AuthedDashboardGenerateRoute = AuthedDashboardGenerateRouteImport.update({
+  id: '/generate',
+  path: '/generate',
+  getParentRoute: () => AuthedDashboardRouteRoute,
+} as any)
+const AuthedDashboardBillingRoute = AuthedDashboardBillingRouteImport.update({
+  id: '/billing',
+  path: '/billing',
+  getParentRoute: () => AuthedDashboardRouteRoute,
+} as any)
+const AuthedDashboardAnalyticsRoute =
+  AuthedDashboardAnalyticsRouteImport.update({
+    id: '/analytics',
+    path: '/analytics',
+    getParentRoute: () => AuthedDashboardRouteRoute,
+  } as any)
 const AuthedAdminUsersRoute = AuthedAdminUsersRouteImport.update({
   id: '/users',
   path: '/users',
@@ -162,6 +152,12 @@ const AuthedAdminJobsRoute = AuthedAdminJobsRouteImport.update({
   path: '/jobs',
   getParentRoute: () => AuthedAdminRouteRoute,
 } as any)
+const AuthedDashboardPublishingIndexRoute =
+  AuthedDashboardPublishingIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthedDashboardPublishingRoute,
+  } as any)
 const ApiYoutubeOauthStartRoute = ApiYoutubeOauthStartRouteImport.update({
   id: '/api/youtube/oauth/start',
   path: '/api/youtube/oauth/start',
@@ -184,6 +180,12 @@ const ApiInternalVideoProcessorAssemblyCompleteRoute =
     path: '/api/internal/video-processor/assembly-complete',
     getParentRoute: () => rootRouteImport,
   } as any)
+const AuthedDashboardPublishingDestinationIdRoute =
+  AuthedDashboardPublishingDestinationIdRouteImport.update({
+    id: '/$destinationId',
+    path: '/$destinationId',
+    getParentRoute: () => AuthedDashboardPublishingRoute,
+  } as any)
 const ApiInternalWorkerVideoJobsDispatchRoute =
   ApiInternalWorkerVideoJobsDispatchRouteImport.update({
     id: '/api/internal/worker/video-jobs/dispatch',
@@ -193,32 +195,32 @@ const ApiInternalWorkerVideoJobsDispatchRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthedAdminRouteRouteWithChildren
-  '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/generate': typeof DashboardGenerateRoute
-  '/dashboard/jobs': typeof DashboardJobsRoute
-  '/dashboard/publishing': typeof DashboardPublishingRouteWithChildren
-  '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/': typeof DashboardIndexRoute
+  '/dashboard': typeof AuthedDashboardRouteRouteWithChildren
   '/admin/jobs': typeof AuthedAdminJobsRoute
   '/admin/keys': typeof AuthedAdminKeysRoute
   '/admin/system': typeof AuthedAdminSystemRoute
   '/admin/users': typeof AuthedAdminUsersRoute
+  '/dashboard/analytics': typeof AuthedDashboardAnalyticsRoute
+  '/dashboard/billing': typeof AuthedDashboardBillingRoute
+  '/dashboard/generate': typeof AuthedDashboardGenerateRoute
+  '/dashboard/jobs': typeof AuthedDashboardJobsRoute
+  '/dashboard/publishing': typeof AuthedDashboardPublishingRouteWithChildren
+  '/dashboard/settings': typeof AuthedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
-  '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/admin/': typeof AuthedAdminIndexRoute
-  '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
+  '/dashboard/': typeof AuthedDashboardIndexRoute
+  '/dashboard/publishing/$destinationId': typeof AuthedDashboardPublishingDestinationIdRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
+  '/dashboard/publishing/': typeof AuthedDashboardPublishingIndexRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
 }
 export interface FileRoutesByTo {
@@ -226,90 +228,90 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
-  '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/generate': typeof DashboardGenerateRoute
-  '/dashboard/jobs': typeof DashboardJobsRoute
-  '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard': typeof DashboardIndexRoute
   '/admin/jobs': typeof AuthedAdminJobsRoute
   '/admin/keys': typeof AuthedAdminKeysRoute
   '/admin/system': typeof AuthedAdminSystemRoute
   '/admin/users': typeof AuthedAdminUsersRoute
+  '/dashboard/analytics': typeof AuthedDashboardAnalyticsRoute
+  '/dashboard/billing': typeof AuthedDashboardBillingRoute
+  '/dashboard/generate': typeof AuthedDashboardGenerateRoute
+  '/dashboard/jobs': typeof AuthedDashboardJobsRoute
+  '/dashboard/settings': typeof AuthedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
-  '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/admin': typeof AuthedAdminIndexRoute
-  '/dashboard/publishing': typeof DashboardPublishingIndexRoute
+  '/dashboard': typeof AuthedDashboardIndexRoute
+  '/dashboard/publishing/$destinationId': typeof AuthedDashboardPublishingDestinationIdRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
+  '/dashboard/publishing': typeof AuthedDashboardPublishingIndexRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authed': typeof AuthedRouteRouteWithChildren
-  '/dashboard': typeof DashboardRouteRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
   '/terms': typeof TermsRoute
   '/_authed/admin': typeof AuthedAdminRouteRouteWithChildren
-  '/dashboard/analytics': typeof DashboardAnalyticsRoute
-  '/dashboard/billing': typeof DashboardBillingRoute
-  '/dashboard/generate': typeof DashboardGenerateRoute
-  '/dashboard/jobs': typeof DashboardJobsRoute
-  '/dashboard/publishing': typeof DashboardPublishingRouteWithChildren
-  '/dashboard/settings': typeof DashboardSettingsRoute
-  '/dashboard/': typeof DashboardIndexRoute
+  '/_authed/dashboard': typeof AuthedDashboardRouteRouteWithChildren
   '/_authed/admin/jobs': typeof AuthedAdminJobsRoute
   '/_authed/admin/keys': typeof AuthedAdminKeysRoute
   '/_authed/admin/system': typeof AuthedAdminSystemRoute
   '/_authed/admin/users': typeof AuthedAdminUsersRoute
+  '/_authed/dashboard/analytics': typeof AuthedDashboardAnalyticsRoute
+  '/_authed/dashboard/billing': typeof AuthedDashboardBillingRoute
+  '/_authed/dashboard/generate': typeof AuthedDashboardGenerateRoute
+  '/_authed/dashboard/jobs': typeof AuthedDashboardJobsRoute
+  '/_authed/dashboard/publishing': typeof AuthedDashboardPublishingRouteWithChildren
+  '/_authed/dashboard/settings': typeof AuthedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
-  '/dashboard/publishing/$destinationId': typeof DashboardPublishingDestinationIdRoute
   '/_authed/admin/': typeof AuthedAdminIndexRoute
-  '/dashboard/publishing/': typeof DashboardPublishingIndexRoute
+  '/_authed/dashboard/': typeof AuthedDashboardIndexRoute
+  '/_authed/dashboard/publishing/$destinationId': typeof AuthedDashboardPublishingDestinationIdRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
   '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
+  '/_authed/dashboard/publishing/': typeof AuthedDashboardPublishingIndexRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/dashboard'
     | '/privacy'
     | '/refund'
     | '/terms'
     | '/admin'
+    | '/dashboard'
+    | '/admin/jobs'
+    | '/admin/keys'
+    | '/admin/system'
+    | '/admin/users'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/generate'
     | '/dashboard/jobs'
     | '/dashboard/publishing'
     | '/dashboard/settings'
-    | '/dashboard/'
-    | '/admin/jobs'
-    | '/admin/keys'
-    | '/admin/system'
-    | '/admin/users'
     | '/api/auth/$'
     | '/api/cron/purge-expiring-assets'
     | '/api/cron/trigger-scheduled-jobs'
-    | '/dashboard/publishing/$destinationId'
     | '/admin/'
-    | '/dashboard/publishing/'
+    | '/dashboard/'
+    | '/dashboard/publishing/$destinationId'
     | '/api/internal/video-processor/assembly-complete'
     | '/api/internal/worker/youtube-publish'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
+    | '/dashboard/publishing/'
     | '/api/internal/worker/video-jobs/dispatch'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -317,64 +319,63 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/refund'
     | '/terms'
+    | '/admin/jobs'
+    | '/admin/keys'
+    | '/admin/system'
+    | '/admin/users'
     | '/dashboard/analytics'
     | '/dashboard/billing'
     | '/dashboard/generate'
     | '/dashboard/jobs'
     | '/dashboard/settings'
-    | '/dashboard'
-    | '/admin/jobs'
-    | '/admin/keys'
-    | '/admin/system'
-    | '/admin/users'
     | '/api/auth/$'
     | '/api/cron/purge-expiring-assets'
     | '/api/cron/trigger-scheduled-jobs'
-    | '/dashboard/publishing/$destinationId'
     | '/admin'
-    | '/dashboard/publishing'
+    | '/dashboard'
+    | '/dashboard/publishing/$destinationId'
     | '/api/internal/video-processor/assembly-complete'
     | '/api/internal/worker/youtube-publish'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
+    | '/dashboard/publishing'
     | '/api/internal/worker/video-jobs/dispatch'
   id:
     | '__root__'
     | '/'
     | '/_authed'
-    | '/dashboard'
     | '/privacy'
     | '/refund'
     | '/terms'
     | '/_authed/admin'
-    | '/dashboard/analytics'
-    | '/dashboard/billing'
-    | '/dashboard/generate'
-    | '/dashboard/jobs'
-    | '/dashboard/publishing'
-    | '/dashboard/settings'
-    | '/dashboard/'
+    | '/_authed/dashboard'
     | '/_authed/admin/jobs'
     | '/_authed/admin/keys'
     | '/_authed/admin/system'
     | '/_authed/admin/users'
+    | '/_authed/dashboard/analytics'
+    | '/_authed/dashboard/billing'
+    | '/_authed/dashboard/generate'
+    | '/_authed/dashboard/jobs'
+    | '/_authed/dashboard/publishing'
+    | '/_authed/dashboard/settings'
     | '/api/auth/$'
     | '/api/cron/purge-expiring-assets'
     | '/api/cron/trigger-scheduled-jobs'
-    | '/dashboard/publishing/$destinationId'
     | '/_authed/admin/'
-    | '/dashboard/publishing/'
+    | '/_authed/dashboard/'
+    | '/_authed/dashboard/publishing/$destinationId'
     | '/api/internal/video-processor/assembly-complete'
     | '/api/internal/worker/youtube-publish'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
+    | '/_authed/dashboard/publishing/'
     | '/api/internal/worker/video-jobs/dispatch'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthedRouteRoute: typeof AuthedRouteRouteWithChildren
-  DashboardRouteRoute: typeof DashboardRouteRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RefundRoute: typeof RefundRoute
   TermsRoute: typeof TermsRoute
@@ -411,13 +412,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/_authed': {
       id: '/_authed'
       path: ''
@@ -432,54 +426,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/dashboard/': {
-      id: '/dashboard/'
-      path: '/'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof DashboardIndexRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/settings': {
-      id: '/dashboard/settings'
-      path: '/settings'
-      fullPath: '/dashboard/settings'
-      preLoaderRoute: typeof DashboardSettingsRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/publishing': {
-      id: '/dashboard/publishing'
-      path: '/publishing'
-      fullPath: '/dashboard/publishing'
-      preLoaderRoute: typeof DashboardPublishingRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/jobs': {
-      id: '/dashboard/jobs'
-      path: '/jobs'
-      fullPath: '/dashboard/jobs'
-      preLoaderRoute: typeof DashboardJobsRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/generate': {
-      id: '/dashboard/generate'
-      path: '/generate'
-      fullPath: '/dashboard/generate'
-      preLoaderRoute: typeof DashboardGenerateRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/billing': {
-      id: '/dashboard/billing'
-      path: '/billing'
-      fullPath: '/dashboard/billing'
-      preLoaderRoute: typeof DashboardBillingRouteImport
-      parentRoute: typeof DashboardRouteRoute
-    }
-    '/dashboard/analytics': {
-      id: '/dashboard/analytics'
-      path: '/analytics'
-      fullPath: '/dashboard/analytics'
-      preLoaderRoute: typeof DashboardAnalyticsRouteImport
-      parentRoute: typeof DashboardRouteRoute
+    '/_authed/dashboard': {
+      id: '/_authed/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthedDashboardRouteRouteImport
+      parentRoute: typeof AuthedRouteRoute
     }
     '/_authed/admin': {
       id: '/_authed/admin'
@@ -488,12 +440,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminRouteRouteImport
       parentRoute: typeof AuthedRouteRoute
     }
-    '/dashboard/publishing/': {
-      id: '/dashboard/publishing/'
+    '/_authed/dashboard/': {
+      id: '/_authed/dashboard/'
       path: '/'
-      fullPath: '/dashboard/publishing/'
-      preLoaderRoute: typeof DashboardPublishingIndexRouteImport
-      parentRoute: typeof DashboardPublishingRoute
+      fullPath: '/dashboard/'
+      preLoaderRoute: typeof AuthedDashboardIndexRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
     }
     '/_authed/admin/': {
       id: '/_authed/admin/'
@@ -501,13 +453,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AuthedAdminIndexRouteImport
       parentRoute: typeof AuthedAdminRouteRoute
-    }
-    '/dashboard/publishing/$destinationId': {
-      id: '/dashboard/publishing/$destinationId'
-      path: '/$destinationId'
-      fullPath: '/dashboard/publishing/$destinationId'
-      preLoaderRoute: typeof DashboardPublishingDestinationIdRouteImport
-      parentRoute: typeof DashboardPublishingRoute
     }
     '/api/cron/trigger-scheduled-jobs': {
       id: '/api/cron/trigger-scheduled-jobs'
@@ -529,6 +474,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/dashboard/settings': {
+      id: '/_authed/dashboard/settings'
+      path: '/settings'
+      fullPath: '/dashboard/settings'
+      preLoaderRoute: typeof AuthedDashboardSettingsRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
+    '/_authed/dashboard/publishing': {
+      id: '/_authed/dashboard/publishing'
+      path: '/publishing'
+      fullPath: '/dashboard/publishing'
+      preLoaderRoute: typeof AuthedDashboardPublishingRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
+    '/_authed/dashboard/jobs': {
+      id: '/_authed/dashboard/jobs'
+      path: '/jobs'
+      fullPath: '/dashboard/jobs'
+      preLoaderRoute: typeof AuthedDashboardJobsRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
+    '/_authed/dashboard/generate': {
+      id: '/_authed/dashboard/generate'
+      path: '/generate'
+      fullPath: '/dashboard/generate'
+      preLoaderRoute: typeof AuthedDashboardGenerateRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
+    '/_authed/dashboard/billing': {
+      id: '/_authed/dashboard/billing'
+      path: '/billing'
+      fullPath: '/dashboard/billing'
+      preLoaderRoute: typeof AuthedDashboardBillingRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
+    }
+    '/_authed/dashboard/analytics': {
+      id: '/_authed/dashboard/analytics'
+      path: '/analytics'
+      fullPath: '/dashboard/analytics'
+      preLoaderRoute: typeof AuthedDashboardAnalyticsRouteImport
+      parentRoute: typeof AuthedDashboardRouteRoute
     }
     '/_authed/admin/users': {
       id: '/_authed/admin/users'
@@ -558,6 +545,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminJobsRouteImport
       parentRoute: typeof AuthedAdminRouteRoute
     }
+    '/_authed/dashboard/publishing/': {
+      id: '/_authed/dashboard/publishing/'
+      path: '/'
+      fullPath: '/dashboard/publishing/'
+      preLoaderRoute: typeof AuthedDashboardPublishingIndexRouteImport
+      parentRoute: typeof AuthedDashboardPublishingRoute
+    }
     '/api/youtube/oauth/start': {
       id: '/api/youtube/oauth/start'
       path: '/api/youtube/oauth/start'
@@ -585,6 +579,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/internal/video-processor/assembly-complete'
       preLoaderRoute: typeof ApiInternalVideoProcessorAssemblyCompleteRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/_authed/dashboard/publishing/$destinationId': {
+      id: '/_authed/dashboard/publishing/$destinationId'
+      path: '/$destinationId'
+      fullPath: '/dashboard/publishing/$destinationId'
+      preLoaderRoute: typeof AuthedDashboardPublishingDestinationIdRouteImport
+      parentRoute: typeof AuthedDashboardPublishingRoute
     }
     '/api/internal/worker/video-jobs/dispatch': {
       id: '/api/internal/worker/video-jobs/dispatch'
@@ -615,59 +616,63 @@ const AuthedAdminRouteRouteChildren: AuthedAdminRouteRouteChildren = {
 const AuthedAdminRouteRouteWithChildren =
   AuthedAdminRouteRoute._addFileChildren(AuthedAdminRouteRouteChildren)
 
+interface AuthedDashboardPublishingRouteChildren {
+  AuthedDashboardPublishingDestinationIdRoute: typeof AuthedDashboardPublishingDestinationIdRoute
+  AuthedDashboardPublishingIndexRoute: typeof AuthedDashboardPublishingIndexRoute
+}
+
+const AuthedDashboardPublishingRouteChildren: AuthedDashboardPublishingRouteChildren =
+  {
+    AuthedDashboardPublishingDestinationIdRoute:
+      AuthedDashboardPublishingDestinationIdRoute,
+    AuthedDashboardPublishingIndexRoute: AuthedDashboardPublishingIndexRoute,
+  }
+
+const AuthedDashboardPublishingRouteWithChildren =
+  AuthedDashboardPublishingRoute._addFileChildren(
+    AuthedDashboardPublishingRouteChildren,
+  )
+
+interface AuthedDashboardRouteRouteChildren {
+  AuthedDashboardAnalyticsRoute: typeof AuthedDashboardAnalyticsRoute
+  AuthedDashboardBillingRoute: typeof AuthedDashboardBillingRoute
+  AuthedDashboardGenerateRoute: typeof AuthedDashboardGenerateRoute
+  AuthedDashboardJobsRoute: typeof AuthedDashboardJobsRoute
+  AuthedDashboardPublishingRoute: typeof AuthedDashboardPublishingRouteWithChildren
+  AuthedDashboardSettingsRoute: typeof AuthedDashboardSettingsRoute
+  AuthedDashboardIndexRoute: typeof AuthedDashboardIndexRoute
+}
+
+const AuthedDashboardRouteRouteChildren: AuthedDashboardRouteRouteChildren = {
+  AuthedDashboardAnalyticsRoute: AuthedDashboardAnalyticsRoute,
+  AuthedDashboardBillingRoute: AuthedDashboardBillingRoute,
+  AuthedDashboardGenerateRoute: AuthedDashboardGenerateRoute,
+  AuthedDashboardJobsRoute: AuthedDashboardJobsRoute,
+  AuthedDashboardPublishingRoute: AuthedDashboardPublishingRouteWithChildren,
+  AuthedDashboardSettingsRoute: AuthedDashboardSettingsRoute,
+  AuthedDashboardIndexRoute: AuthedDashboardIndexRoute,
+}
+
+const AuthedDashboardRouteRouteWithChildren =
+  AuthedDashboardRouteRoute._addFileChildren(AuthedDashboardRouteRouteChildren)
+
 interface AuthedRouteRouteChildren {
   AuthedAdminRouteRoute: typeof AuthedAdminRouteRouteWithChildren
+  AuthedDashboardRouteRoute: typeof AuthedDashboardRouteRouteWithChildren
 }
 
 const AuthedRouteRouteChildren: AuthedRouteRouteChildren = {
   AuthedAdminRouteRoute: AuthedAdminRouteRouteWithChildren,
+  AuthedDashboardRouteRoute: AuthedDashboardRouteRouteWithChildren,
 }
 
 const AuthedRouteRouteWithChildren = AuthedRouteRoute._addFileChildren(
   AuthedRouteRouteChildren,
 )
 
-interface DashboardPublishingRouteChildren {
-  DashboardPublishingDestinationIdRoute: typeof DashboardPublishingDestinationIdRoute
-  DashboardPublishingIndexRoute: typeof DashboardPublishingIndexRoute
-}
-
-const DashboardPublishingRouteChildren: DashboardPublishingRouteChildren = {
-  DashboardPublishingDestinationIdRoute: DashboardPublishingDestinationIdRoute,
-  DashboardPublishingIndexRoute: DashboardPublishingIndexRoute,
-}
-
-const DashboardPublishingRouteWithChildren =
-  DashboardPublishingRoute._addFileChildren(DashboardPublishingRouteChildren)
-
-interface DashboardRouteRouteChildren {
-  DashboardAnalyticsRoute: typeof DashboardAnalyticsRoute
-  DashboardBillingRoute: typeof DashboardBillingRoute
-  DashboardGenerateRoute: typeof DashboardGenerateRoute
-  DashboardJobsRoute: typeof DashboardJobsRoute
-  DashboardPublishingRoute: typeof DashboardPublishingRouteWithChildren
-  DashboardSettingsRoute: typeof DashboardSettingsRoute
-  DashboardIndexRoute: typeof DashboardIndexRoute
-}
-
-const DashboardRouteRouteChildren: DashboardRouteRouteChildren = {
-  DashboardAnalyticsRoute: DashboardAnalyticsRoute,
-  DashboardBillingRoute: DashboardBillingRoute,
-  DashboardGenerateRoute: DashboardGenerateRoute,
-  DashboardJobsRoute: DashboardJobsRoute,
-  DashboardPublishingRoute: DashboardPublishingRouteWithChildren,
-  DashboardSettingsRoute: DashboardSettingsRoute,
-  DashboardIndexRoute: DashboardIndexRoute,
-}
-
-const DashboardRouteRouteWithChildren = DashboardRouteRoute._addFileChildren(
-  DashboardRouteRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthedRouteRoute: AuthedRouteRouteWithChildren,
-  DashboardRouteRoute: DashboardRouteRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RefundRoute: RefundRoute,
   TermsRoute: TermsRoute,

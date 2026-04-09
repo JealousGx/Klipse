@@ -6,7 +6,7 @@ import { PublishingDestinationView } from "@/features/publishing-destination/pub
 import { usePublishingDestinationPage } from "@/features/publishing-destination/use-publishing-destination-page";
 import { channelQueryOptions } from "@/lib/queries/dashboard-queries";
 
-export const Route = createFileRoute("/dashboard/publishing/$destinationId")({
+export const Route = createFileRoute("/_authed/dashboard/publishing/$destinationId")({
 	staticData: { dashboardTitle: "Publishing destination" },
 	validateSearch: (raw: Record<string, unknown>) => {
 		const p = publishingDestinationSearchSchema.safeParse(raw);
@@ -15,7 +15,7 @@ export const Route = createFileRoute("/dashboard/publishing/$destinationId")({
 	beforeLoad: async ({ context, params }) => {
 		await context.queryClient.ensureQueryData(
 			channelQueryOptions(params.destinationId),
-		);
+		)
 	},
 	component: PublishingDestinationPage,
 });
@@ -37,7 +37,7 @@ function PublishingDestinationPage() {
 					<Link to="/dashboard/publishing">Back to publishing</Link>
 				</Button>
 			</div>
-		);
+		)
 	}
 
 	return <PublishingDestinationView {...page.viewProps} />;

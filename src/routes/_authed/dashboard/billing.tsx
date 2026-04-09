@@ -13,6 +13,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { z } from "zod";
+
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,14 +24,17 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
-import { analyticsQueryOptions } from "@/lib/queries/dashboard-queries";
+
 import {
 	CREDIT_ADDON_AMOUNTS,
 	MONTHLY_CREDITS_BY_PLAN,
 } from "@/features/billing/tier-config";
 import type { MeResponse } from "@/features/user/types/me";
+
 import { authClient } from "@/lib/auth/client";
+import { analyticsQueryOptions } from "@/lib/queries/dashboard-queries";
 import { cn } from "@/lib/utils";
 
 const billingSearchSchema = z.object({
@@ -38,7 +42,7 @@ const billingSearchSchema = z.object({
 	checkout: z.literal("success").optional(),
 });
 
-export const Route = createFileRoute("/dashboard/billing")({
+export const Route = createFileRoute("/_authed/dashboard/billing")({
 	staticData: { dashboardTitle: "Billing" },
 	validateSearch: (raw: Record<string, unknown>) => {
 		const parsed = billingSearchSchema.safeParse(raw);
@@ -113,18 +117,18 @@ function BillingPage() {
 	/** One DB-backed session load after Polar redirects here (webhook may lag cookie cache). */
 	useEffect(() => {
 		if (search.checkout !== "success" || checkoutRefreshDone.current) {
-			return;
+			return
 		}
 		checkoutRefreshDone.current = true;
 		void refetch({ query: { disableCookieCache: true } }).finally(() => {
 			void navigate({
 				search: (prev) => {
 					const { checkout: _c, ...rest } = prev;
-					return rest;
+					return rest
 				},
 				replace: true,
-			});
-		});
+			})
+		})
 	}, [search.checkout, refetch, navigate]);
 
 	const runCheckout = async (slug: string) => {
@@ -134,7 +138,7 @@ function BillingPage() {
 		} finally {
 			setLoadingSlug(null);
 		}
-	};
+	}
 
 	const openPortal = async () => {
 		setPortalLoading(true);
@@ -143,8 +147,8 @@ function BillingPage() {
 			if (res.error) {
 				toast.error("Couldn’t open portal", {
 					description: res.error.message ?? "Try again in a moment.",
-				});
-				return;
+				})
+				return
 			}
 			const url = res.data?.url;
 			if (url) {
@@ -153,7 +157,7 @@ function BillingPage() {
 		} finally {
 			setPortalLoading(false);
 		}
-	};
+	}
 
 	const credits = user.creditsRemaining ?? 0;
 
@@ -161,7 +165,7 @@ function BillingPage() {
 
 	const currentMonth = new Date().toLocaleString(undefined, {
 		month: "long",
-	});
+	})
 	const videosThisMonth = analyticsQuery.data?.totalCompleted ?? null;
 
 	return (
@@ -257,15 +261,15 @@ function BillingPage() {
 						const tierRank = PLAN_RANK[tier.slug];
 						const loading = loadingSlug === tier.slug;
 
-						let cta: string;
+						let cta: string
 						if (isCurrent) {
-							cta = "Your plan";
+							cta = "Your plan"
 						} else if (userRank === 0) {
 							cta = `Get ${tier.title}`;
 						} else if (tierRank > userRank) {
-							cta = "Upgrade";
+							cta = "Upgrade"
 						} else {
-							cta = "Switch plan";
+							cta = "Switch plan"
 						}
 
 						return (
@@ -343,7 +347,7 @@ function BillingPage() {
 									</Button>
 								</CardFooter>
 							</Card>
-						);
+						)
 					})}
 				</div>
 			</section>
@@ -421,7 +425,7 @@ function BillingPage() {
 				</div>
 			</section>
 		</div>
-	);
+	)
 }
 
 function CreditPackCard({
@@ -486,5 +490,5 @@ function CreditPackCard({
 				)}
 			</Button>
 		</div>
-	);
+	)
 }
