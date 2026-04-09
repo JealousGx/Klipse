@@ -18,6 +18,7 @@ export const providerApiKeyProviderEnum = mysqlEnum("provider", [
 	"google_tts", // TTS primary (1M chars/month free)
 	"replicate", // image fallback (FLUX Schnell $0.003/img)
 	"unreal_speech", // TTS fallback (250K chars/month free)
+	"elevenlabs", // sound effects (Creator+)
 	// Legacy — kept for DB enum compat, no longer used in new code
 	"gemini",
 	"pollinations",
@@ -37,9 +38,16 @@ export const providerApiKeyTaskEnum = mysqlEnum("task_type", [
 	"image",
 	"tts",
 	"voice",
+	"sound",
 ]);
 
-export type ProviderApiKeyTask = "any" | "script" | "image" | "tts" | "voice";
+export type ProviderApiKeyTask =
+	| "any"
+	| "script"
+	| "image"
+	| "tts"
+	| "voice"
+	| "sound";
 
 /**
  * API keys per provider: manually inserted or **materialized from env** when a provider
