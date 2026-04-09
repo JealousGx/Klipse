@@ -167,7 +167,7 @@ export const changeUserPlanFn = createServerFn({ method: "POST" })
 			.set({ plan: data.plan, updatedAt: new Date() })
 			.where(eq(users.id, data.userId));
 
-		if (!result.rowsAffected) return { ok: false, code: "not_found" };
+		if (!result[0].affectedRows) return { ok: false, code: "not_found" };
 
 		console.info(`[admin] plan changed for ${data.userId} → ${data.plan}`);
 
@@ -209,7 +209,7 @@ export const setUserRoleFn = createServerFn({ method: "POST" })
 			.set({ role: data.role, updatedAt: new Date() })
 			.where(eq(users.id, data.userId));
 
-		if (!result.rowsAffected) return { ok: false, code: "not_found" };
+		if (!result[0].affectedRows) return { ok: false, code: "not_found" };
 
 		console.info(
 			`[admin] role set for ${data.userId} → ${data.role} (by ${adminInfo.email})`,
@@ -283,6 +283,6 @@ export const unbanUserFn = createServerFn({ method: "POST" })
 			.set({ banned: false, banReason: null, updatedAt: new Date() })
 			.where(eq(users.id, data.userId));
 
-		if (!result.rowsAffected) return { ok: false, code: "not_found" };
+		if (!result[0].affectedRows) return { ok: false, code: "not_found" };
 		return { ok: true };
 	});

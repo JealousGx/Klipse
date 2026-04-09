@@ -4,6 +4,15 @@ import { Sparkles, Video } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import {
+	Select,
+	SelectContent,
+	SelectGroup,
+	SelectItem,
+	SelectLabel,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
 import {
@@ -22,7 +31,7 @@ export const Route = createFileRoute("/dashboard/generate")({
 });
 
 const fieldClass =
-	"w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none ring-offset-2 transition focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+	"w-full text-sm text-foreground transition disabled:cursor-not-allowed disabled:opacity-50";
 
 function GeneratePage() {
 	const queryClient = useQueryClient();
@@ -123,9 +132,7 @@ function GeneratePage() {
 							Channel
 						</label>
 						{channelsQuery.isPending ? (
-							<p className="text-sm text-muted-foreground">
-								Loading channels…
-							</p>
+							<p className="text-sm text-muted-foreground">Loading channels…</p>
 						) : channels.length === 0 ? (
 							<p className="text-sm text-muted-foreground">
 								No channels yet.{" "}
@@ -138,24 +145,31 @@ function GeneratePage() {
 								first.
 							</p>
 						) : (
-							<select
-								id="gen-channel"
-								className={fieldClass}
-								value={channelId}
-								onChange={(e) => {
-									setChannelId(e.target.value);
+							<Select
+								defaultValue={channelId}
+								onValueChange={(val) => {
+									setChannelId(val);
 									setSuccess(false);
 									setError(null);
 								}}
 								disabled={busy}
 							>
-								<option value="">Select a channel…</option>
-								{channels.map((c) => (
-									<option key={c.id} value={c.id}>
-										{c.name}
-									</option>
-								))}
-							</select>
+								<SelectTrigger className={fieldClass}>
+									<SelectValue placeholder="Select a channel" />
+								</SelectTrigger>
+								<SelectContent>
+									<SelectGroup>
+										<SelectLabel>
+											Choose from your connected channels
+										</SelectLabel>
+										{channels.map((c) => (
+											<SelectItem key={c.id} value={c.id}>
+												{c.name}
+											</SelectItem>
+										))}
+									</SelectGroup>
+								</SelectContent>
+							</Select>
 						)}
 					</div>
 

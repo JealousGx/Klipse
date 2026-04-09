@@ -4,6 +4,7 @@ import {
 	AlertCircle,
 	ChevronDown,
 	ChevronUp,
+	MoreHorizontal,
 	RefreshCw,
 	StopCircle,
 	Video,
@@ -12,6 +13,12 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import {
 	type AdminJobRow,
 	cancelAdminJobFn,
@@ -153,7 +160,7 @@ function JobRow({
 					<p className="text-xs font-medium text-zinc-300">{job.userEmail}</p>
 				</td>
 				<td className="max-w-30 px-4 py-3.5">
-					<p className="truncate text-sm text-zinc-400" title={job.channelName}>
+					<p className="truncate text-sm text-zinc-400" title={job.channelName ?? ""}>
 						{job.channelName}
 					</p>
 				</td>
@@ -167,24 +174,24 @@ function JobRow({
 				</td>
 				<td className="px-4 py-3.5 tabular-nums text-sm text-zinc-400">
 					{isActive ? (
-						"${job.progress}%"
+						`${job.progress}%`
 					) : (
 						<span className="text-zinc-600">—</span>
 					)}
 				</td>
-				<td className="max-w-45 px-4 py-3.5">
+				<td className="w-52 px-4 py-3.5">
 					{job.errorMessage ? (
 						<button
 							type="button"
 							onClick={() => setExpanded((v) => !v)}
-							className="flex items-center gap-1 text-xs text-red-400 hover:text-red-300"
+							className="flex w-full items-start gap-1.5 text-left text-xs text-red-400 hover:text-red-300"
 						>
-							<AlertCircle className="size-3 shrink-0" />
-							<span className="truncate">{job.errorMessage.slice(0, 40)}</span>
+							<AlertCircle className="mt-0.5 size-3 shrink-0" />
+							<span className="line-clamp-2 flex-1 break-all">{job.errorMessage}</span>
 							{expanded ? (
-								<ChevronUp className="size-3 shrink-0" />
+								<ChevronUp className="mt-0.5 size-3 shrink-0" />
 							) : (
-								<ChevronDown className="size-3 shrink-0" />
+								<ChevronDown className="mt-0.5 size-3 shrink-0" />
 							)}
 						</button>
 					) : (
@@ -202,33 +209,45 @@ function JobRow({
 				</td>
 				<td className="px-4 py-3.5">
 					{isActive && (
-						<button
-							type="button"
-							title="Cancel job"
-							onClick={() => {
-								if (window.confirm(`Cancel job ${job.id}?`)) {
-									onCancel(job.id)
-								}
-							}}
-							disabled={isCancelling}
-							className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-red-400 disabled:opacity-40"
-						>
-							<StopCircle className="size-4" />
-						</button>
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<button
+									type="button"
+									disabled={isCancelling}
+									className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-40"
+								>
+									<MoreHorizontal className="size-4" />
+								</button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent align="end" className="w-36">
+								<DropdownMenuItem
+									variant="destructive"
+									onClick={() => {
+										if (window.confirm(`Cancel job ${job.id}?`)) {
+											onCancel(job.id);
+										}
+									}}
+									disabled={isCancelling}
+								>
+									<StopCircle className="size-3.5" />
+									Cancel Job
+								</DropdownMenuItem>
+							</DropdownMenuContent>
+						</DropdownMenu>
 					)}
 				</td>
 			</tr>
 			{expanded && job.errorMessage && (
 				<tr className="bg-red-950/20">
-					<td colSpan={8} className="px-4 pb-3 pt-0">
-						<pre className="rounded-lg bg-zinc-900 p-3 text-xs text-red-300 whitespace-pre-wrap break-all">
+					<td colSpan={8} className="px-4 pb-4 pt-0">
+						<pre className="whitespace-pre-wrap break-all rounded-lg bg-zinc-950 p-3 text-xs leading-relaxed text-red-300">
 							{job.errorMessage}
 						</pre>
 					</td>
 				</tr>
 			)}
 		</>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -251,12 +270,13 @@ function AdminJobsPage() {
 					offset: page * PAGE_SIZE,
 				},
 			}),
+		staleTime: 5_000,
 		refetchInterval: (query) => {
 			const jobs = query.state.data?.ok ? query.state.data.jobs : [];
 			const hasActive = jobs.some((j) => ACTIVE_STATUSES.has(j.status));
 			return hasActive ? 10_000 : false;
 		},
-	})
+	});
 
 	const jobs: AdminJobRow[] = data?.ok ? data.jobs : [];
 	const total = data?.ok ? data.total : 0;

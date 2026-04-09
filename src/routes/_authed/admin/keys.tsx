@@ -5,6 +5,7 @@ import {
 	Check,
 	Clock,
 	KeyRound,
+	MoreHorizontal,
 	Plus,
 	RotateCcw,
 	ShieldOff,
@@ -15,6 +16,20 @@ import { useState } from "react";
 import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
+import {
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuSeparator,
+	DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import {
 	type AdminKeyRow,
 	addAdminKeyFn,
@@ -290,19 +305,21 @@ function AddKeyModal({
 						>
 							Provider
 						</label>
-						<select
-							name="select-provider"
-							id="select-provider"
-							className={fieldClass}
-							value={provider}
-							onChange={(e) => setProvider(e.target.value as Provider)}
+						<Select
+							onValueChange={(val) => setProvider(val as Provider)}
+							defaultValue={provider}
 						>
-							{PROVIDERS.map((p) => (
-								<option key={p} value={p}>
-									{p}
-								</option>
-							))}
-						</select>
+							<SelectTrigger className={fieldClass}>
+								<SelectValue placeholder="Select provider" />
+							</SelectTrigger>
+							<SelectContent>
+								{PROVIDERS.map((p) => (
+									<SelectItem key={p} value={p}>
+										{p.charAt(0).toUpperCase() + p.slice(1)}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					</div>
 
 					{/* Secret */}
@@ -408,9 +425,8 @@ function KeyRowActions({ row }: { row: AdminKeyRow }) {
 		mutationFn: (vars: { id: string; disabled: boolean }) =>
 			toggleAdminKeyFn({ data: vars }),
 		onSuccess: (result) => {
-			console.log({ result });
 			if (result.ok) {
-				toast.success(result ? "Key updated." : "Key updated.");
+				toast.success("Key updated.");
 				queryClient.invalidateQueries({ queryKey: ["admin-keys"] });
 			} else {
 				toast.error("Failed to update key.");
@@ -447,50 +463,52 @@ function KeyRowActions({ row }: { row: AdminKeyRow }) {
 	});
 
 	const isDisabled = row.status === "disabled";
+	const isCooling = row.status === "cooling";
 
 	return (
 		<>
-			<div className="flex items-center justify-end gap-1">
-				{/* Enable / Disable */}
-				<button
-					type="button"
-					title={isDisabled ? "Enable key" : "Disable key"}
-					onClick={() =>
-						toggleMutation.mutate({ id: row.id, disabled: !isDisabled })
-					}
-					disabled={toggleMutation.isPending}
-					className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300 disabled:opacity-40"
-				>
-					{isDisabled ? (
-						<Check className="size-4 text-emerald-400" />
-					) : (
-						<ShieldOff className="size-4" />
-					)}
-				</button>
-
-				{/* Reset Cooldown — only for cooling keys */}
-				{row.status === "cooling" && (
+			<DropdownMenu>
+				<DropdownMenuTrigger asChild>
 					<button
 						type="button"
-						title="Reset cooldown"
-						onClick={() => cooldownMutation.mutate(row.id)}
-						disabled={cooldownMutation.isPending}
-						className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-amber-400 disabled:opacity-40"
+						className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-zinc-300"
 					>
-						<RotateCcw className="size-4" />
+						<MoreHorizontal className="size-4" />
 					</button>
-				)}
-
-				{/* Delete */}
-				<button
-					type="button"
-					title="Delete key"
-					onClick={() => setDeleteId(row.id)}
-					className="rounded-lg p-1.5 text-zinc-500 transition-colors hover:bg-zinc-800 hover:text-red-400"
-				>
-					<Trash2 className="size-4" />
-				</button>
-			</div>
+				</DropdownMenuTrigger>
+				<DropdownMenuContent align="end" className="w-44">
+					<DropdownMenuItem
+						onClick={() =>
+							toggleMutation.mutate({ id: row.id, disabled: !isDisabled })
+						}
+						disabled={toggleMutation.isPending}
+					>
+						{isDisabled ? (
+							<Check className="size-3.5 text-emerald-400" />
+						) : (
+							<ShieldOff className="size-3.5" />
+						)}
+						{isDisabled ? "Enable Key" : "Disable Key"}
+					</DropdownMenuItem>
+					{isCooling && (
+						<DropdownMenuItem
+							onClick={() => cooldownMutation.mutate(row.id)}
+							disabled={cooldownMutation.isPending}
+						>
+							<RotateCcw className="size-3.5" />
+							Reset Cooldown
+						</DropdownMenuItem>
+					)}
+					<DropdownMenuSeparator />
+					<DropdownMenuItem
+						variant="destructive"
+						onClick={() => setDeleteId(row.id)}
+					>
+						<Trash2 className="size-3.5" />
+						Delete Key
+					</DropdownMenuItem>
+				</DropdownMenuContent>
+			</DropdownMenu>
 
 			{deleteId && (
 				<DeleteDialog
@@ -514,6 +532,7 @@ function AdminKeysPage() {
 	const { data, isLoading, isError } = useQuery({
 		queryKey: ["admin-keys"],
 		queryFn: () => listAdminKeysFn(),
+		staleTime: 15_000,
 		refetchInterval: 30_000,
 	});
 
