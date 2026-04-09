@@ -25,16 +25,16 @@ export type AiTask = (typeof AI_TASK)[keyof typeof AI_TASK];
 
 /** Defaults — override with env vars where supported. */
 export const DEFAULT_MODEL_IDS = {
-	/** Gemini model for script generation. @default gemini-2.0-flash */
-	geminiScript: "gemini-2.0-flash",
+	/** Gemini model for script generation. @default gemini-2.5-flash-lite */
+	geminiScript: "gemini-2.5-flash-lite",
 	/** Pollinations text model. @default mistral */
 	pollinationsText: "mistral",
 	/** Pollinations image model. @default flux */
 	pollinationsImage: "flux",
 	/** Pollinations TTS voice (fallback). @default alloy */
 	pollinationsTtsVoice: "alloy",
-	/** Google Cloud TTS voice. @default en-US-Neural2-A */
-	googleTtsVoice: "en-US-Neural2-A",
+	/** Google Cloud TTS voice. @default en-US-Chirp-HD-F */
+	googleTtsVoice: "en-US-Chirp-HD-F",
 } as const;
 
 export type RoutingRow = {
@@ -63,11 +63,10 @@ export const MODEL_ROUTING_TABLE: RoutingRow[] = [
 ];
 
 export function pipelineModelContextBlock(): string {
-	const lines = MODEL_ROUTING_TABLE.map(
-		(r) =>
-			r.fallback === "—"
-				? `- ${r.task}: ${r.primary}.`
-				: `- ${r.task}: primary ${r.primary}; fallback ${r.fallback}.`,
+	const lines = MODEL_ROUTING_TABLE.map((r) =>
+		r.fallback === "—"
+			? `- ${r.task}: ${r.primary}.`
+			: `- ${r.task}: primary ${r.primary}; fallback ${r.fallback}.`,
 	);
 	return [
 		"## AI routing (do not claim a different vendor stack)",
