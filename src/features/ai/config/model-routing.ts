@@ -2,25 +2,23 @@
  * Klipse AI routing — single source of truth for provider selection.
  *
  * **Stack:**
- * - Script:  OpenRouter (primary, free models) → Gemini (secondary) → Pollinations (last resort)
- * - Images:  Pollinations Flux (only free option)
- * - TTS:     Google Cloud TTS (primary, free 4M chars/month) → Pollinations Audio (last resort)
+ * - Script:  OpenRouter single call — `models[]` array, OpenRouter handles provider
+ *            fallback internally. No manual retry chain needed.
+ * - Images:  OpenRouter FLUX.2 (free) → Replicate FLUX Schnell (~$0.003/img)
+ * - TTS:     Google Cloud TTS (1M Neural2 chars/month free) → Unreal Speech (250K/month free)
  *
- * OpenRouter free models (configure via OPENROUTER_SCRIPT_MODEL):
- *   - openrouter/free  (default — auto-selects best available free model)
- *   - nvidia/nemotron-3-super:free
- *   - arceeai/arcee-trinity-large-preview:free
- *   - openai/gpt-oss-120b:free
- *
- * Future premium tiers can branch in `resolveAiRoutingTier` (`ai-routing-policy.server.ts`)
- * without changing provider modules.
+ * OpenRouter model chain (all configurable via env):
+ *   Primary:   OPENROUTER_SCRIPT_MODEL            (default: openrouter/auto)
+ *   Fallbacks: OPENROUTER_SCRIPT_FALLBACK_MODELS  (default: google/gemini-2.5-flash,meta-llama/llama-4-scout:free)
  *
  * Provider docs:
- * - OpenRouter:   https://openrouter.ai/docs
- * - Gemini:       https://ai.google.dev/gemini-api/docs/quickstart
- * - Pollinations: https://text.pollinations.ai / https://image.pollinations.ai / https://audio.pollinations.ai
- * - Google TTS:   https://cloud.google.com/text-to-speech/docs/reference/rest/v1/text/synthesize
+ * - OpenRouter:    https://openrouter.ai/docs
+ * - Google TTS:    https://cloud.google.com/text-to-speech
+ * - Replicate:     https://replicate.com/black-forest-labs/flux-schnell
+ * - Unreal Speech: https://docs.unrealspeech.com
  */
+
+import { env } from "@/env";
 
 export const AI_TASK = {
 	script: "script",
@@ -30,59 +28,56 @@ export const AI_TASK = {
 
 export type AiTask = (typeof AI_TASK)[keyof typeof AI_TASK];
 
-/** Defaults — override with env vars where supported. */
+/** Defaults — all overridable via env vars. */
 export const DEFAULT_MODEL_IDS = {
-	/** OpenRouter model for script generation (primary). @default nvidia/nemotron-3-super:free */
-	openRouterScript: "openrouter/free",
-	/** Gemini model for script generation (secondary). @default gemini-2.5-flash-lite */
-	geminiScript: "gemini-2.5-flash-lite",
-	/** Pollinations text model (last resort). @default mistral */
-	pollinationsText: "mistral",
-	/** Pollinations image model. @default flux */
-	pollinationsImage: "flux",
-	/** Pollinations TTS voice (last resort). @default alloy */
-	pollinationsTtsVoice: "alloy",
-	/** Google Cloud TTS voice. @default en-US-Chirp-HD-F */
+	/** OpenRouter auto-router — picks best available free model per request. */
+	openRouterScript: "openrouter/auto",
+	/** OpenRouter FLUX.2 Pro — currently free. */
+	openRouterImage: "black-forest-labs/flux.2-pro",
+	/** Google Cloud TTS default voice (Chirp HD = highest quality free tier). */
 	googleTtsVoice: "en-US-Chirp-HD-F",
+	/** Unreal Speech default voice. Options: Scarlett | Dan | Liv | Will | Amy */
+	unrealSpeechVoice: "Scarlett",
 } as const;
 
-export type RoutingRow = {
-	task: string;
-	primary: string;
-	secondary?: string;
-	fallback: string;
-};
+/**
+ * Builds the OpenRouter `models[]` array for script generation:
+ * [primaryModel, ...fallbackModels]
+ *
+ * OpenRouter tries them in order if a model fails (context too long,
+ * content filter, rate limit, etc.). All handled server-side by OpenRouter.
+ *
+ * @param overridePrimary - per-key `modelId` from the DB, takes highest precedence.
+ */
+export function buildOpenRouterModelChain(
+	overridePrimary?: string | null,
+): string[] {
+	const primary =
+		overridePrimary?.trim() ||
+		env.OPENROUTER_SCRIPT_MODEL?.trim() ||
+		DEFAULT_MODEL_IDS.openRouterScript;
 
-/** Provider matrix shown in system prompts so the model doesn't hallucinate a different stack. */
-export const MODEL_ROUTING_TABLE: RoutingRow[] = [
-	{
-		task: "Script",
-		primary: "OpenRouter (Nemotron / GPT-class)",
-		secondary: "Gemini 2.5 Flash Lite",
-		fallback: "Pollinations (Mistral-class)",
-	},
-	{
-		task: "Images",
-		primary: "Pollinations (Flux)",
-		fallback: "—",
-	},
-	{
-		task: "TTS",
-		primary: "Google Cloud TTS",
-		fallback: "Pollinations Audio",
-	},
-];
+	const fallbacks = (env.OPENROUTER_SCRIPT_FALLBACK_MODELS ?? "")
+		.split(",")
+		.map((m) => m.trim())
+		.filter(Boolean)
+		.filter((m) => m !== primary);
 
+	return [primary, ...fallbacks];
+}
+
+/** Injected into system prompts so the LLM knows what stack generated it. */
 export function pipelineModelContextBlock(): string {
-	const lines = MODEL_ROUTING_TABLE.map((r) => {
-		if (r.fallback === "—") return `- ${r.task}: ${r.primary}.`;
-		const chain = [r.primary, r.secondary, r.fallback]
-			.filter(Boolean)
-			.join(" → ");
-		return `- ${r.task}: ${chain}.`;
-	});
+	const primary =
+		env.OPENROUTER_SCRIPT_MODEL?.trim() || DEFAULT_MODEL_IDS.openRouterScript;
+	const fallbacks =
+		env.OPENROUTER_SCRIPT_FALLBACK_MODELS?.trim() ||
+		"google/gemini-2.5-flash,meta-llama/llama-4-scout:free";
+
 	return [
 		"## AI routing (do not claim a different vendor stack)",
-		...lines,
+		`- Script: OpenRouter (${primary} → ${fallbacks}).`,
+		`- Images: OpenRouter FLUX.2 → Replicate FLUX Schnell.`,
+		`- TTS: Google Cloud TTS → Unreal Speech.`,
 	].join("\n");
 }

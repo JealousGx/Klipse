@@ -182,6 +182,62 @@ export const addAdminKeyFn = createServerFn({ method: "POST" })
 	});
 
 // ---------------------------------------------------------------------------
+// updateAdminKeyFn
+// ---------------------------------------------------------------------------
+
+const updateKeyInput = z.object({
+	id: z.string(),
+	label: z.string().max(128).optional(),
+	modelId: z.string().max(255).optional(),
+	taskType: z.enum(["any", "script", "image", "tts", "voice"]),
+	sortOrder: z.number().int().min(0),
+	ownerEmail: z.string().email().optional(),
+});
+
+export type UpdateAdminKeyResult =
+	| { ok: true; key: AdminKeyRow }
+	| {
+			ok: false;
+			code: "unauthorized" | "not_found" | "validation";
+			message?: string;
+	  };
+
+export const updateAdminKeyFn = createServerFn({ method: "POST" })
+	.inputValidator((raw: unknown) => updateKeyInput.parse(raw))
+	.handler(async ({ data }): Promise<UpdateAdminKeyResult> => {
+		const request = getRequest();
+		try {
+			await requireAdmin(request);
+		} catch {
+			return { ok: false, code: "unauthorized" };
+		}
+
+		const db = getDb();
+		const result = await db
+			.update(providerApiKeys)
+			.set({
+				label: data.label?.trim() || null,
+				modelId: data.modelId?.trim() || null,
+				taskType: data.taskType,
+				sortOrder: data.sortOrder,
+				ownerEmail: data.ownerEmail?.trim() || null,
+				updatedAt: new Date(),
+			})
+			.where(eq(providerApiKeys.id, data.id));
+
+		if (!result[0].affectedRows) return { ok: false, code: "not_found" };
+
+		const [updated] = await db
+			.select()
+			.from(providerApiKeys)
+			.where(eq(providerApiKeys.id, data.id))
+			.limit(1);
+
+		if (!updated) return { ok: false, code: "not_found" };
+		return { ok: true, key: toAdminKeyRow(updated) };
+	});
+
+// ---------------------------------------------------------------------------
 // toggleAdminKeyFn
 // ---------------------------------------------------------------------------
 

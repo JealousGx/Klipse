@@ -13,11 +13,16 @@ import {
 
 /** Which upstream API the secret authenticates to. */
 export const providerApiKeyProviderEnum = mysqlEnum("provider", [
+	// Active providers
+	"openrouter", // script (models[] array) + images (FLUX.2)
+	"google_tts", // TTS primary (1M chars/month free)
+	"replicate", // image fallback (FLUX Schnell $0.003/img)
+	"unreal_speech", // TTS fallback (250K chars/month free)
+	// Legacy — kept for DB enum compat, no longer used in new code
 	"gemini",
-	"google_tts",
 	"pollinations",
+	// Reserved for future
 	"openai",
-	"openrouter",
 	"kling",
 	"luma",
 ]);
