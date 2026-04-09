@@ -21,6 +21,9 @@ export type AdminKeyRow = {
 	provider: string;
 	/** Last 8 chars of the SHA-256 fingerprint — enough to identify, not enough to reconstruct. */
 	keyHint: string;
+	label: string | null;
+	modelId: string | null;
+	taskType: string;
 	sortOrder: number;
 	disabled: boolean;
 	cooldownUntil: Date | null;
@@ -42,6 +45,9 @@ function toAdminKeyRow(row: typeof providerApiKeys.$inferSelect): AdminKeyRow {
 		id: row.id,
 		provider: row.provider,
 		keyHint: row.secretFingerprint.slice(-8),
+		label: row.label ?? null,
+		modelId: row.modelId ?? null,
+		taskType: row.taskType,
 		sortOrder: row.sortOrder,
 		disabled: row.disabled,
 		cooldownUntil: row.cooldownUntil ?? null,
@@ -87,6 +93,7 @@ export const listAdminKeysFn = createServerFn({ method: "GET" }).handler(
 
 const addKeyInput = z.object({
 	provider: z.enum([
+		"openrouter",
 		"gemini",
 		"google_tts",
 		"pollinations",
@@ -97,6 +104,9 @@ const addKeyInput = z.object({
 	secret: z.string().min(8),
 	ownerEmail: z.string().email().optional(),
 	sortOrder: z.number().int().min(0).default(0),
+	label: z.string().max(128).optional(),
+	modelId: z.string().max(255).optional(),
+	taskType: z.enum(["any", "script", "image", "tts", "voice"]).default("any"),
 });
 
 export type AddAdminKeyResult =
@@ -151,6 +161,9 @@ export const addAdminKeyFn = createServerFn({ method: "POST" })
 			disabled: false,
 			failureCount: 0,
 			ownerEmail: data.ownerEmail ?? null,
+			label: data.label ?? null,
+			modelId: data.modelId ?? null,
+			taskType: data.taskType,
 			createdAt: now,
 			updatedAt: now,
 		});

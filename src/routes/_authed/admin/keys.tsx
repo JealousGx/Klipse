@@ -48,6 +48,7 @@ export const Route = createFileRoute("/_authed/admin/keys")({
 // ---------------------------------------------------------------------------
 
 const PROVIDERS = [
+	"openrouter",
 	"gemini",
 	"google_tts",
 	"pollinations",
@@ -59,12 +60,24 @@ const PROVIDERS = [
 type Provider = (typeof PROVIDERS)[number];
 
 const PROVIDER_DOT_COLOR: Record<Provider, string> = {
+	openrouter: "bg-violet-400",
 	gemini: "bg-blue-400",
 	google_tts: "bg-emerald-400",
 	openai: "bg-purple-400",
 	pollinations: "bg-orange-400",
 	kling: "bg-pink-400",
 	luma: "bg-cyan-400",
+};
+
+const TASK_TYPES = ["any", "script", "image", "tts", "voice"] as const;
+type TaskType = (typeof TASK_TYPES)[number];
+
+const TASK_TYPE_LABEL: Record<TaskType, string> = {
+	any: "Any",
+	script: "Script",
+	image: "Image",
+	tts: "TTS",
+	voice: "Voice",
 };
 
 const fieldClass =
@@ -238,11 +251,14 @@ function AddKeyModal({
 	onClose: () => void;
 	onSuccess: () => void;
 }) {
-	const [provider, setProvider] = useState<Provider>("gemini");
+	const [provider, setProvider] = useState<Provider>("openrouter");
 	const [secret, setSecret] = useState("");
 	const [showSecret, setShowSecret] = useState(false);
 	const [ownerEmail, setOwnerEmail] = useState("");
 	const [sortOrder, setSortOrder] = useState(0);
+	const [label, setLabel] = useState("");
+	const [modelId, setModelId] = useState("");
+	const [taskType, setTaskType] = useState<TaskType>("any");
 
 	const queryClient = useQueryClient();
 
@@ -252,6 +268,9 @@ function AddKeyModal({
 			secret: string;
 			ownerEmail?: string;
 			sortOrder: number;
+			label?: string;
+			modelId?: string;
+			taskType: TaskType;
 		}) => addAdminKeyFn({ data }),
 		onSuccess: (result) => {
 			if (result.ok) {
@@ -279,6 +298,9 @@ function AddKeyModal({
 			secret,
 			ownerEmail: ownerEmail.trim() || undefined,
 			sortOrder,
+			label: label.trim() || undefined,
+			modelId: modelId.trim() || undefined,
+			taskType,
 		});
 	}
 
@@ -387,6 +409,76 @@ function AddKeyModal({
 							onChange={(e) => setSortOrder(Number(e.target.value))}
 							min={0}
 						/>
+					</div>
+
+					{/* Label */}
+					<div>
+						<label
+							htmlFor="key-label"
+							className="mb-1.5 block text-xs font-medium text-zinc-400"
+						>
+							Label <span className="text-zinc-600">(optional)</span>
+						</label>
+						<input
+							name="key-label"
+							id="key-label"
+							type="text"
+							className={fieldClass}
+							value={label}
+							onChange={(e) => setLabel(e.target.value)}
+							placeholder="e.g. Primary Gemini key"
+						/>
+					</div>
+
+					{/* Model ID */}
+					<div>
+						<label
+							htmlFor="model-id"
+							className="mb-1.5 block text-xs font-medium text-zinc-400"
+						>
+							Model ID override{" "}
+							<span className="text-zinc-600">(optional)</span>
+						</label>
+						<input
+							name="model-id"
+							id="model-id"
+							type="text"
+							className={fieldClass}
+							value={modelId}
+							onChange={(e) => setModelId(e.target.value)}
+							placeholder="e.g. gemini-2.5-flash or nvidia/nemotron-3-super:free"
+						/>
+						<p className="mt-1 text-xs text-zinc-600">
+							For Google TTS keys, use a voice name (e.g. en-US-Neural2-F).
+						</p>
+					</div>
+
+					{/* Task Type */}
+					<div>
+						<label
+							htmlFor="task-type"
+							className="mb-1.5 block text-xs font-medium text-zinc-400"
+						>
+							Task type
+						</label>
+						<Select
+							onValueChange={(val) => setTaskType(val as TaskType)}
+							defaultValue={taskType}
+						>
+							<SelectTrigger className={fieldClass}>
+								<SelectValue placeholder="Select task type" />
+							</SelectTrigger>
+							<SelectContent>
+								{TASK_TYPES.map((t) => (
+									<SelectItem key={t} value={t}>
+										{TASK_TYPE_LABEL[t]}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						<p className="mt-1 text-xs text-zinc-600">
+							"Any" means this key is used for all task types.
+						</p>
 					</div>
 
 					<div className="flex justify-end gap-2 pt-2">
@@ -616,6 +708,9 @@ function AdminKeysPage() {
 									{[
 										"Provider",
 										"Key Hint",
+										"Label",
+										"Model",
+										"Task",
 										"Owner",
 										"Sort",
 										"Status",
@@ -643,6 +738,34 @@ function AdminKeysPage() {
 										</td>
 										<td className="px-4 py-3.5 font-mono text-xs text-zinc-400">
 											…{key.keyHint}
+										</td>
+										<td className="max-w-36 px-4 py-3.5 text-xs text-zinc-400">
+											{key.label ? (
+												<span className="truncate block" title={key.label}>
+													{key.label}
+												</span>
+											) : (
+												<span className="text-zinc-600">—</span>
+											)}
+										</td>
+										<td className="max-w-40 px-4 py-3.5 font-mono text-xs text-zinc-400">
+											{key.modelId ? (
+												<span className="truncate block" title={key.modelId}>
+													{key.modelId}
+												</span>
+											) : (
+												<span className="text-zinc-600">—</span>
+											)}
+										</td>
+										<td className="px-4 py-3.5 text-xs text-zinc-400">
+											{key.taskType === "any" ? (
+												<span className="text-zinc-600">any</span>
+											) : (
+												<span className="rounded-full border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-zinc-300">
+													{TASK_TYPE_LABEL[key.taskType as TaskType] ??
+														key.taskType}
+												</span>
+											)}
 										</td>
 										<td className="px-4 py-3.5 text-zinc-400">
 											{key.ownerEmail ?? (

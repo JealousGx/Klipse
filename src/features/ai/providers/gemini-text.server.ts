@@ -17,13 +17,15 @@ export async function generateTextGemini(input: {
 	system: string;
 	user: string;
 }): Promise<string> {
-	const modelId =
+	const globalModel =
 		env.GEMINI_SCRIPT_MODEL?.trim() || DEFAULT_MODEL_IDS.geminiScript;
 
 	return executeWithProviderKeyRotation(
 		"gemini",
-		async (apiKey) => {
-			const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(apiKey)}`;
+		async (credential) => {
+			// Per-key modelId takes precedence over the global env/default.
+			const modelId = credential.modelId?.trim() || globalModel;
+			const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${encodeURIComponent(credential.secret)}`;
 
 			const res = await fetch(url, {
 				method: "POST",
@@ -64,10 +66,10 @@ export async function generateTextGemini(input: {
 			}
 			return text;
 		},
-		{ providerLabel: "gemini" },
+		{ providerLabel: "gemini", taskType: "script" },
 	);
 }
 
 export async function isGeminiConfigured(): Promise<boolean> {
-	return (await getProviderApiKeys("gemini")).length > 0;
+	return (await getProviderApiKeys("gemini", "script")).length > 0;
 }

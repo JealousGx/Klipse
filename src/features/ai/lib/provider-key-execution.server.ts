@@ -1,5 +1,7 @@
 import "@tanstack/react-start/server-only";
 
+import type { ProviderApiKeyTask } from "@/db/schema/provider-api-keys";
+
 import { RoundRobinPool } from "./api-key-pool.server";
 import {
 	clearCooldownAfterSuccessfulUse,
@@ -21,14 +23,20 @@ function sleep(ms: number): Promise<void> {
 /**
  * FEATURE_DOC §2.4: round-robin, try next key on classifiable HTTP failures, persist
  * cooldown only on failure (transient short vs quota/auth until next calendar month UTC).
+ *
+ * `executeOne` receives the full credential so providers can read `modelId` and use it
+ * as a per-key model override instead of (or in addition to) the global env default.
  */
 export async function executeWithProviderKeyRotation<T>(
 	provider: AiProviderKind,
-	executeOne: (apiKey: string) => Promise<T>,
-	options?: { providerLabel?: string },
+	executeOne: (credential: ProviderApiKeyCredential) => Promise<T>,
+	options?: { providerLabel?: string; taskType?: ProviderApiKeyTask },
 ): Promise<T> {
 	const label = options?.providerLabel ?? provider;
-	const credentials = await listProviderApiKeyCredentials(provider);
+	const credentials = await listProviderApiKeyCredentials(
+		provider,
+		options?.taskType,
+	);
 	if (credentials.length === 0) {
 		throw new Error(`${label}_no_api_keys`);
 	}
@@ -37,28 +45,20 @@ export async function executeWithProviderKeyRotation<T>(
 	const ordered: ProviderApiKeyCredential[] = [];
 	for (let i = 0; i < credentials.length; i++) {
 		const c = pool.next();
-		if (c) {
-			ordered.push(c);
-		}
+		if (c) ordered.push(c);
 	}
 
 	let lastError: unknown;
 	for (let i = 0; i < ordered.length; i++) {
 		const credential = ordered[i];
-		if (!credential) {
-			continue;
-		}
+		if (!credential) continue;
 
 		// Cooldown filtering is done at DB query level in listProviderApiKeyCredentials.
-		// No per-key roundtrip needed here.
-
 		const backoffMs = Math.min(100 * 2 ** i, 8000);
-		if (backoffMs > 0) {
-			await sleep(backoffMs);
-		}
+		if (backoffMs > 0) await sleep(backoffMs);
 
 		try {
-			const result = await executeOne(credential.secret);
+			const result = await executeOne(credential);
 			await clearCooldownAfterSuccessfulUse(credential);
 			return result;
 		} catch (e) {
@@ -78,9 +78,7 @@ export async function executeWithProviderKeyRotation<T>(
 		}
 	}
 
-	if (lastError instanceof Error) {
-		throw lastError;
-	}
+	if (lastError instanceof Error) throw lastError;
 	throw new Error(`${label}_all_keys_exhausted`);
 }
 

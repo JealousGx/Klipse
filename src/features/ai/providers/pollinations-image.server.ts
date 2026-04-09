@@ -56,7 +56,7 @@ export async function pollinationsImageUrl(input: {
 	model?: string;
 	seed?: number;
 }): Promise<string> {
-	const keys = await getProviderApiKeys("pollinations");
+	const keys = await getProviderApiKeys("pollinations", "image");
 	const pool = new ApiKeyPool(keys);
 	const token = pool.next();
 	return buildPollinationsImageUrl(input, token);
@@ -70,11 +70,16 @@ export async function fetchPollinationsImage(input: {
 }): Promise<ArrayBuffer> {
 	return executeWithProviderKeyRotation(
 		"pollinations",
-		async (token) => {
-			const url = buildPollinationsImageUrl(input, token);
+		async (credential) => {
+			// Per-key modelId overrides the image model (e.g. "flux-pro").
+			const modelOverride = credential.modelId?.trim();
+			const url = buildPollinationsImageUrl(
+				{ ...input, model: modelOverride ?? input.model },
+				credential.secret || undefined,
+			);
 			const headers: Record<string, string> = {};
-			if (token) {
-				headers.Authorization = `Bearer ${token}`;
+			if (credential.secret) {
+				headers.Authorization = `Bearer ${credential.secret}`;
 			}
 			const res = await fetch(url, {
 				headers,
@@ -91,6 +96,6 @@ export async function fetchPollinationsImage(input: {
 			}
 			return res.arrayBuffer();
 		},
-		{ providerLabel: "pollinations_image" },
+		{ providerLabel: "pollinations_image", taskType: "image" },
 	);
 }

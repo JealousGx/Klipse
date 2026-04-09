@@ -47,15 +47,25 @@ export async function synthesizeSpeechWithFallback(
 	const { text, pollinationsVoice } = resolveTtsText(input);
 
 	if (await isGoogleTtsConfigured()) {
+		console.log("Attempting to synthesize speech with Google TTS...");
 		try {
 			const { audioContentBase64 } = await synthesizeGoogleTts({ text });
 			const buf = Buffer.from(audioContentBase64, "base64");
-			return { source: "google", buffer: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength) as ArrayBuffer };
+			return {
+				source: "google",
+				buffer: buf.buffer.slice(
+					buf.byteOffset,
+					buf.byteOffset + buf.byteLength,
+				) as ArrayBuffer,
+			};
 		} catch {
 			// fall through to Pollinations
 		}
 	}
 
-	const buffer = await fetchPollinationsSpeech({ text, voice: pollinationsVoice });
+	const buffer = await fetchPollinationsSpeech({
+		text,
+		voice: pollinationsVoice,
+	});
 	return { source: "pollinations", buffer };
 }

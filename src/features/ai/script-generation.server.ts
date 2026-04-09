@@ -8,11 +8,15 @@ import {
 	generateTextGemini,
 	isGeminiConfigured,
 } from "./providers/gemini-text.server";
+import {
+	generateTextOpenRouter,
+	isOpenRouterConfigured,
+} from "./providers/openrouter-text.server";
 import { generateTextPollinationsOpenAi } from "./providers/pollinations-text.server";
 
 export type ScriptGenerationContext = ChannelCreativeBrief & { idea: string };
 
-export type ScriptGenerationMode = "gemini" | "pollinations";
+export type ScriptGenerationMode = "openrouter" | "gemini" | "pollinations";
 
 function shortFormSystemPrompt(): string {
 	return [
@@ -131,7 +135,17 @@ async function runProviders(
 ): Promise<{ text: string; mode: ScriptGenerationMode }> {
 	const attempts: string[] = [];
 
-	// Gemini is primary: free tier (1500 req/day), higher quality output.
+	// 1. OpenRouter (primary): free frontier models via OPENROUTER_API_KEYS.
+	if (await isOpenRouterConfigured()) {
+		try {
+			const text = await generateTextOpenRouter({ system, user });
+			return { text, mode: "openrouter" };
+		} catch (e) {
+			attempts.push(`openrouter:${e instanceof Error ? e.message : String(e)}`);
+		}
+	}
+
+	// 2. Gemini (secondary): free tier (1500 req/day) via GEMINI_API_KEYS.
 	if (await isGeminiConfigured()) {
 		try {
 			const text = await generateTextGemini({ system, user });
@@ -141,7 +155,7 @@ async function runProviders(
 		}
 	}
 
-	// Pollinations is the free fallback — no key required.
+	// 3. Pollinations (last resort): no key required.
 	try {
 		const text = await generateTextPollinationsOpenAi({ system, user });
 		return { text, mode: "pollinations" };
@@ -150,7 +164,7 @@ async function runProviders(
 	}
 
 	throw new ScriptGenerationFailedError(
-		"Script generation failed: both Gemini and Pollinations failed. Check GEMINI_API_KEYS and provider quotas.",
+		`Script generation failed after ${attempts.length} attempt(s). Check OPENROUTER_API_KEYS, GEMINI_API_KEYS, and provider quotas.`,
 		attempts,
 	);
 }
