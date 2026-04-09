@@ -3,13 +3,20 @@ import "@tanstack/react-start/server-only";
 import { and, asc, count, eq, isNull, lt, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
-import { providerApiKeys } from "@/db/schema/provider-api-keys";
+import {
+	providerApiKeys,
+	type ProviderApiKeyTask,
+} from "@/db/schema/provider-api-keys";
 import { env } from "@/env";
 import { providerApiKeyRowId } from "@/lib/id";
 
 import { secretFingerprint } from "./provider-key-fingerprint.server";
 
-export type AiProviderKind = "gemini" | "google_tts" | "pollinations";
+export type AiProviderKind =
+	| "gemini"
+	| "google_tts"
+	| "pollinations"
+	| "openrouter";
 
 /** One row in `provider_api_keys` (manually created or materialized from env). */
 export type ProviderApiKeyCredential = {
@@ -17,6 +24,11 @@ export type ProviderApiKeyCredential = {
 	secret: string;
 	/** Next known quota reset (UTC), from DB — used when the error has no reset time. */
 	quotaResetAt: Date | null;
+	/**
+	 * Per-key model override. When set, providers use this instead of their global
+	 * env/default model (e.g. a Gemini key can target `gemini-2.5-flash` specifically).
+	 */
+	modelId: string | null;
 };
 
 function parseCommaEnv(raw: string | undefined): string[] {
@@ -28,6 +40,8 @@ function parseCommaEnv(raw: string | undefined): string[] {
 
 function envFallbackKeys(provider: AiProviderKind): string[] {
 	switch (provider) {
+		case "openrouter":
+			return parseCommaEnv(env.OPENROUTER_API_KEYS);
 		case "gemini":
 			return parseCommaEnv(env.GEMINI_API_KEYS);
 		case "google_tts":
@@ -78,6 +92,7 @@ async function ensureEnvProviderKeysMaterialized(
 				provider,
 				secret,
 				secretFingerprint: fp,
+				taskType: "any",
 				sortOrder: i,
 				disabled: false,
 				failureCount: 0,
@@ -95,6 +110,7 @@ const KEY_SELECT = {
 	id: providerApiKeys.id,
 	secret: providerApiKeys.secret,
 	quotaResetAt: providerApiKeys.quotaResetAt,
+	modelId: providerApiKeys.modelId,
 } as const;
 
 const KEY_ORDER = [
@@ -106,13 +122,22 @@ function toCredential(r: {
 	id: string;
 	secret: string;
 	quotaResetAt: Date | null;
+	modelId: string | null;
 }): ProviderApiKeyCredential {
-	return { id: r.id, secret: r.secret.trim(), quotaResetAt: r.quotaResetAt ?? null };
+	return {
+		id: r.id,
+		secret: r.secret.trim(),
+		quotaResetAt: r.quotaResetAt ?? null,
+		modelId: r.modelId ?? null,
+	};
 }
 
 /**
  * Enabled keys for the provider, ordered. Env keys are materialized into the table first
  * when there are no rows for that provider.
+ *
+ * Pass `taskType` to restrict to keys whose `task_type` is `any` or the given task — lets
+ * admins pin specific keys to specific pipeline stages.
  *
  * Two-query pattern to avoid N per-key cooldown roundtrips in the execution loop:
  * 1. Active keys (cooldownUntil IS NULL OR cooldownUntil < NOW()) — return these when any exist.
@@ -121,13 +146,23 @@ function toCredential(r: {
  */
 export async function listProviderApiKeyCredentials(
 	provider: AiProviderKind,
+	taskType?: ProviderApiKeyTask,
 ): Promise<ProviderApiKeyCredential[]> {
 	await ensureEnvProviderKeysMaterialized(provider);
 
 	const db = getDb();
+	const taskWhere =
+		taskType && taskType !== "any"
+			? or(
+					eq(providerApiKeys.taskType, "any"),
+					eq(providerApiKeys.taskType, taskType),
+				)
+			: undefined;
+
 	const baseWhere = and(
 		eq(providerApiKeys.provider, provider),
 		eq(providerApiKeys.disabled, false),
+		taskWhere,
 	);
 
 	// Query 1: keys not in cooldown.
@@ -150,7 +185,6 @@ export async function listProviderApiKeyCredentials(
 	}
 
 	// Query 2: everything is cooled down — return all so we attempt anyway.
-	// The execution layer will record the next failure and advance the cooldown window.
 	const allRows = await db
 		.select(KEY_SELECT)
 		.from(providerApiKeys)
@@ -165,7 +199,8 @@ export async function listProviderApiKeyCredentials(
  */
 export async function getProviderApiKeys(
 	provider: AiProviderKind,
+	taskType?: ProviderApiKeyTask,
 ): Promise<string[]> {
-	const creds = await listProviderApiKeyCredentials(provider);
+	const creds = await listProviderApiKeyCredentials(provider, taskType);
 	return creds.map((c) => c.secret);
 }

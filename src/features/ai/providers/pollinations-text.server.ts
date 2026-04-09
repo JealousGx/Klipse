@@ -20,23 +20,24 @@ function chatCompletionsUrl(): string {
 }
 
 /**
- * Pollinations OpenAI-compatible chat Completions.
+ * Pollinations OpenAI-compatible chat Completions (last-resort fallback).
  */
 export async function generateTextPollinationsOpenAi(input: {
 	system: string;
 	user: string;
 }): Promise<string> {
-	const model =
+	const globalModel =
 		env.POLLINATIONS_TEXT_MODEL?.trim() || DEFAULT_MODEL_IDS.pollinationsText;
 
 	return executeWithProviderKeyRotation(
 		"pollinations",
-		async (token) => {
+		async (credential) => {
+			const model = credential.modelId?.trim() || globalModel;
 			const headers: Record<string, string> = {
 				"Content-Type": "application/json",
 			};
-			if (token) {
-				headers.Authorization = `Bearer ${token}`;
+			if (credential.secret) {
+				headers.Authorization = `Bearer ${credential.secret}`;
 			}
 
 			const res = await fetch(chatCompletionsUrl(), {
@@ -73,6 +74,6 @@ export async function generateTextPollinationsOpenAi(input: {
 			}
 			return content;
 		},
-		{ providerLabel: "pollinations_text" },
+		{ providerLabel: "pollinations_text", taskType: "script" },
 	);
 }
