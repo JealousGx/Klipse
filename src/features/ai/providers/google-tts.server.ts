@@ -18,7 +18,8 @@ export async function synthesizeGoogleTts(input: {
 	voiceName?: string;
 	languageCode?: string;
 }): Promise<{ audioContentBase64: string }> {
-	const globalVoiceName = env.GOOGLE_TTS_VOICE_NAME?.trim() || "en-US-Chirp-HD-F";
+	const globalVoiceName =
+		env.GOOGLE_TTS_VOICE_NAME?.trim() || "en-US-Wavenet-G";
 	const languageCode = input.languageCode ?? "en-US";
 
 	return executeWithProviderKeyRotation(
