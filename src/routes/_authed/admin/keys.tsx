@@ -639,7 +639,7 @@ function EditKeyModal({
 							className={fieldClass}
 							value={modelId}
 							onChange={(e) => setModelId(e.target.value)}
-							placeholder="e.g. gemini-2.5-flash or openrouter/auto"
+							placeholder="e.g. gemini-2.5-flash or openrouter/free"
 						/>
 						<p className="mt-1 text-xs text-zinc-600">
 							For Google TTS keys, use a voice name (e.g. en-US-Neural2-F).
