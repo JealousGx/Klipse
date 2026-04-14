@@ -11,12 +11,19 @@ const REPLICATE_BASE = "https://api.replicate.com/v1";
 // FLUX Schnell on Replicate: ~$0.003/image, fast 2-4 step generation.
 const FLUX_SCHNELL_MODEL = "black-forest-labs/flux-schnell";
 
+/** Max burst-limit retries before escalating to the key-rotation system. */
+const MAX_BURST_RETRIES = 4;
+
 type AspectRatio = "1:1" | "16:9" | "9:16" | "4:3" | "3:4" | "2:3" | "3:2";
 
 /**
  * Replicate FLUX Schnell — image fallback (~$0.003/image).
  * Uses synchronous mode (Prefer: wait=60) to avoid polling overhead.
  * Output is a CDN URL; we download it and return raw bytes.
+ *
+ * Retries up to {@link MAX_BURST_RETRIES} times on 429 burst-limit responses
+ * (accounts with burst=1 rate limit hit this when >1 request fires in parallel).
+ * Respects Retry-After header; falls back to exponential backoff (1s → 2s → 4s → 8s).
  *
  * @see https://replicate.com/black-forest-labs/flux-schnell
  */
@@ -27,71 +34,92 @@ export async function generateImageReplicate(input: {
 	return executeWithProviderKeyRotation(
 		"replicate",
 		async (credential) => {
-			const res = await fetch(`${REPLICATE_BASE}/predictions`, {
-				method: "POST",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${credential.secret}`,
-					// Synchronous mode: block until done (max 60s).
-					Prefer: "wait=60",
-				},
-				body: JSON.stringify({
-					version: credential.modelId ?? FLUX_SCHNELL_MODEL,
-					input: {
-						prompt: input.prompt,
-						aspect_ratio: input.aspectRatio ?? "16:9",
-						output_format: "webp",
-						output_quality: 85,
-						num_outputs: 1,
+			let attempt = 0;
+
+			while (true) {
+				const res = await fetch(`${REPLICATE_BASE}/predictions`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+						Authorization: `Bearer ${credential.secret}`,
+						// Synchronous mode: block until done (max 60s).
+						Prefer: "wait=60",
 					},
-				}),
-				signal: AbortSignal.timeout(90_000),
-			});
+					body: JSON.stringify({
+						version: credential.modelId ?? FLUX_SCHNELL_MODEL,
+						input: {
+							prompt: input.prompt,
+							aspect_ratio: input.aspectRatio ?? "16:9",
+							output_format: "webp",
+							output_quality: 85,
+							num_outputs: 1,
+						},
+					}),
+					signal: AbortSignal.timeout(90_000),
+				});
 
-			if (!res.ok) {
-				const t = await res.text().catch(() => "");
-				throwProviderHttpError(
-					"replicate_image",
-					res.status,
-					t,
-					res.headers.get("retry-after"),
+				// Retry burst-limit 429s with backoff before escalating to key rotation.
+				if (res.status === 429 && attempt < MAX_BURST_RETRIES) {
+					attempt++;
+					const retryAfterSec = Number(res.headers.get("retry-after") ?? "0");
+					const waitMs =
+						retryAfterSec > 0
+							? retryAfterSec * 1000
+							: Math.min(1000 * 2 ** (attempt - 1), 16_000); // 1s, 2s, 4s, 8s
+					await new Promise<void>((r) => setTimeout(r, waitMs));
+					continue;
+				}
+
+				if (!res.ok) {
+					const t = await res.text().catch(() => "");
+					throwProviderHttpError(
+						"replicate_image",
+						res.status,
+						t,
+						res.headers.get("retry-after"),
+					);
+				}
+
+				const prediction = (await res.json()) as {
+					status: string;
+					output?: string[];
+					error?: string;
+					urls?: { get?: string };
+				};
+
+				console.log(
+					`Replicate image generation succeeded on attempt ${attempt + 1}`,
+					{ prediction },
 				);
+
+				if (prediction.error) {
+					throw new Error(`replicate_image_error: ${prediction.error}`);
+				}
+
+				// Synchronous mode returns output immediately; fall back to polling if needed.
+				let outputUrl = prediction.output?.[0];
+
+				if (
+					!outputUrl &&
+					prediction.status !== "failed" &&
+					prediction.urls?.get
+				) {
+					outputUrl = await pollReplicatePrediction(
+						credential.secret,
+						prediction.urls.get,
+					);
+				}
+
+				if (!outputUrl) throw new Error("replicate_image_no_output");
+
+				// Download the CDN image and return as ArrayBuffer.
+				const imgRes = await fetch(outputUrl, {
+					signal: AbortSignal.timeout(60_000),
+				});
+				if (!imgRes.ok)
+					throw new Error(`replicate_image_download_failed: ${imgRes.status}`);
+				return imgRes.arrayBuffer();
 			}
-
-			const prediction = (await res.json()) as {
-				status: string;
-				output?: string[];
-				error?: string;
-				urls?: { get?: string };
-			};
-
-			if (prediction.error) {
-				throw new Error(`replicate_image_error: ${prediction.error}`);
-			}
-
-			// Synchronous mode returns output immediately; fall back to polling if needed.
-			let outputUrl = prediction.output?.[0];
-
-			if (
-				!outputUrl &&
-				prediction.status !== "failed" &&
-				prediction.urls?.get
-			) {
-				outputUrl = await pollReplicatePrediction(
-					credential.secret,
-					prediction.urls.get,
-				);
-			}
-
-			if (!outputUrl) throw new Error("replicate_image_no_output");
-
-			// Download the CDN image and return as ArrayBuffer.
-			const imgRes = await fetch(outputUrl, {
-				signal: AbortSignal.timeout(60_000),
-			});
-			if (!imgRes.ok)
-				throw new Error(`replicate_image_download_failed: ${imgRes.status}`);
-			return imgRes.arrayBuffer();
 		},
 		{ providerLabel: "replicate_image", taskType: "image" },
 	);
