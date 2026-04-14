@@ -49,6 +49,8 @@ const updateInput = z
 		externalChannelId: z.union([z.string(), z.null()]).optional(),
 		externalChannelTitle: z.union([z.string(), z.null()]).optional(),
 		externalChannelHandle: z.union([z.string(), z.null()]).optional(),
+		soundEnabled: z.boolean().optional(),
+		soundPromptHint: z.string().max(255).nullable().optional(),
 	})
 	.refine(
 		(d) =>
@@ -58,7 +60,9 @@ const updateInput = z
 			d.platform !== undefined ||
 			d.externalChannelId !== undefined ||
 			d.externalChannelTitle !== undefined ||
-			d.externalChannelHandle !== undefined,
+			d.externalChannelHandle !== undefined ||
+			d.soundEnabled !== undefined ||
+			d.soundPromptHint !== undefined,
 		{
 			message:
 				"Provide at least one field to update (including platform link fields).",
@@ -209,6 +213,8 @@ export const updateChannelFn = createServerFn({ method: "POST" })
 				externalChannelId,
 				externalChannelTitle: data.externalChannelTitle,
 				externalChannelHandle: data.externalChannelHandle,
+				soundEnabled: data.soundEnabled,
+				soundPromptHint: data.soundPromptHint,
 			});
 			return { ok: true, channel };
 		} catch (e) {

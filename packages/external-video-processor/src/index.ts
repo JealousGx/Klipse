@@ -160,6 +160,12 @@ function isHandoffPayload(x: unknown): x is VideoProcessorHandoffPayload {
 	) {
 		return false;
 	}
+	if (
+		o.soundAudioUrl !== undefined &&
+		(typeof o.soundAudioUrl !== "string" || !/^https?:\/\//.test(o.soundAudioUrl))
+	) {
+		return false;
+	}
 	return true;
 }
 
@@ -329,11 +335,15 @@ async function runRichStillImageWithAudioPipeline(
 	}
 
 	const tmpAud = join(tmpdir(), `klipse-aud-${randomUUID()}.mp3`);
+	const tmpSnd = join(tmpdir(), `klipse-snd-${randomUUID()}.mp3`);
 	const tmpVid = join(tmpdir(), `klipse-rich-${payload.jobId}.mp4`);
 	const tmpWm = join(tmpdir(), `klipse-rich-wm-${payload.jobId}.mp4`);
 	const tmpVideoOnly = join(tmpdir(), `klipse-rich-vo-${payload.jobId}.mp4`);
 	const concatListPath = join(tmpdir(), `klipse-concat-${payload.jobId}.txt`);
 	const cleanup: string[] = [];
+	const hasSoundTrack = Boolean(
+		payload.soundAudioUrl && /^https?:\/\//.test(payload.soundAudioUrl),
+	);
 
 	try {
 		const tmpImagePaths: string[] = [];
@@ -362,6 +372,19 @@ async function runRichStillImageWithAudioPipeline(
 			await writeFile(tmpAud, Buffer.from(await res.arrayBuffer()));
 		});
 		cleanup.push(tmpAud);
+
+		if (hasSoundTrack) {
+			await withRetries("fetch_sound", R2_PUT_ATTEMPTS, async () => {
+				const res = await fetch(payload.soundAudioUrl as string, {
+					signal: AbortSignal.timeout(300_000),
+				});
+				if (!res.ok) {
+					throw new Error(`sound_fetch_${res.status}`);
+				}
+				await writeFile(tmpSnd, Buffer.from(await res.arrayBuffer()));
+			});
+			cleanup.push(tmpSnd);
+		}
 
 		const audioDuration = await withRetries("ffprobe_audio", FFMPEG_ATTEMPTS, () =>
 			ffprobeDurationSeconds(tmpAud),
@@ -438,36 +461,74 @@ async function runRichStillImageWithAudioPipeline(
 		);
 		cleanup.push(tmpVideoOnly);
 
-		await withRetries("ffmpeg_mux", FFMPEG_ATTEMPTS, () =>
-			execFileAsync(
-				ffmpegBinary(),
-				[
-					"-y",
-					"-i",
-					tmpVideoOnly,
-					"-i",
-					tmpAud,
-					"-c:v",
-					"copy",
-					"-c:a",
-					"aac",
-					"-b:a",
-					"192k",
-					"-map",
-					"0:v:0",
-					"-map",
-					"1:a:0",
-					"-shortest",
-					"-movflags",
-					"+faststart",
-					tmpVid,
-				],
-				{
-					timeout: 600_000,
-					maxBuffer: 80 * 1024 * 1024,
-				},
-			),
-		);
+		if (hasSoundTrack) {
+			// Mix TTS (full volume) + background sound (30%) using amix.
+			await withRetries("ffmpeg_mux_with_sound", FFMPEG_ATTEMPTS, () =>
+				execFileAsync(
+					ffmpegBinary(),
+					[
+						"-y",
+						"-i",
+						tmpVideoOnly,
+						"-i",
+						tmpAud,
+						"-i",
+						tmpSnd,
+						"-filter_complex",
+						"[1:a]volume=1.0[tts];[2:a]volume=0.3[sfx];[tts][sfx]amix=inputs=2:duration=first:dropout_transition=0[aout]",
+						"-map",
+						"0:v:0",
+						"-map",
+						"[aout]",
+						"-c:v",
+						"copy",
+						"-c:a",
+						"aac",
+						"-b:a",
+						"192k",
+						"-shortest",
+						"-movflags",
+						"+faststart",
+						tmpVid,
+					],
+					{
+						timeout: 600_000,
+						maxBuffer: 80 * 1024 * 1024,
+					},
+				),
+			);
+		} else {
+			await withRetries("ffmpeg_mux", FFMPEG_ATTEMPTS, () =>
+				execFileAsync(
+					ffmpegBinary(),
+					[
+						"-y",
+						"-i",
+						tmpVideoOnly,
+						"-i",
+						tmpAud,
+						"-c:v",
+						"copy",
+						"-c:a",
+						"aac",
+						"-b:a",
+						"192k",
+						"-map",
+						"0:v:0",
+						"-map",
+						"1:a:0",
+						"-shortest",
+						"-movflags",
+						"+faststart",
+						tmpVid,
+					],
+					{
+						timeout: 600_000,
+						maxBuffer: 80 * 1024 * 1024,
+					},
+				),
+			);
+		}
 		cleanup.push(tmpVid);
 
 		let videoPath = tmpVid;

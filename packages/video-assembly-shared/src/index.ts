@@ -36,8 +36,10 @@ export type VideoProcessorHandoffPayload = {
 	aspectRatio?: "16:9" | "9:16" | "1:1";
 	/** Content pipeline: script text forwarded for future encoder graphs. */
 	scriptText?: string;
-	/** HTTPS image URLs (e.g. Pollinations) — processor fetches; not stored in app R2. */
+	/** R2 image URLs — processor fetches; registered in expiring_assets (2h TTL). */
 	imageUrls?: string[];
-	/** HTTPS audio URL (e.g. Pollinations TTS GET). */
+	/** R2 URL for TTS voiceover audio. */
 	ttsAudioUrl?: string;
+	/** R2 URL for background sound effect — Creator+ only, absent when not generated. */
+	soundAudioUrl?: string;
 };
