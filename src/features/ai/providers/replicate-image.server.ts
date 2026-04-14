@@ -36,7 +36,7 @@ export async function generateImageReplicate(input: {
 					Prefer: "wait=60",
 				},
 				body: JSON.stringify({
-					version: FLUX_SCHNELL_MODEL,
+					version: credential.modelId ?? FLUX_SCHNELL_MODEL,
 					input: {
 						prompt: input.prompt,
 						aspect_ratio: input.aspectRatio ?? "16:9",
