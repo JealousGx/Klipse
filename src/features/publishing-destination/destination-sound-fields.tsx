@@ -1,3 +1,7 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+
 type DestinationSoundFieldsProps = {
 	soundEnabled: boolean;
 	onSoundEnabledChange: (next: boolean) => void;
@@ -40,56 +44,65 @@ export function DestinationSoundFields({
 				</p>
 			) : null}
 
-			<label className="flex cursor-pointer items-center gap-3">
+			<Label
+				htmlFor="sound-enabled"
+				className="flex cursor-pointer items-center gap-3"
+			>
 				<input
+					id="sound-enabled"
 					type="checkbox"
 					className="size-4 rounded border-border"
 					checked={soundEnabled}
 					disabled={!canUseSoundGeneration || isSavingEnabled}
 					onChange={(e) => onSoundEnabledChange(e.target.checked)}
+					aria-describedby="sound-enabled-hint"
 				/>
-				<span className="text-sm font-medium text-foreground">
-					Enable background sound for this destination
-				</span>
-			</label>
-
-			{soundEnabled && canUseSoundGeneration ? (
-				<div className="space-y-2">
-					<p className="text-sm font-medium text-foreground">
-						Sound prompt hint{" "}
-						<span className="font-normal text-muted-foreground">(optional)</span>
-					</p>
-					<p className="text-xs text-muted-foreground">
-						Describe the sound style, e.g. "calm ambient piano" or "upbeat
-						electronic". Leave blank to auto-generate from your channel niche and
-						tone.
-					</p>
-					<div className="flex gap-2">
-						<input
-							type="text"
-							className="flex-1 rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
-							placeholder="e.g. calm ambient background music"
-							maxLength={255}
-							value={soundPromptHint}
-							onChange={(e) => onSoundPromptHintChange(e.target.value)}
-							disabled={isSavingHint}
-						/>
-						<button
-							type="button"
-							className="rounded-md border border-input bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-accent hover:text-accent-foreground disabled:cursor-not-allowed disabled:opacity-50"
-							onClick={onSavePromptHint}
-							disabled={isSavingHint}
-						>
-							{isSavingHint ? "Saving…" : "Save"}
-						</button>
-					</div>
-				</div>
-			) : null}
+				<span>Enable background sound for this destination</span>
+			</Label>
+			<p id="sound-enabled-hint" className="sr-only">
+				Ambient sound plays under the voiceover at 30% volume. Creator plan
+				required.
+			</p>
 
 			{isSavingEnabled ? (
 				<p className="text-xs text-muted-foreground" aria-live="polite">
 					Saving…
 				</p>
+			) : null}
+
+			{soundEnabled && canUseSoundGeneration ? (
+				<div className="space-y-2">
+					<Label htmlFor="sound-prompt-hint">
+						Sound prompt hint{" "}
+						<span className="font-normal text-muted-foreground">(optional)</span>
+					</Label>
+					<p id="sound-prompt-hint-desc" className="text-xs text-muted-foreground">
+						Describe the sound style, e.g. "calm ambient piano" or "upbeat
+						electronic". Leave blank to auto-generate from your channel niche and
+						tone.
+					</p>
+					<div className="flex gap-2">
+						<Input
+							id="sound-prompt-hint"
+							type="text"
+							placeholder="e.g. calm ambient background music"
+							maxLength={255}
+							value={soundPromptHint}
+							onChange={(e) => onSoundPromptHintChange(e.target.value)}
+							disabled={isSavingHint}
+							aria-describedby="sound-prompt-hint-desc"
+						/>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onClick={onSavePromptHint}
+							disabled={isSavingHint}
+						>
+							{isSavingHint ? "Saving…" : "Save"}
+						</Button>
+					</div>
+				</div>
 			) : null}
 		</div>
 	);

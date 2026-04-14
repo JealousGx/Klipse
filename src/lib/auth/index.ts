@@ -15,8 +15,6 @@ import { additionalUserFields } from "@/lib/auth/additional-user-fields";
 import { sendAuthOTPEmail } from "@/lib/email/auth-otp";
 import { accountId, sessionId, userId, verificationId } from "@/lib/id";
 
-import { ac, adminRoles } from "./admin-access-control";
-
 const OTP_LENGTH = 6;
 const OTP_EXPIRATION_SECONDS = 600;
 const ALLOWED_OTP_ATTEMPTS = 5;
@@ -73,16 +71,6 @@ export const auth = betterAuth({
 			generateOTP:
 				process.env.NODE_ENV === "development" ? () => "123456" : undefined,
 			overrideDefaultEmailVerification: true,
-		}),
-		admin({
-			// Only the "admin" role gets access to admin endpoints.
-			// The "user" role is the default for all new accounts.
-			defaultRole: "user",
-			adminRoles: ["admin"],
-			// Custom RBAC — lets us define fine-grained permissions per role
-			// as we add more team members in the future.
-			ac,
-			roles: adminRoles,
 		}),
 		createPolarBillingPlugin(),
 		tanstackStartCookies(),

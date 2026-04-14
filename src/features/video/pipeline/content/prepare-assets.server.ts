@@ -201,7 +201,7 @@ export async function resolvePrepareRefs(input: {
 		),
 	]);
 
-	// Sound: non-blocking, runs after TTS so we have targetSeconds.
+	// Sound: runs after TTS (needs targetSeconds); extends the prepare stage when enabled.
 	const soundAudioUrl =
 		(await prepareSoundAsset({
 			channel: input.channel,

@@ -16,7 +16,6 @@ export const authClient = createAuthClient({
 		polarClient(),
 		adminClient({ ac, roles: adminRoles }),
 		inferAdditionalFields({ user: additionalUserFields }),
-		adminClient({ ac, roles: adminRoles }),
 	],
 });
 

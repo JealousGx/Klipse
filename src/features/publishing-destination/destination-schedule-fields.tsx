@@ -8,12 +8,6 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-
-import type { ChannelConfig } from "@/features/channels/channel-config.schema";
-
-const publishingDestinationFieldClass =
-	"w-full text-sm text-foreground transition";
-
 import type { ChannelConfig } from "@/features/channels/channel-config.schema";
 
 import { publishingDestinationFieldClass } from "./publishing-destination-field-class";
@@ -97,23 +91,27 @@ export function DestinationScheduleFields({
 			<label className="text-sm font-medium" htmlFor="posting-frequency">
 				Posting frequency
 			</label>
-			<select
-				id="posting-frequency"
+			<Select
 				value={frequency}
 				disabled={isChangingFrequency}
-				onChange={(e) =>
-					onFrequencyChange(
-						e.target.value as ChannelConfig["posting_frequency"],
-					)
+				onValueChange={(v) =>
+					onFrequencyChange(v as ChannelConfig["posting_frequency"])
 				}
-				className={publishingDestinationFieldClass}
 			>
-				{FREQUENCY_OPTIONS.map((opt) => (
-					<option key={opt.value} value={opt.value}>
-						{opt.label}
-					</option>
-				))}
-			</select>
+				<SelectTrigger
+					id="posting-frequency"
+					className={publishingDestinationFieldClass}
+				>
+					<SelectValue />
+				</SelectTrigger>
+				<SelectContent>
+					{FREQUENCY_OPTIONS.map((opt) => (
+						<SelectItem key={opt.value} value={opt.value}>
+							{opt.label}
+						</SelectItem>
+					))}
+				</SelectContent>
+			</Select>
 			<p className="text-xs text-muted-foreground">
 				Klipse generates a new video for this channel at this interval. Changing
 				the frequency resets the next scheduled run.
