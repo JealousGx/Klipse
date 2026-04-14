@@ -5,8 +5,10 @@ import { and, eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import type { VideoJobArtifacts } from "@/db/schema/video-jobs";
 import { videoJobs } from "@/db/schema/video-jobs";
+import { users } from "@/db/schema/users";
 
 import { getChannelForUser } from "@/features/channels/channels.service.server";
+import type { MeResponse } from "@/features/user/types/me";
 
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
 import {
@@ -34,8 +36,10 @@ export async function processContentPrepareStage(jobId: string): Promise<void> {
 			status: videoJobs.status,
 			currentStage: videoJobs.currentStage,
 			artifacts: videoJobs.artifacts,
+			userPlan: users.plan,
 		})
 		.from(videoJobs)
+		.innerJoin(users, eq(videoJobs.userId, users.id))
 		.where(eq(videoJobs.id, id))
 		.limit(1);
 
@@ -117,6 +121,7 @@ export async function processContentPrepareStage(jobId: string): Promise<void> {
 			channel,
 			userId: row.userId,
 			jobId: id,
+			userPlan: (row.userPlan ?? "free") as MeResponse["plan"],
 		});
 
 		const artifacts: VideoJobArtifacts = {

@@ -8,11 +8,9 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-
 import type { ChannelConfig } from "@/features/channels/channel-config.schema";
 
-const publishingDestinationFieldClass =
-	"w-full text-sm text-foreground transition";
+import { publishingDestinationFieldClass } from "./publishing-destination-field-class";
 
 type ScheduleInfo = {
 	nextRunAt: Date;
@@ -94,14 +92,17 @@ export function DestinationScheduleFields({
 				Posting frequency
 			</label>
 			<Select
-				defaultValue={frequency}
-				onValueChange={(val) =>
-					onFrequencyChange(val as ChannelConfig["posting_frequency"])
-				}
+				value={frequency}
 				disabled={isChangingFrequency}
+				onValueChange={(v) =>
+					onFrequencyChange(v as ChannelConfig["posting_frequency"])
+				}
 			>
-				<SelectTrigger className={publishingDestinationFieldClass}>
-					<SelectValue placeholder="Select frequency" />
+				<SelectTrigger
+					id="posting-frequency"
+					className={publishingDestinationFieldClass}
+				>
+					<SelectValue />
 				</SelectTrigger>
 				<SelectContent>
 					{FREQUENCY_OPTIONS.map((opt) => (

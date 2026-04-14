@@ -17,4 +17,8 @@ export type PublishingDestinationChannel = {
 	oauthConnected: boolean;
 	/** External account id locked on first OAuth; reconnect must match. */
 	boundExternalAccountId: string | null;
+	/** Whether to generate AI background sound for videos on this channel (Creator+). */
+	soundEnabled: boolean;
+	/** Optional prompt hint for sound generation; null = auto-generate from brief. */
+	soundPromptHint: string | null;
 };

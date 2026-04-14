@@ -41,6 +41,10 @@ export type ChannelRow = {
 	 * Null until first successful connect.
 	 */
 	boundExternalAccountId: string | null;
+	/** Whether to generate AI background sound for videos (Creator+ only). */
+	soundEnabled: boolean;
+	/** Optional prompt hint for sound generation; null = auto-generate from channel brief. */
+	soundPromptHint: string | null;
 	createdAt: Date;
 	updatedAt: Date;
 };
@@ -59,6 +63,8 @@ function toChannelRow(r: typeof channels.$inferSelect): ChannelRow {
 		externalChannelThumbnailUrl: r.externalChannelThumbnailUrl ?? null,
 		oauthConnected: Boolean(r.oauthRefreshToken),
 		boundExternalAccountId: r.boundExternalAccountId ?? null,
+		soundEnabled: r.soundEnabled ?? true,
+		soundPromptHint: r.soundPromptHint ?? null,
 		createdAt: r.createdAt,
 		updatedAt: r.updatedAt,
 	};
@@ -236,6 +242,8 @@ export async function updateChannel(input: {
 	externalChannelTitle?: string | null;
 	externalChannelHandle?: string | null;
 	externalChannelThumbnailUrl?: string | null;
+	soundEnabled?: boolean;
+	soundPromptHint?: string | null;
 }): Promise<ChannelRow> {
 	const db = getDb();
 	const existing = await getChannelForUser(input.userId, input.channelId);
@@ -290,6 +298,15 @@ export async function updateChannel(input: {
 		if (!existing.boundExternalAccountId && existing.externalChannelId) {
 			patch.boundExternalAccountId = existing.externalChannelId.trim();
 		}
+	}
+	if (input.soundEnabled !== undefined) {
+		patch.soundEnabled = input.soundEnabled;
+	}
+	if (input.soundPromptHint !== undefined) {
+		patch.soundPromptHint =
+			input.soundPromptHint === null || input.soundPromptHint === ""
+				? null
+				: input.soundPromptHint.trim();
 	}
 
 	await db

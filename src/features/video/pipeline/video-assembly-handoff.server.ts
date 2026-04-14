@@ -75,6 +75,7 @@ export async function handoffVideoAssemblyToExternalProcessor(
 			userPlan: users.plan,
 			artifacts: videoJobs.artifacts,
 			channelConfig: channels.config,
+			channelSoundEnabled: channels.soundEnabled,
 		})
 		.from(videoJobs)
 		.innerJoin(users, eq(videoJobs.userId, users.id))
@@ -174,6 +175,9 @@ export async function handoffVideoAssemblyToExternalProcessor(
 			: {}),
 		...(art?.prepareRefs?.ttsAudioUrl
 			? { ttsAudioUrl: art.prepareRefs.ttsAudioUrl }
+			: {}),
+		...(art?.prepareRefs?.soundAudioUrl
+			? { soundAudioUrl: art.prepareRefs.soundAudioUrl }
 			: {}),
 	};
 

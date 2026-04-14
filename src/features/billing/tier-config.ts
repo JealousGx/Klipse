@@ -61,6 +61,14 @@ export function planAllowsScheduleFastForward(
 	return plan === "creator" || plan === "empire";
 }
 
+/**
+ * AI background sound generation is gated to Creator+ plans.
+ * Requires ElevenLabs API keys configured by an admin.
+ */
+export function planAllowsSoundGeneration(plan: MeResponse["plan"]): boolean {
+	return plan === "creator" || plan === "empire";
+}
+
 /** One-time credit packs (FEATURE_DOC §10.4). */
 export const CREDIT_ADDON_AMOUNTS = {
 	small: 750,

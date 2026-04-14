@@ -7,6 +7,7 @@ import {
 import { createAuthClient } from "better-auth/react";
 
 import { additionalUserFields } from "@/lib/auth/additional-user-fields";
+
 import { ac, adminRoles } from "./admin-access-control";
 
 export const authClient = createAuthClient({

@@ -10,11 +10,10 @@ import * as schema from "@/db/schema";
 
 import { env } from "@/env";
 import { createPolarBillingPlugin } from "@/features/billing/polar-plugin.server";
+import { ac, adminRoles } from "@/lib/auth/admin-access-control";
 import { additionalUserFields } from "@/lib/auth/additional-user-fields";
 import { sendAuthOTPEmail } from "@/lib/email/auth-otp";
 import { accountId, sessionId, userId, verificationId } from "@/lib/id";
-
-import { ac, adminRoles } from "./admin-access-control";
 
 const OTP_LENGTH = 6;
 const OTP_EXPIRATION_SECONDS = 600;

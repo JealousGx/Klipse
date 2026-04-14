@@ -7,6 +7,7 @@ import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
 import {
 	planAllowsPaidPublishingConnections,
 	planAllowsScheduleFastForward,
+	planAllowsSoundGeneration,
 } from "@/features/billing/tier-config";
 import type { ChannelConfig } from "@/features/channels/channel-config.schema";
 import {
@@ -46,6 +47,7 @@ export function usePublishingDestinationPage(
 	const userPlan = (session.user.plan ?? "free") as MeResponse["plan"];
 	const canConnectPublishing = planAllowsPaidPublishingConnections(userPlan);
 	const canTriggerNow = planAllowsScheduleFastForward(userPlan);
+	const canUseSoundGeneration = planAllowsSoundGeneration(userPlan);
 
 	const channelQuery = useQuery(channelQueryOptions(destinationId));
 	const scheduleQuery = useQuery(schedulingQueryOptions(destinationId));
@@ -56,8 +58,9 @@ export function usePublishingDestinationPage(
 	const [displayName, setDisplayName] = useState("");
 	const [niche, setNiche] = useState("");
 	const [autoPost, setAutoPost] = useState(false);
-	const [frequency, setFrequency] =
-		useState<ChannelConfig["posting_frequency"]>("weekly");
+	const [frequency, setFrequency] = useState<ChannelConfig["posting_frequency"]>("weekly");
+	const [soundEnabled, setSoundEnabled] = useState(true);
+	const [soundPromptHint, setSoundPromptHint] = useState("");
 
 	useEffect(() => {
 		let cancelled = false;
@@ -238,6 +241,73 @@ export function usePublishingDestinationPage(
 		},
 	});
 
+	const updateSoundEnabledMutation = useMutation({
+		mutationFn: async (next: boolean) => {
+			return updateChannelFn({
+				data: { channelId: destinationId, soundEnabled: next },
+			});
+		},
+		onSuccess: (r, next) => {
+			if (r.ok) {
+				setSoundEnabled(next);
+				toast.success(next ? "Background sound enabled" : "Background sound disabled");
+				void queryClient.invalidateQueries({ queryKey: ["channel", destinationId] });
+				return;
+			}
+			toast.error(r.message ?? "Could not save");
+		},
+		onError: () => toast.error("Could not save"),
+	});
+
+	const updateSoundPromptHintMutation = useMutation({
+		mutationFn: async () => {
+			return updateChannelFn({
+				data: {
+					channelId: destinationId,
+					soundPromptHint: soundPromptHint.trim() || null,
+				},
+			});
+		},
+		onSuccess: (r) => {
+			if (r.ok) {
+				toast.success("Sound prompt hint saved");
+				void queryClient.invalidateQueries({ queryKey: ["channel", destinationId] });
+				return;
+			}
+			toast.error(r.message ?? "Could not save");
+		},
+		onError: () => toast.error("Could not save"),
+	});
+
+	const updateFrequencyMutation = useMutation({
+		mutationFn: async (newFrequency: ChannelConfig["posting_frequency"]) => {
+			const c = queryClient.getQueryData(["channel", destinationId]) as
+				| { config: ChannelConfig }
+				| undefined;
+			if (!c) {
+				throw new Error("Channel not loaded");
+			}
+			return updateChannelFn({
+				data: {
+					channelId: destinationId,
+					config: { ...c.config, posting_frequency: newFrequency },
+				},
+			});
+		},
+		onSuccess: (r, newFrequency) => {
+			if (r.ok) {
+				setFrequency(newFrequency);
+				toast.success("Posting frequency updated");
+				void queryClient.invalidateQueries({
+					queryKey: ["channel", destinationId],
+				});
+				void queryClient.invalidateQueries({ queryKey: ["schedule", destinationId] });
+				return;
+			}
+			toast.error(r.message ?? "Could not save");
+		},
+	});
+
 	const updateLinkMutation = useMutation({
 		mutationFn: async (payload: {
 			platform: "unlinked" | "youtube";
@@ -341,6 +411,8 @@ export function usePublishingDestinationPage(
 		setNiche(ch.niche);
 		setAutoPost(ch.config.auto_post);
 		setFrequency(ch.config.posting_frequency);
+		setSoundEnabled(ch.soundEnabled);
+		setSoundPromptHint(ch.soundPromptHint ?? "");
 	}, [ch]);
 
 	const handleDisconnect = useCallback(() => {
@@ -424,6 +496,14 @@ export function usePublishingDestinationPage(
 		canTriggerNow,
 		onTriggerNow: () => triggerNowMutation.mutate(),
 		isTriggeringNow: triggerNowMutation.isPending,
+		soundEnabled,
+		onSoundEnabledChange: (next) => updateSoundEnabledMutation.mutate(next),
+		isSavingSoundEnabled: updateSoundEnabledMutation.isPending,
+		soundPromptHint,
+		onSoundPromptHintChange: setSoundPromptHint,
+		onSaveSoundPromptHint: () => updateSoundPromptHintMutation.mutate(),
+		isSavingSoundPromptHint: updateSoundPromptHintMutation.isPending,
+		canUseSoundGeneration,
 	};
 
 	return { status: "ready", viewProps };

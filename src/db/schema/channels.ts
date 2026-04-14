@@ -63,7 +63,7 @@ export const channels = mysqlTable(
 		 * Requires Creator+ plan. Generated via ElevenLabs Sound Generation API.
 		 * When false (default), no sound is generated and videos are voiceover-only.
 		 */
-		soundEnabled: boolean("sound_enabled").default(false).notNull(),
+		soundEnabled: boolean("sound_enabled").default(true).notNull(),
 		/**
 		 * Optional prompt hint for sound effect generation on this channel.
 		 * e.g. "calm ambient music", "upbeat electronic background"

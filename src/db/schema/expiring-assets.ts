@@ -34,7 +34,7 @@ export const expiringAssets = mysqlTable(
 		 * - `"output"` — final rendered video (plan-based retention)
 		 */
 		kind: varchar("kind", { length: 32 })
-			.$type<"tts_intermediate" | "output">()
+			.$type<"tts_intermediate" | "image_intermediate" | "sound_intermediate" | "output">()
 			.notNull(),
 		expiresAt: timestamp("expires_at", { fsp: 3 }).notNull(),
 		createdAt: timestamp("created_at", { fsp: 3 })
