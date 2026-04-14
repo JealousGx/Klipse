@@ -66,14 +66,16 @@ async function prepareTtsAsset(input: {
 		"audio/mpeg",
 	);
 
-	await getDb().insert(expiringAssets).values({
-		id: expiringAssetRowId(),
-		userId: input.userId,
-		logicalKey,
-		videoJobId: input.jobId,
-		kind: "tts_intermediate",
-		expiresAt: new Date(Date.now() + ASSET_TTL_MS),
-	});
+	await getDb()
+		.insert(expiringAssets)
+		.values({
+			id: expiringAssetRowId(),
+			userId: input.userId,
+			logicalKey,
+			videoJobId: input.jobId,
+			kind: "tts_intermediate",
+			expiresAt: new Date(Date.now() + ASSET_TTL_MS),
+		});
 
 	return publicUrl;
 }
@@ -105,14 +107,16 @@ async function prepareImageAsset(input: {
 		contentType,
 	);
 
-	await getDb().insert(expiringAssets).values({
-		id: expiringAssetRowId(),
-		userId: input.userId,
-		logicalKey,
-		videoJobId: input.jobId,
-		kind: "image_intermediate",
-		expiresAt: new Date(Date.now() + ASSET_TTL_MS),
-	});
+	await getDb()
+		.insert(expiringAssets)
+		.values({
+			id: expiringAssetRowId(),
+			userId: input.userId,
+			logicalKey,
+			videoJobId: input.jobId,
+			kind: "image_intermediate",
+			expiresAt: new Date(Date.now() + ASSET_TTL_MS),
+		});
 
 	return publicUrl;
 }
@@ -147,14 +151,16 @@ async function prepareSoundAsset(input: {
 		"audio/mpeg",
 	);
 
-	await getDb().insert(expiringAssets).values({
-		id: expiringAssetRowId(),
-		userId: input.userId,
-		logicalKey,
-		videoJobId: input.jobId,
-		kind: "sound_intermediate",
-		expiresAt: new Date(Date.now() + ASSET_TTL_MS),
-	});
+	await getDb()
+		.insert(expiringAssets)
+		.values({
+			id: expiringAssetRowId(),
+			userId: input.userId,
+			logicalKey,
+			videoJobId: input.jobId,
+			kind: "sound_intermediate",
+			expiresAt: new Date(Date.now() + ASSET_TTL_MS),
+		});
 
 	return publicUrl;
 }
@@ -182,24 +188,29 @@ export async function resolvePrepareRefs(input: {
 	const prompts = visualPromptsFromScript(input.scriptMarkdown);
 	const aspectRatio = input.channel.config.aspect_ratio ?? "16:9";
 
-	// TTS + images in parallel.
-	const [ttsAudioUrl, ...imageUrls] = await Promise.all([
-		prepareTtsAsset({
-			text: plainText,
-			voice,
-			userId: input.userId,
-			jobId: input.jobId,
-		}),
-		...prompts.map((prompt, i) =>
-			prepareImageAsset({
+	// TTS runs concurrently with image generation. Images are serialized (one at a time)
+	// to avoid hitting Replicate's burst=1 rate limit on lower-credit accounts.
+	const ttsPromise = prepareTtsAsset({
+		text: plainText,
+		voice,
+		userId: input.userId,
+		jobId: input.jobId,
+	});
+
+	const imageUrls: string[] = [];
+	for (const [i, prompt] of prompts.entries()) {
+		imageUrls.push(
+			await prepareImageAsset({
 				prompt,
 				aspectRatio,
 				userId: input.userId,
 				jobId: input.jobId,
 				index: i,
 			}),
-		),
-	]);
+		);
+	}
+
+	const ttsAudioUrl = await ttsPromise;
 
 	// Sound: runs after TTS (needs targetSeconds); extends the prepare stage when enabled.
 	const soundAudioUrl =
