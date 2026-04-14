@@ -8,7 +8,7 @@
  * - TTS:     Google Cloud TTS (1M Neural2 chars/month free) → Unreal Speech (250K/month free)
  *
  * OpenRouter model chain (all configurable via env):
- *   Primary:   OPENROUTER_SCRIPT_MODEL            (default: openrouter/auto)
+ *   Primary:   OPENROUTER_SCRIPT_MODEL            (default: openrouter/free)
  *   Fallbacks: OPENROUTER_SCRIPT_FALLBACK_MODELS  (default: google/gemini-2.5-flash,meta-llama/llama-4-scout:free)
  *
  * Provider docs:
@@ -31,7 +31,7 @@ export type AiTask = (typeof AI_TASK)[keyof typeof AI_TASK];
 /** Defaults — all overridable via env vars. */
 export const DEFAULT_MODEL_IDS = {
 	/** OpenRouter auto-router — picks best available free model per request. */
-	openRouterScript: "openrouter/auto",
+	openRouterScript: "openrouter/free",
 	/** OpenRouter FLUX.2 Pro — currently free. */
 	openRouterImage: "black-forest-labs/flux.2-pro",
 	/** Google Cloud TTS default voice (Chirp HD = highest quality free tier). */

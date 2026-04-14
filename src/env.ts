@@ -70,10 +70,10 @@ export const env = createEnv({
 		OPENROUTER_API_KEYS: z.string().optional(),
 		/**
 		 * Primary model for script generation.
-		 * @default openrouter/auto — auto-selects best available free model
+		 * @default openrouter/free — auto-selects best available free model
 		 * Other options: google/gemini-2.5-flash, meta-llama/llama-4-scout:free, openai/gpt-oss-120b:free
 		 */
-		OPENROUTER_SCRIPT_MODEL: z.string().min(1).default("openrouter/auto"),
+		OPENROUTER_SCRIPT_MODEL: z.string().min(1).default("openrouter/free"),
 		/**
 		 * Comma-separated fallback model IDs passed in OpenRouter's `models[]` array.
 		 * OpenRouter tries them in order if the primary model fails.
@@ -134,7 +134,11 @@ export const env = createEnv({
 		 * Default duration (seconds) for generated sound effects.
 		 * @default 5  Range: 0.5–22
 		 */
-		ELEVENLABS_SOUND_DURATION_SECONDS: z.coerce.number().min(0.5).max(22).default(5),
+		ELEVENLABS_SOUND_DURATION_SECONDS: z.coerce
+			.number()
+			.min(0.5)
+			.max(22)
+			.default(5),
 
 		/**
 		 * Better Auth `session.cookieCache.maxAge` (seconds). After Polar checkout we
