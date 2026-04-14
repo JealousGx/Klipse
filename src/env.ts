@@ -70,10 +70,13 @@ export const env = createEnv({
 		OPENROUTER_API_KEYS: z.string().optional(),
 		/**
 		 * Primary model for script generation.
-		 * @default openrouter/free — auto-selects best available free model
+		 * @default nvidia/nemotron-nano-12b-v2-vl:free
 		 * Other options: google/gemini-2.5-flash, meta-llama/llama-4-scout:free, openai/gpt-oss-120b:free
 		 */
-		OPENROUTER_SCRIPT_MODEL: z.string().min(1).default("openrouter/free"),
+		OPENROUTER_SCRIPT_MODEL: z
+			.string()
+			.min(1)
+			.default("google/gemma-4-26b-a4b-it:free"),
 		/**
 		 * Comma-separated fallback model IDs passed in OpenRouter's `models[]` array.
 		 * OpenRouter tries them in order if the primary model fails.
@@ -82,15 +85,17 @@ export const env = createEnv({
 		OPENROUTER_SCRIPT_FALLBACK_MODELS: z
 			.string()
 			.min(1)
-			.default("google/gemini-2.5-flash,meta-llama/llama-4-scout:free"),
+			.default(
+				"google/gemma-4-26b-a4b-it:free,nvidia/nemotron-nano-12b-v2-vl:free",
+			),
 		/**
-		 * Image generation model via OpenRouter (free FLUX.2 variants).
-		 * @default black-forest-labs/flux.2-pro
+		 * Image generation model via OpenRouter
+		 * @default google/gemma-4-26b-a4b-it:free
 		 */
 		OPENROUTER_IMAGE_MODEL: z
 			.string()
 			.min(1)
-			.default("black-forest-labs/flux.2-pro"),
+			.default("nvidia/nemotron-nano-12b-v2-vl:free"),
 
 		// -------------------------------------------------------------------------
 		// Google Cloud TTS — primary TTS (1M Neural2 chars/month free)
