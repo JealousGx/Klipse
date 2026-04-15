@@ -2,44 +2,37 @@ import "@tanstack/react-start/server-only";
 
 import type { ProcessorProviderKeys } from "@klipse/video-assembly-shared";
 
-import { listProviderApiKeyCredentials } from "./provider-api-keys.server";
+import { listAllProcessorProviderKeyCredentials } from "./provider-api-keys.server";
 
 /**
- * Fetches all active provider keys from DB and bundles them for `ProcessorJobSpec`.
- * The processor tries keys in the returned order, reporting failures back via callback.
+ * Fetches all active provider keys from DB in two queries (grouped count + bulk SELECT)
+ * and bundles them for `ProcessorJobSpec`. Previously made five parallel DB calls.
  */
 export async function bundleProviderKeysForProcessor(): Promise<ProcessorProviderKeys> {
-	const [openrouter, googleTts, replicate, unrealSpeech, elevenlabs] =
-		await Promise.all([
-			listProviderApiKeyCredentials("openrouter"),
-			listProviderApiKeyCredentials("google_tts"),
-			listProviderApiKeyCredentials("replicate"),
-			listProviderApiKeyCredentials("unreal_speech"),
-			listProviderApiKeyCredentials("elevenlabs"),
-		]);
+	const all = await listAllProcessorProviderKeyCredentials();
 
 	return {
-		openrouter: openrouter.map((k) => ({
+		openrouter: all.openrouter.map((k) => ({
 			id: k.id,
 			secret: k.secret,
 			modelId: k.modelId,
 		})),
-		googleTts: googleTts.map((k) => ({
+		googleTts: all.google_tts.map((k) => ({
 			id: k.id,
 			secret: k.secret,
 			modelId: k.modelId,
 		})),
-		replicate: replicate.map((k) => ({
+		replicate: all.replicate.map((k) => ({
 			id: k.id,
 			secret: k.secret,
 			modelId: k.modelId,
 		})),
-		unrealSpeech: unrealSpeech.map((k) => ({
+		unrealSpeech: all.unreal_speech.map((k) => ({
 			id: k.id,
 			secret: k.secret,
 			modelId: k.modelId,
 		})),
-		elevenlabs: elevenlabs.map((k) => ({
+		elevenlabs: all.elevenlabs.map((k) => ({
 			id: k.id,
 			secret: k.secret,
 			modelId: k.modelId,
