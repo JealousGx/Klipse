@@ -17,6 +17,7 @@ export type VideoProcessorWebhookInput = {
 	userId: string;
 	status: "completed" | "failed";
 	error?: string;
+	scriptText?: string;
 };
 
 export type VideoProcessorWebhookResult =
@@ -81,6 +82,9 @@ export async function applyVideoProcessorWebhook(
 				outputUrl,
 				errorMessage: null,
 				updatedAt: new Date(),
+				...(input.scriptText
+					? { artifacts: { scriptText: input.scriptText } }
+					: {}),
 			})
 			.where(
 				and(

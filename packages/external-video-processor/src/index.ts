@@ -80,16 +80,8 @@ function isProcessorJobSpec(x: unknown): x is ProcessorJobSpec {
 		(o.callbackBaseUrl as string).startsWith("http") &&
 		typeof o.callbackSecret === "string" &&
 		o.callbackSecret.length > 0 &&
-		// presignedUrls — validate all required URLs are non-empty strings
+		// presignedUrls — only the final video upload URL is required
 		urls !== undefined &&
-		typeof urls.ttsAudio === "string" &&
-		urls.ttsAudio.length > 0 &&
-		Array.isArray(urls.images) &&
-		(urls.images as unknown[]).length >= 3 &&
-		(urls.images as unknown[]).every(
-			(u) => typeof u === "string" && u.length > 0,
-		) &&
-		(urls.soundAudio === null || typeof urls.soundAudio === "string") &&
 		typeof urls.outputVideo === "string" &&
 		urls.outputVideo.length > 0 &&
 		// providerKeys — require all five arrays to be present

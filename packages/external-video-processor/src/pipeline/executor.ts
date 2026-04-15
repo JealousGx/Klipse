@@ -81,7 +81,7 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 			...ctx,
 			ok: true,
 		});
-		await reportComplete(spec, "completed");
+		await reportComplete(spec, "completed", undefined, scriptMarkdown);
 	} catch (e) {
 		const msg = formatError(e);
 		logTiming("executor", "job.failed", Date.now() - jobStart, {

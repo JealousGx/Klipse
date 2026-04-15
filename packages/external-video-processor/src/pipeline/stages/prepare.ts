@@ -5,7 +5,6 @@ import { generateImage } from "../../providers/image-gen";
 import { generateSound } from "../../providers/sound-gen";
 import { synthesizeSpeech } from "../../providers/tts-gen";
 import { reportProgress } from "../../utils/callbacks";
-import { uploadBufferToPresignedUrl } from "../../utils/r2-upload";
 
 const IMAGE_COUNT = 3;
 
@@ -79,7 +78,7 @@ export type PreparedAssets = {
 };
 
 /**
- * Stage 2: Generate and upload TTS audio, images, and optional sound to R2.
+ * Stage 2: Generate TTS audio, images, and optional sound; write to local tmpDir only.
  * Images are generated sequentially to avoid Replicate burst=1 rate limit.
  * TTS runs concurrently with image generation.
  */
@@ -90,12 +89,6 @@ export async function runPrepareStage(
 	tmpDir: { path: (suffix: string) => string },
 ): Promise<PreparedAssets> {
 	await reportProgress(spec, "prepare", 5);
-
-	if (spec.presignedUrls.images.length < IMAGE_COUNT) {
-		throw new Error(
-			`prepare_missing_presigned_urls: expected ${IMAGE_COUNT} image URLs, got ${spec.presignedUrls.images.length}`,
-		);
-	}
 
 	const prompts = visualPromptsFromScript(scriptMarkdown);
 
@@ -108,11 +101,6 @@ export async function runPrepareStage(
 		const buf = await generateImage(spec, prompts[i] ?? "");
 		const p = tmpDir.path(`img-${i}.webp`);
 		await writeFile(p, Buffer.from(buf));
-		await uploadBufferToPresignedUrl(
-			spec.presignedUrls.images[i] as string,
-			Buffer.from(buf),
-			"image/webp",
-		);
 		imagePaths.push(p);
 		await reportProgress(spec, "prepare", 20 + i * 20);
 	}
@@ -120,23 +108,13 @@ export async function runPrepareStage(
 	const ttsBuf = await ttsPromise;
 	const ttsAudioPath = tmpDir.path("tts.mp3");
 	await writeFile(ttsAudioPath, Buffer.from(ttsBuf));
-	await uploadBufferToPresignedUrl(
-		spec.presignedUrls.ttsAudio,
-		Buffer.from(ttsBuf),
-		"audio/mpeg",
-	);
 	await reportProgress(spec, "prepare", 85);
 
 	let soundAudioPath: string | null = null;
 	const soundBuf = await generateSound(spec);
-	if (soundBuf && spec.presignedUrls.soundAudio) {
+	if (soundBuf) {
 		soundAudioPath = tmpDir.path("sound.mp3");
 		await writeFile(soundAudioPath, Buffer.from(soundBuf));
-		await uploadBufferToPresignedUrl(
-			spec.presignedUrls.soundAudio,
-			Buffer.from(soundBuf),
-			"audio/mpeg",
-		);
 	}
 
 	await reportProgress(spec, "prepare", 100);

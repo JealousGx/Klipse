@@ -170,15 +170,6 @@ export async function handoffVideoAssemblyToExternalProcessor(
 		targetDuration,
 		aspectRatio,
 		...(art?.scriptText ? { scriptText: art.scriptText } : {}),
-		...(art?.prepareRefs?.imageUrls?.length
-			? { imageUrls: art.prepareRefs.imageUrls }
-			: {}),
-		...(art?.prepareRefs?.ttsAudioUrl
-			? { ttsAudioUrl: art.prepareRefs.ttsAudioUrl }
-			: {}),
-		...(art?.prepareRefs?.soundAudioUrl
-			? { soundAudioUrl: art.prepareRefs.soundAudioUrl }
-			: {}),
 	};
 
 	try {

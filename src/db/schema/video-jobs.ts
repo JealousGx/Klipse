@@ -18,20 +18,9 @@ export type VideoJobInputPayload = {
 	idea: string;
 };
 
-/** HTTPS asset URLs for the external processor to fetch — uploaded to R2, 2h TTL. */
-export type VideoJobPrepareRefs = {
-	imageUrls: string[];
-	/** R2 URL for TTS audio (uploaded during prepare stage). */
-	ttsAudioUrl: string;
-	/** R2 URL for background sound effect — Creator+ only, absent when disabled/ungated. */
-	soundAudioUrl?: string;
-};
-
 /** Intermediate outputs produced by multi-stage pipelines (script text, etc.). */
 export type VideoJobArtifacts = {
 	scriptText?: string;
-	/** Populated after the prepare stage (parallel media + TTS URL resolution). */
-	prepareRefs?: VideoJobPrepareRefs;
 };
 
 export const videoJobs = mysqlTable(
