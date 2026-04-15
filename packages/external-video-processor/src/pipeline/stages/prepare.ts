@@ -47,6 +47,12 @@ export async function runPrepareStage(
 ): Promise<PreparedAssets> {
 	await reportProgress(spec, "prepare", 5);
 
+	if (spec.presignedUrls.images.length < IMAGE_COUNT) {
+		throw new Error(
+			`prepare_missing_presigned_urls: expected ${IMAGE_COUNT} image URLs, got ${spec.presignedUrls.images.length}`,
+		);
+	}
+
 	const prompts = visualPromptsFromScript(scriptMarkdown);
 
 	// TTS runs concurrently with image generation.
@@ -59,7 +65,7 @@ export async function runPrepareStage(
 		const p = tmpDir.path(`img-${i}.webp`);
 		await writeFile(p, Buffer.from(buf));
 		await uploadBufferToPresignedUrl(
-			spec.presignedUrls.images[i] ?? "",
+			spec.presignedUrls.images[i] as string,
 			Buffer.from(buf),
 			"image/webp",
 		);

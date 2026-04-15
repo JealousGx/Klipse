@@ -1,11 +1,15 @@
 import type { ProcessorJobSpec } from "@klipse/video-assembly-shared";
 
+import { BoundedSet } from "../utils/bounded-set";
 import { executeJob } from "./executor";
 
 /** Jobs currently being processed or queued. Cleared when pipeline finishes. */
 const activeSpecJobIds = new Set<string>();
-/** Terminal jobs (complete callback delivered). Prevents duplicate processing. */
-const finishedSpecJobIds = new Set<string>();
+/**
+ * Terminal jobs — prevents duplicate processing on replayed requests.
+ * BoundedSet caps at 2000 entries to avoid memory growth on long-lived instances.
+ */
+const finishedSpecJobIds = new BoundedSet(2_000);
 
 const specQueue: ProcessorJobSpec[] = [];
 let specPumpScheduled = false;

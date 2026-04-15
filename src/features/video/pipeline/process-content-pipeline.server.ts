@@ -8,7 +8,7 @@ import {
 	dispatchContentJob,
 	isContentProcessorConfigured,
 } from "./dispatch-content-job.server";
-import { PIPELINE_KIND } from "./pipeline-kind";
+import { PIPELINE_KIND, PIPELINE_STAGE } from "./pipeline-kind";
 import { markVideoJobFailed } from "./process-stub-pipeline.server";
 
 /**
@@ -20,7 +20,11 @@ export async function processContentPipelineJob(jobId: string): Promise<void> {
 	const id = jobId.trim();
 
 	const [row] = await db
-		.select({ pipelineKind: videoJobs.pipelineKind, status: videoJobs.status })
+		.select({
+			pipelineKind: videoJobs.pipelineKind,
+			status: videoJobs.status,
+			currentStage: videoJobs.currentStage,
+		})
 		.from(videoJobs)
 		.where(eq(videoJobs.id, id))
 		.limit(1);
@@ -30,7 +34,14 @@ export async function processContentPipelineJob(jobId: string): Promise<void> {
 		throw new Error("video_job_pipeline_mismatch");
 	}
 	if (row.status === "completed" || row.status === "failed") return;
-	if (row.status !== "queued") return;
+
+	// Re-attempt dispatch if the job was claimed (status=dispatched) but the
+	// spec POST never reached the processor (crash between CAS and fetch).
+	const isStuckDispatch =
+		row.status === "dispatched" &&
+		row.currentStage === PIPELINE_STAGE.DISPATCH_PENDING;
+
+	if (row.status !== "queued" && !isStuckDispatch) return;
 
 	if (!isContentProcessorConfigured()) {
 		await markVideoJobFailed({

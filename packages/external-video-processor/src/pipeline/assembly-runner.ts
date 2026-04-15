@@ -1,10 +1,15 @@
 import type { VideoProcessorHandoffPayload } from "@klipse/video-assembly-shared";
 
+import { BoundedSet } from "../utils/bounded-set";
 import { runAssemblyJob } from "./assembly";
 
 /** Assembly-only jobs (video_assemble_v1): active/finished tracking for idempotency. */
 const activeJobIds = new Set<string>();
-const finishedJobIds = new Set<string>();
+/**
+ * Finished jobs — prevents duplicate processing on replayed requests.
+ * BoundedSet caps at 2000 entries to avoid memory growth on long-lived instances.
+ */
+const finishedJobIds = new BoundedSet(2_000);
 
 const queue: VideoProcessorHandoffPayload[] = [];
 let pumpScheduled = false;

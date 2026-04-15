@@ -48,17 +48,57 @@ function isHandoffPayload(x: unknown): x is VideoProcessorHandoffPayload {
 function isProcessorJobSpec(x: unknown): x is ProcessorJobSpec {
 	if (!x || typeof x !== "object") return false;
 	const o = x as Record<string, unknown>;
+
+	const urls = o.presignedUrls as Record<string, unknown> | undefined;
+	const keys = o.providerKeys as Record<string, unknown> | undefined;
+
 	return (
+		// Core identity
 		typeof o.jobId === "string" &&
 		o.jobId.length > 0 &&
 		typeof o.userId === "string" &&
 		o.userId.length > 0 &&
+		typeof o.channelId === "string" &&
+		o.channelId.length > 0 &&
+		// Script prompts
 		typeof o.scriptSystemPrompt === "string" &&
 		typeof o.scriptUserPrompt === "string" &&
+		// Model config
+		Array.isArray(o.openrouterScriptModels) &&
+		typeof o.openrouterImageModel === "string" &&
+		typeof o.ttsVoice === "string" &&
+		// Video config
+		typeof o.targetDuration === "number" &&
+		o.targetDuration > 0 &&
+		(o.aspectRatio === "16:9" ||
+			o.aspectRatio === "9:16" ||
+			o.aspectRatio === "1:1") &&
+		typeof o.freeTierWatermark === "boolean" &&
+		typeof o.watermarkLabel === "string" &&
+		// Callback
 		typeof o.callbackBaseUrl === "string" &&
 		(o.callbackBaseUrl as string).startsWith("http") &&
 		typeof o.callbackSecret === "string" &&
-		o.callbackSecret.length > 0
+		o.callbackSecret.length > 0 &&
+		// presignedUrls — validate all required URLs are non-empty strings
+		urls !== undefined &&
+		typeof urls.ttsAudio === "string" &&
+		urls.ttsAudio.length > 0 &&
+		Array.isArray(urls.images) &&
+		(urls.images as unknown[]).length >= 3 &&
+		(urls.images as unknown[]).every(
+			(u) => typeof u === "string" && u.length > 0,
+		) &&
+		(urls.soundAudio === null || typeof urls.soundAudio === "string") &&
+		typeof urls.outputVideo === "string" &&
+		urls.outputVideo.length > 0 &&
+		// providerKeys — require all five arrays to be present
+		keys !== undefined &&
+		Array.isArray(keys.openrouter) &&
+		Array.isArray(keys.googleTts) &&
+		Array.isArray(keys.replicate) &&
+		Array.isArray(keys.unrealSpeech) &&
+		Array.isArray(keys.elevenlabs)
 	);
 }
 

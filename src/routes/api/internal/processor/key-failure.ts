@@ -59,6 +59,7 @@ export const Route = createFileRoute("/api/internal/processor/key-failure")({
 				const [key] = await getDb()
 					.select({
 						id: providerApiKeys.id,
+						provider: providerApiKeys.provider,
 						quotaResetAt: providerApiKeys.quotaResetAt,
 					})
 					.from(providerApiKeys)
@@ -66,6 +67,15 @@ export const Route = createFileRoute("/api/internal/processor/key-failure")({
 					.limit(1);
 
 				if (!key) return Response.json({ ok: true, skipped: "key_not_found" });
+
+				// Guard against provider mismatch — a wrong provider string would apply
+				// incorrect cooldown/quotaReset logic.
+				if (key.provider !== provider) {
+					return Response.json(
+						{ ok: false, error: "provider_mismatch" },
+						{ status: 400 },
+					);
+				}
 
 				const retryAfterAt = parseRetryAfterHeader(retryAfterHeader);
 				const err = new ProviderHttpError(

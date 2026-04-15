@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { z } from "zod";
 
 import { getDb } from "@/db";
@@ -50,11 +50,16 @@ export const Route = createFileRoute("/api/internal/processor/progress")({
 				const { jobId, stage, progress } = parsed.data;
 				const currentStage = STAGE_MAP[stage] ?? stage;
 
+				// Accept progress from both "dispatched" and "processing" to avoid
+				// dropping callbacks that arrive before the app flips dispatched → processing.
 				await getDb()
 					.update(videoJobs)
 					.set({ currentStage, progress, updatedAt: new Date() })
 					.where(
-						and(eq(videoJobs.id, jobId), eq(videoJobs.status, "processing")),
+						and(
+							eq(videoJobs.id, jobId),
+							inArray(videoJobs.status, ["dispatched", "processing"]),
+						),
 					);
 
 				return Response.json({ ok: true });

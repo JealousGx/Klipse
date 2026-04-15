@@ -1,7 +1,7 @@
 import "@tanstack/react-start/server-only";
 
 import type { ProcessorJobSpec } from "@klipse/video-assembly-shared";
-import { and, eq } from "drizzle-orm";
+import { and, eq, or } from "drizzle-orm";
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
 import { env } from "@/env";
@@ -38,14 +38,20 @@ export function isContentProcessorConfigured(): boolean {
 
 /**
  * Dispatches a content_pipeline_v1 job to the external processor (Cloud Run).
- * Sets job to dispatch_pending → builds ProcessorJobSpec → POSTs to processor → processing.
+ * Transitions: queued → dispatched (status) / dispatch_pending (stage) → builds
+ * ProcessorJobSpec → POSTs to processor → processing / script.
  * The processor handles: script → TTS + images + sound → FFmpeg → R2 upload → callback.
+ *
+ * Also re-dispatches if job is stuck in dispatched + dispatch_pending (crash between
+ * the CAS claim and the fetch to the processor).
  */
 export async function dispatchContentJob(jobId: string): Promise<void> {
 	const db = getDb();
 	const id = jobId.trim();
 
-	// Claim: queued → dispatch_pending (CAS to prevent duplicate dispatch).
+	// Claim: queued → dispatched/dispatch_pending.
+	// Also covers the crash-recovery case: dispatched + dispatch_pending (spec POST
+	// never reached the processor) — re-sets updatedAt so the row appears active.
 	const claim = await db
 		.update(videoJobs)
 		.set({
@@ -54,7 +60,18 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 			currentStage: PIPELINE_STAGE.DISPATCH_PENDING,
 			updatedAt: new Date(),
 		})
-		.where(and(eq(videoJobs.id, id), eq(videoJobs.status, "queued")));
+		.where(
+			and(
+				eq(videoJobs.id, id),
+				or(
+					eq(videoJobs.status, "queued"),
+					and(
+						eq(videoJobs.status, "dispatched"),
+						eq(videoJobs.currentStage, PIPELINE_STAGE.DISPATCH_PENDING),
+					),
+				),
+			),
+		);
 
 	if (mysqlAffectedRowsFromUpdateResult(claim) === 0) {
 		return; // already dispatched or terminal
