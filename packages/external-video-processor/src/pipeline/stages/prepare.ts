@@ -1,5 +1,5 @@
-import { writeFile } from "node:fs/promises";
 import type { ProcessorJobSpec } from "@klipse/video-assembly-shared";
+import { writeFile } from "node:fs/promises";
 
 import { generateImage } from "../../providers/image-gen";
 import { generateSound } from "../../providers/sound-gen";
@@ -9,21 +9,65 @@ import { uploadBufferToPresignedUrl } from "../../utils/r2-upload";
 
 const IMAGE_COUNT = 3;
 
-/** Extracts up to IMAGE_COUNT visual prompts from script markdown (paragraph lines). */
+/** Strips markdown syntax, leaving plain text. */
+function stripMarkdown(s: string): string {
+	return s
+		.replace(/^#+\s*/, "") // headings
+		.replace(/\*{1,3}([^*]*)\*{1,3}/g, "$1") // bold/italic
+		.replace(/_{1,3}([^_]*)_{1,3}/g, "$1") // underscore bold/italic
+		.replace(/\[([^\]]+)\]\([^)]*\)/g, "$1") // links
+		.replace(/`[^`]*`/g, "") // inline code
+		.replace(/[*_~`>#]/g, "") // stray symbols
+		.replace(/\s+/g, " ")
+		.trim();
+}
+
+/**
+ * Primary: extracts the dedicated **Visual scenes** section (numbered list 1. 2. 3.)
+ * that the script generation prompt explicitly produces.
+ *
+ * Fallback: heuristic scan of script body lines (filters out headings/metadata).
+ */
 function visualPromptsFromScript(markdown: string): string[] {
+	// --- Primary: parse "Visual scenes" section ---
+	const visualSectionMatch = markdown.match(
+		/\*{0,2}Visual scenes?\*{0,2}[^\n]*\n([\s\S]*?)(?=\n\*{0,2}[A-Z]|\n#{1,3}|\s*$)/i,
+	);
+	if (visualSectionMatch) {
+		const section = visualSectionMatch[1] ?? "";
+		const items = section
+			.split(/\n/)
+			.map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim()) // strip "1. " or "1) "
+			.map(stripMarkdown)
+			.filter((s) => s.length > 15);
+		if (items.length >= IMAGE_COUNT) {
+			return items.slice(0, IMAGE_COUNT).map((s) => s.slice(0, 800));
+		}
+	}
+
+	// --- Fallback: heuristic body-line scan ---
 	const lines = markdown
 		.split(/\n+/)
-		.map((s) => s.replace(/^#+\s*/, "").trim())
-		.filter(Boolean);
+		.map(stripMarkdown)
+		.filter((s) => {
+			if (s.length < 30) return false;
+			if (
+				/^(Script for|short.?form|channel|section|part \d|scene \d|visual scenes?)/i.test(
+					s,
+				)
+			)
+				return false;
+			if (/^\[.*\]$/.test(s)) return false;
+			return true;
+		});
 
 	const out: string[] = [];
 	for (const line of lines) {
 		if (out.length >= IMAGE_COUNT) break;
-		const chunk = line.slice(0, 400);
-		if (chunk.length > 0) out.push(chunk);
+		out.push(line.slice(0, 800));
 	}
 	while (out.length < IMAGE_COUNT) {
-		out.push(out[0] ?? "cinematic imagery, soft lighting, high detail");
+		out.push(out[0] ?? "cinematic imagery, dramatic lighting, high detail");
 	}
 	return out.slice(0, IMAGE_COUNT);
 }

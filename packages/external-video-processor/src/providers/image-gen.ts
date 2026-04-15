@@ -96,6 +96,8 @@ async function replicateImage(
 				version: modelId,
 				input: {
 					prompt,
+					negative_prompt:
+						"nsfw, nudity, explicit, sexual content, inappropriate",
 					aspect_ratio: aspectRatio,
 					output_format: "webp",
 					output_quality: 85,
@@ -160,6 +162,25 @@ async function pollReplicate(secret: string, getUrl: string): Promise<string> {
 	throw new Error("replicate_timeout");
 }
 
+function isNsfwError(e: unknown): boolean {
+	return e instanceof Error && e.message.toLowerCase().includes("nsfw");
+}
+
+/**
+ * Strips words that commonly trigger NSFW classifiers and appends artistic framing.
+ * Applied on first NSFW rejection; if that also fails we propagate the error.
+ */
+function sanitizePrompt(prompt: string): string {
+	const stripped = prompt
+		.replace(
+			/\b(nude|naked|sexy|intimate|sensual|erotic|exposed|revealing)\b/gi,
+			"",
+		)
+		.replace(/\s{2,}/g, " ")
+		.trim();
+	return `${stripped}, cinematic, artistic, professional photography`;
+}
+
 /** Generates one image: tries OpenRouter keys first, then Replicate. */
 export async function generateImage(
 	spec: ProcessorJobSpec,
@@ -190,22 +211,31 @@ export async function generateImage(
 	}
 
 	for (const key of spec.providerKeys.replicate) {
-		try {
-			return await replicateImage(key, prompt, aspectRatio);
-		} catch (e) {
-			lastError = e;
-			if (isHttpErr(e)) {
-				await reportKeyFailure(
-					spec,
-					"replicate",
-					key.id,
-					e.httpStatus,
-					e.bodySnippet,
-					e.retryAfterHeader,
-				);
-				continue;
+		// Per key: try original prompt, then sanitized prompt on NSFW.
+		let p = prompt;
+		for (let nsfwAttempt = 0; nsfwAttempt <= 1; nsfwAttempt++) {
+			try {
+				return await replicateImage(key, p, aspectRatio);
+			} catch (e) {
+				if (isNsfwError(e) && nsfwAttempt === 0) {
+					p = sanitizePrompt(prompt);
+					continue; // retry same key with sanitized prompt
+				}
+				lastError = e;
+				if (isHttpErr(e)) {
+					await reportKeyFailure(
+						spec,
+						"replicate",
+						key.id,
+						e.httpStatus,
+						e.bodySnippet,
+						e.retryAfterHeader,
+					);
+				} else if (!isNsfwError(e)) {
+					throw e;
+				}
+				break; // move to next key
 			}
-			throw e;
 		}
 	}
 
