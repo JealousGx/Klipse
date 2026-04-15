@@ -4,6 +4,7 @@ import type {
 } from "@klipse/video-assembly-shared";
 
 import { reportKeyFailure } from "../utils/callbacks";
+import { withTiming } from "../utils/logger";
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 
@@ -92,7 +93,9 @@ export async function generateScript(spec: ProcessorJobSpec): Promise<string> {
 	let lastError: unknown;
 	for (const key of keys) {
 		try {
-			return await callOpenRouterText(key, models, system, user);
+			return await withTiming("script-gen", "openrouter.call", () =>
+				callOpenRouterText(key, models, system, user),
+			);
 		} catch (e) {
 			lastError = e;
 			if (isHttpErr(e) && shouldRotate(e.httpStatus)) {

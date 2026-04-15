@@ -4,6 +4,7 @@ import type {
 } from "@klipse/video-assembly-shared";
 
 import { reportKeyFailure } from "../utils/callbacks";
+import { withTiming } from "../utils/logger";
 
 const GOOGLE_TTS_BASE =
 	"https://texttospeech.googleapis.com/v1/text:synthesize";
@@ -145,7 +146,9 @@ export async function synthesizeSpeech(
 
 	for (const key of spec.providerKeys.googleTts) {
 		try {
-			return await googleTts(key, text);
+			return await withTiming("tts-gen", "google_tts.call", () =>
+				googleTts(key, text),
+			);
 		} catch (e) {
 			lastError = e;
 			if (isHttpErr(e)) {
@@ -165,7 +168,9 @@ export async function synthesizeSpeech(
 
 	for (const key of spec.providerKeys.unrealSpeech) {
 		try {
-			return await unrealSpeechTts(key, text, spec.ttsVoice);
+			return await withTiming("tts-gen", "unreal_speech.call", () =>
+				unrealSpeechTts(key, text, spec.ttsVoice),
+			);
 		} catch (e) {
 			lastError = e;
 			if (isHttpErr(e)) {

@@ -19,6 +19,7 @@ import { buildScriptPrompts } from "@/features/ai/script-generation.server";
 import { parseChannelConfig } from "@/features/channels/channel-config.schema";
 import { clampTargetDuration } from "@/features/entitlements";
 import type { MeResponse } from "@/features/user/types/me";
+import { withPerfTiming } from "@/lib/perf-timing";
 import { generateJobPresignedUrls } from "@/lib/storage/r2-presigned.server";
 import { getAppPublicBaseUrl } from "@/lib/video-processor/app-base-url.server";
 
@@ -107,14 +108,19 @@ export async function buildProcessorJobSpec(
 			)
 		: null;
 
-	const [providerKeys, presignedUrls] = await Promise.all([
-		bundleProviderKeysForProcessor(),
-		generateJobPresignedUrls({
-			userId: job.userId,
-			jobId: id,
-			withSound: isSoundEligible,
-		}),
-	]);
+	const [providerKeys, presignedUrls] = await withPerfTiming(
+		"spec_build.io",
+		{ jobId: id, userId: job.userId },
+		() =>
+			Promise.all([
+				bundleProviderKeysForProcessor(),
+				generateJobPresignedUrls({
+					userId: job.userId,
+					jobId: id,
+					withSound: isSoundEligible,
+				}),
+			]),
+	);
 
 	return {
 		jobId: id,
