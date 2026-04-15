@@ -1,5 +1,6 @@
 import type { ProcessorJobSpec } from "@klipse/video-assembly-shared";
 import { reportComplete } from "../utils/callbacks";
+import { logEvent, logTiming, withTiming } from "../utils/logger";
 import { cleanupFiles, tmpPath } from "../utils/temp-file";
 import { runAssembleStage } from "./stages/assemble";
 import { runPrepareStage } from "./stages/prepare";
@@ -25,30 +26,59 @@ function formatError(e: unknown): string {
  * Always calls the complete callback (success or failure) before returning.
  */
 export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
-	const tmpDir = makeTmpDir(spec.jobId);
+	const { jobId, channelId } = spec;
+	const tmpDir = makeTmpDir(jobId);
 	const cleanup: string[] = [];
+	const ctx = { jobId, channelId };
+	const jobStart = Date.now();
+
+	logEvent("executor", "job.start", ctx);
 
 	try {
 		// Stage 1: Script generation.
-		const { scriptMarkdown, ttsText } = await runScriptStage(spec);
+		const { scriptMarkdown, ttsText } = await withTiming(
+			"executor",
+			"stage.script",
+			() => runScriptStage(spec),
+			ctx,
+		);
 
 		// Stage 2: TTS + images + sound generation → R2 upload.
-		const assets = await runPrepareStage(spec, scriptMarkdown, ttsText, tmpDir);
+		const assets = await withTiming(
+			"executor",
+			"stage.prepare",
+			() => runPrepareStage(spec, scriptMarkdown, ttsText, tmpDir),
+			ctx,
+		);
 		cleanup.push(assets.ttsAudioPath, ...assets.imagePaths);
 		if (assets.soundAudioPath) cleanup.push(assets.soundAudioPath);
 
 		// Stage 3: FFmpeg encode → watermark → R2 upload.
-		await runAssembleStage(spec, assets, tmpDir, cleanup);
+		await withTiming(
+			"executor",
+			"stage.assemble",
+			() => runAssembleStage(spec, assets, tmpDir, cleanup),
+			ctx,
+		);
 
+		logTiming("executor", "job.done", Date.now() - jobStart, {
+			...ctx,
+			ok: true,
+		});
 		await reportComplete(spec, "completed");
 	} catch (e) {
 		const msg = formatError(e);
-		console.error(`[executor] job ${spec.jobId} failed:`, e);
+		logTiming("executor", "job.failed", Date.now() - jobStart, {
+			...ctx,
+			ok: false,
+			error: msg.slice(0, 200),
+		});
+		console.error(`[executor] job ${jobId} failed:`, e);
 		try {
 			await reportComplete(spec, "failed", msg);
 		} catch (notifyErr) {
 			console.error(
-				`[executor] CRITICAL: complete callback failed for job ${spec.jobId}`,
+				`[executor] CRITICAL: complete callback failed for job ${jobId}`,
 				notifyErr,
 			);
 		}

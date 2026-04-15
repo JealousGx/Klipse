@@ -7,6 +7,8 @@ import { videoJobs } from "@/db/schema/video-jobs";
 import { env } from "@/env";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
 
+import { withPerfTiming } from "@/lib/perf-timing";
+
 import { buildProcessorJobSpec } from "./build-processor-job-spec.server";
 import { PIPELINE_STAGE } from "./pipeline-kind";
 import { markVideoJobFailed } from "./process-stub-pipeline.server";
@@ -81,7 +83,9 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 
 	let spec: ProcessorJobSpec;
 	try {
-		spec = await buildProcessorJobSpec(id);
+		spec = await withPerfTiming("dispatch.spec_build", { jobId: id }, () =>
+			buildProcessorJobSpec(id),
+		);
 	} catch (e) {
 		const msg =
 			e instanceof Error ? e.message.slice(0, 500) : "spec_build_failed";
@@ -92,15 +96,17 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 
 	let res: Response;
 	try {
-		res = await fetch(`${processorBaseUrl}/v1/process-spec`, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${clientSecret}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(spec),
-			signal: AbortSignal.timeout(30_000),
-		});
+		res = await withPerfTiming("dispatch.processor_post", { jobId: id }, () =>
+			fetch(`${processorBaseUrl}/v1/process-spec`, {
+				method: "POST",
+				headers: {
+					Authorization: `Bearer ${clientSecret}`,
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify(spec),
+				signal: AbortSignal.timeout(30_000),
+			}),
+		);
 	} catch (e) {
 		console.error("[dispatch-content-job] processor unreachable", e);
 		await markVideoJobFailed({
