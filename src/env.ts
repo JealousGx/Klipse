@@ -88,14 +88,13 @@ export const env = createEnv({
 			.default(
 				"google/gemma-4-26b-a4b-it:free,nvidia/nemotron-nano-12b-v2-vl:free",
 			),
-		/**
-		 * Image generation model via OpenRouter
-		 * @default google/gemma-4-26b-a4b-it:free
-		 */
-		OPENROUTER_IMAGE_MODEL: z
-			.string()
-			.min(1)
-			.default("nvidia/nemotron-nano-12b-v2-vl:free"),
+		// -------------------------------------------------------------------------
+		// Google Gemini — script generation fallback when OpenRouter exhausted
+		// https://ai.google.dev/api/generate-content
+		// -------------------------------------------------------------------------
+
+		/** Comma-separated Gemini API keys (from Google AI Studio). */
+		GEMINI_API_KEYS: z.string().optional(),
 
 		// -------------------------------------------------------------------------
 		// Google Cloud TTS — primary TTS (1M Neural2 chars/month free)

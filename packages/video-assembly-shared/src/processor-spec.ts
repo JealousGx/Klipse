@@ -14,6 +14,8 @@ export type ProcessorProviderKeys = {
 	replicate: ProcessorProviderKey[];
 	unrealSpeech: ProcessorProviderKey[];
 	elevenlabs: ProcessorProviderKey[];
+	/** Gemini keys — used as script generation fallback when OpenRouter exhausted. */
+	gemini: ProcessorProviderKey[];
 };
 
 /** Pre-generated presigned PUT URL (1h TTL) for the processor to upload the final video to R2. */
@@ -36,8 +38,6 @@ export type ProcessorJobSpec = {
 	scriptUserPrompt: string;
 	/** Model chain for OpenRouter text completions (primary + fallbacks in order). */
 	openrouterScriptModels: string[];
-	/** OpenRouter image model ID (e.g. black-forest-labs/flux.2-pro). */
-	openrouterImageModel: string;
 	/** Unreal Speech voice ID (Google TTS uses env default on processor). */
 	ttsVoice: string;
 	targetDuration: number;

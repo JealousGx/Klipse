@@ -5,7 +5,6 @@ import type {
 import { reportKeyFailure } from "../utils/callbacks";
 import { sleep } from "../utils/retry";
 
-const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
 const REPLICATE_BASE = "https://api.replicate.com/v1";
 const FLUX_SCHNELL_MODEL = "black-forest-labs/flux-schnell";
 const MAX_BURST_RETRIES = 4;
@@ -57,50 +56,6 @@ function makeHttpErr(
 	err.bodySnippet = body.slice(0, 800);
 	err.retryAfterHeader = retryAfter;
 	return err;
-}
-
-async function openRouterImage(
-	key: ProcessorProviderKey,
-	model: string,
-	prompt: string,
-	aspectRatio: string,
-): Promise<ArrayBuffer> {
-	const res = await fetch(`${OPENROUTER_BASE}/chat/completions`, {
-		method: "POST",
-		headers: {
-			"Content-Type": "application/json",
-			Authorization: `Bearer ${key.secret}`,
-			"X-Title": "Klipse",
-		},
-		body: JSON.stringify({
-			model,
-			modalities: ["image"],
-			image_config: { aspect_ratio: aspectRatio },
-			messages: [{ role: "user", content: prompt }],
-		}),
-		signal: AbortSignal.timeout(300_000),
-	});
-	if (!res.ok)
-		throw makeHttpErr(
-			res.status,
-			await res.text().catch(() => ""),
-			res.headers.get("retry-after"),
-		);
-	const json = (await res.json()) as {
-		choices?: { message?: { images?: { image_url?: { url?: string } }[] } }[];
-		error?: { message?: string };
-	};
-	if (json.error?.message)
-		throw new Error(`openrouter_image_error: ${json.error.message}`);
-	const dataUrl = json.choices?.[0]?.message?.images?.[0]?.image_url?.url;
-	if (!dataUrl) throw new Error("openrouter_image_empty");
-	const base64 = dataUrl.includes(",") ? dataUrl.split(",")[1] : dataUrl;
-	if (!base64) throw new Error("openrouter_image_invalid_data_url");
-	const buf = Buffer.from(base64, "base64");
-	return buf.buffer.slice(
-		buf.byteOffset,
-		buf.byteOffset + buf.byteLength,
-	) as ArrayBuffer;
 }
 
 async function replicateImage(
@@ -220,34 +175,13 @@ function sanitizePrompt(prompt: string): string {
 	return `${stripped}, cinematic, artistic, professional photography`;
 }
 
-/** Generates one image: tries OpenRouter keys first, then Replicate. */
+/** Generates one image via Replicate (Flux Schnell default, SDXL configurable). */
 export async function generateImage(
 	spec: ProcessorJobSpec,
 	prompt: string,
 ): Promise<ArrayBuffer> {
 	const aspectRatio = spec.aspectRatio ?? "9:16";
-	const imageModel = spec.openrouterImageModel;
 	let lastError: unknown;
-
-	for (const key of spec.providerKeys.openrouter) {
-		try {
-			return await openRouterImage(key, imageModel, prompt, aspectRatio);
-		} catch (e) {
-			lastError = e;
-			if (isHttpErr(e)) {
-				await reportKeyFailure(
-					spec,
-					"openrouter",
-					key.id,
-					e.httpStatus,
-					e.bodySnippet,
-					e.retryAfterHeader,
-				);
-				continue;
-			}
-			throw e;
-		}
-	}
 
 	for (const key of spec.providerKeys.replicate) {
 		// Per key: try original prompt, then sanitized prompt on NSFW.

@@ -17,6 +17,11 @@ export async function bundleProviderKeysForProcessor(): Promise<ProcessorProvide
 			secret: k.secret,
 			modelId: k.modelId,
 		})),
+		gemini: all.gemini.map((k) => ({
+			id: k.id,
+			secret: k.secret,
+			modelId: k.modelId,
+		})),
 		googleTts: all.google_tts.map((k) => ({
 			id: k.id,
 			secret: k.secret,

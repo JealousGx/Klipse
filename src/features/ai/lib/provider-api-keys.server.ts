@@ -13,9 +13,10 @@ import { providerApiKeyRowId } from "@/lib/id";
 import { secretFingerprint } from "./provider-key-fingerprint.server";
 
 export type AiProviderKind =
-	| "openrouter" // script (LLM) + images (FLUX.2)
+	| "openrouter" // script (LLM) primary
+	| "gemini" // script (LLM) fallback — direct Gemini API
 	| "google_tts" // TTS primary (1M Neural2 chars/month free)
-	| "replicate" // image fallback (FLUX Schnell ~$0.003/img)
+	| "replicate" // image generation (FLUX Schnell ~$0.003/img)
 	| "unreal_speech" // TTS fallback (250K chars/month free)
 	| "elevenlabs"; // sound effects (Creator+ only, 10K credits/month free)
 
@@ -43,6 +44,8 @@ function envFallbackKeys(provider: AiProviderKind): string[] {
 	switch (provider) {
 		case "openrouter":
 			return parseCommaEnv(env.OPENROUTER_API_KEYS);
+		case "gemini":
+			return parseCommaEnv(env.GEMINI_API_KEYS);
 		case "google_tts":
 			return parseCommaEnv(env.GOOGLE_TTS_API_KEYS);
 		case "replicate":
@@ -197,6 +200,7 @@ export async function listProviderApiKeyCredentials(
 
 const PROCESSOR_PROVIDERS: AiProviderKind[] = [
 	"openrouter",
+	"gemini",
 	"google_tts",
 	"replicate",
 	"unreal_speech",

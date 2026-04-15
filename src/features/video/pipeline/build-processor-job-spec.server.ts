@@ -128,7 +128,6 @@ export async function buildProcessorJobSpec(
 		scriptSystemPrompt,
 		scriptUserPrompt,
 		openrouterScriptModels: buildOpenRouterModelChain(),
-		openrouterImageModel: DEFAULT_MODEL_IDS.openRouterImage,
 		ttsVoice: selectVoiceForChannelTone(config.tone),
 		targetDuration,
 		aspectRatio: config.aspect_ratio ?? "9:16",

@@ -7,6 +7,8 @@ import { reportKeyFailure } from "../utils/callbacks";
 import { withTiming } from "../utils/logger";
 
 const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
+const GEMINI_DEFAULT_MODEL = "gemini-2.5-flash-lite";
 
 async function callOpenRouterText(
 	key: ProcessorProviderKey,
@@ -81,18 +83,61 @@ function shouldRotate(status: number): boolean {
 	);
 }
 
-/** Generates script text using OpenRouter, rotating through keys on failure. */
+async function callGeminiText(
+	key: ProcessorProviderKey,
+	system: string,
+	user: string,
+): Promise<string> {
+	const modelId = key.modelId?.trim() || GEMINI_DEFAULT_MODEL;
+	const res = await fetch(
+		`${GEMINI_BASE}/models/${modelId}:generateContent?key=${key.secret}`,
+		{
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				system_instruction: { parts: [{ text: system }] },
+				contents: [{ role: "user", parts: [{ text: user }] }],
+				generationConfig: {
+					temperature: 0.7,
+					maxOutputTokens: 8192,
+					responseMimeType: "application/json",
+				},
+			}),
+			signal: AbortSignal.timeout(120_000),
+		},
+	);
+
+	if (!res.ok) {
+		const t = await res.text().catch(() => "");
+		throw new Error(`gemini_${res.status}:${t.slice(0, 500)}`);
+	}
+
+	const json = (await res.json()) as {
+		candidates?: { content?: { parts?: { text?: string }[] } }[];
+		error?: { message?: string };
+	};
+	if (json.error?.message)
+		throw new Error(`gemini_api_error: ${json.error.message}`);
+	const content = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
+	if (!content) throw new Error("gemini_empty_response");
+	return content;
+}
+
+/**
+ * Generates script text: OpenRouter primary (key rotation + model chain fallback),
+ * then Gemini direct API as fallback if all OpenRouter keys exhausted or unavailable.
+ */
 export async function generateScript(spec: ProcessorJobSpec): Promise<string> {
 	const {
 		openrouterScriptModels: models,
 		scriptSystemPrompt: system,
 		scriptUserPrompt: user,
 	} = spec;
-	const keys = spec.providerKeys.openrouter;
-	if (keys.length === 0) throw new Error("openrouter_no_keys");
 
 	let lastError: unknown;
-	for (const key of keys) {
+
+	// Primary: OpenRouter — rotate keys, OpenRouter handles model fallback internally.
+	for (const key of spec.providerKeys.openrouter) {
 		try {
 			return await withTiming("script-gen", "openrouter.call", () =>
 				callOpenRouterText(key, models, system, user),
@@ -108,10 +153,21 @@ export async function generateScript(spec: ProcessorJobSpec): Promise<string> {
 					e.bodySnippet,
 					e.retryAfterHeader,
 				);
-				continue;
 			}
-			throw e;
+			// Continue to next key regardless — fall through to Gemini when exhausted.
 		}
 	}
-	throw lastError ?? new Error("openrouter_all_keys_failed");
+
+	// Fallback: Gemini direct API (gemini-2.5-flash-lite-preview or per-key modelId).
+	for (const key of spec.providerKeys.gemini) {
+		try {
+			return await withTiming("script-gen", "gemini.call", () =>
+				callGeminiText(key, system, user),
+			);
+		} catch (e) {
+			lastError = e;
+		}
+	}
+
+	throw lastError ?? new Error("script_generation_all_failed");
 }

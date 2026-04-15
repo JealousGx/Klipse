@@ -65,7 +65,6 @@ function isProcessorJobSpec(x: unknown): x is ProcessorJobSpec {
 		typeof o.scriptUserPrompt === "string" &&
 		// Model config
 		Array.isArray(o.openrouterScriptModels) &&
-		typeof o.openrouterImageModel === "string" &&
 		typeof o.ttsVoice === "string" &&
 		// Video config
 		typeof o.targetDuration === "number" &&
@@ -84,9 +83,10 @@ function isProcessorJobSpec(x: unknown): x is ProcessorJobSpec {
 		urls !== undefined &&
 		typeof urls.outputVideo === "string" &&
 		urls.outputVideo.length > 0 &&
-		// providerKeys — require all five arrays to be present
+		// providerKeys — require all six arrays to be present
 		keys !== undefined &&
 		Array.isArray(keys.openrouter) &&
+		Array.isArray(keys.gemini) &&
 		Array.isArray(keys.googleTts) &&
 		Array.isArray(keys.replicate) &&
 		Array.isArray(keys.unrealSpeech) &&
