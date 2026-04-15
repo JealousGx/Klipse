@@ -4,18 +4,16 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
-
-import { processContentPrepareStage } from "./content/stages/prepare-stage.server";
-import { processContentScriptStage } from "./content/stages/script-stage.server";
+import {
+	dispatchContentJob,
+	isContentProcessorConfigured,
+} from "./dispatch-content-job.server";
 import { PIPELINE_KIND, PIPELINE_STAGE } from "./pipeline-kind";
 import { markVideoJobFailed } from "./process-stub-pipeline.server";
-import {
-	handoffVideoAssemblyToExternalProcessor,
-	isExternalVideoProcessorConfigured,
-} from "./video-assembly-handoff.server";
 
 /**
- * Modular content pipeline: {@link PIPELINE_STAGE.SCRIPT} → {@link PIPELINE_STAGE.PREPARE} → assemble.
+ * Content pipeline entry point: dispatches the job to the external processor (Cloud Run).
+ * The processor runs the full pipeline: script → TTS + images + sound → FFmpeg → R2 → callback.
  */
 export async function processContentPipelineJob(jobId: string): Promise<void> {
 	const db = getDb();
@@ -31,34 +29,27 @@ export async function processContentPipelineJob(jobId: string): Promise<void> {
 		.where(eq(videoJobs.id, id))
 		.limit(1);
 
-	if (!row) {
-		throw new Error("video_job_not_found");
-	}
+	if (!row) throw new Error("video_job_not_found");
 	if (row.pipelineKind !== PIPELINE_KIND.CONTENT_PIPELINE_V1) {
 		throw new Error("video_job_pipeline_mismatch");
 	}
-	if (row.status === "completed" || row.status === "failed") {
+	if (row.status === "completed" || row.status === "failed") return;
+
+	// Re-attempt dispatch if the job was claimed (status=dispatched) but the
+	// spec POST never reached the processor (crash between CAS and fetch).
+	const isStuckDispatch =
+		row.status === "dispatched" &&
+		row.currentStage === PIPELINE_STAGE.DISPATCH_PENDING;
+
+	if (row.status !== "queued" && !isStuckDispatch) return;
+
+	if (!isContentProcessorConfigured()) {
+		await markVideoJobFailed({
+			jobId: id,
+			message: "video_processor_not_configured",
+		});
 		return;
 	}
 
-	switch (row.currentStage) {
-		case PIPELINE_STAGE.SCRIPT:
-			await processContentScriptStage(id);
-			return;
-		case PIPELINE_STAGE.PREPARE:
-			await processContentPrepareStage(id);
-			return;
-		case PIPELINE_STAGE.ASSEMBLE:
-			if (!isExternalVideoProcessorConfigured()) {
-				await markVideoJobFailed({
-					jobId: id,
-					message: "video_processor_not_configured",
-				});
-				return;
-			}
-			await handoffVideoAssemblyToExternalProcessor(id);
-			return;
-		default:
-			return;
-	}
+	await dispatchContentJob(id);
 }

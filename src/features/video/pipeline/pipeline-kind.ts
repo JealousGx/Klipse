@@ -62,7 +62,9 @@ export function labelForPipelineKind(kind: string): string {
 }
 
 /** User-facing label for a pipeline stage shown in progress indicators. */
-export function labelForPipelineStage(stage: string | null | undefined): string {
+export function labelForPipelineStage(
+	stage: string | null | undefined,
+): string {
 	switch (stage) {
 		case PIPELINE_STAGE.QUEUED:
 			return "Waiting";

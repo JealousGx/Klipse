@@ -8,9 +8,9 @@ import { videoJobs } from "@/db/schema/video-jobs";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
 import { publicUrlForR2Key } from "@/lib/storage/r2.server";
 import { markFreeTierVideoConsumedIfNeeded } from "./free-tier-video-consumed.server";
-import { runAfterVideoRenderComplete } from "./video-job-after-render.server";
 import { PIPELINE_STAGE } from "./pipeline-kind";
 import { markVideoJobFailed } from "./process-stub-pipeline.server";
+import { runAfterVideoRenderComplete } from "./video-job-after-render.server";
 
 export type VideoProcessorWebhookInput = {
 	jobId: string;

@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 
-import { and, asc, count, eq, isNull, lt, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import {
@@ -193,6 +193,82 @@ export async function listProviderApiKeyCredentials(
 		.orderBy(...KEY_ORDER);
 
 	return allRows.map(toCredential);
+}
+
+const PROCESSOR_PROVIDERS: AiProviderKind[] = [
+	"openrouter",
+	"google_tts",
+	"replicate",
+	"unreal_speech",
+	"elevenlabs",
+];
+
+/**
+ * Fetches credentials for all five processor providers in two queries instead of ten:
+ * 1. Grouped count → materialize any provider that has no rows yet (env keys → DB).
+ * 2. Single bulk SELECT → group by provider client-side, apply active-first logic.
+ *
+ * Drop-in replacement for five parallel `listProviderApiKeyCredentials()` calls.
+ */
+export async function listAllProcessorProviderKeyCredentials(): Promise<
+	Record<AiProviderKind, ProviderApiKeyCredential[]>
+> {
+	const db = getDb();
+
+	// Query 1: one grouped count to detect which providers need env materialization.
+	const countRows = await db
+		.select({ provider: providerApiKeys.provider, n: count() })
+		.from(providerApiKeys)
+		.where(inArray(providerApiKeys.provider, PROCESSOR_PROVIDERS))
+		.groupBy(providerApiKeys.provider);
+
+	const countMap = new Map(
+		countRows.map((r) => [r.provider as AiProviderKind, Number(r.n)]),
+	);
+	const missing = PROCESSOR_PROVIDERS.filter(
+		(p) => (countMap.get(p) ?? 0) === 0,
+	);
+	if (missing.length > 0) {
+		await Promise.all(missing.map(ensureEnvProviderKeysMaterialized));
+	}
+
+	// Query 2: all non-disabled keys for all providers in one shot.
+	const rows = await db
+		.select({
+			id: providerApiKeys.id,
+			secret: providerApiKeys.secret,
+			quotaResetAt: providerApiKeys.quotaResetAt,
+			modelId: providerApiKeys.modelId,
+			provider: providerApiKeys.provider,
+			cooldownUntil: providerApiKeys.cooldownUntil,
+		})
+		.from(providerApiKeys)
+		.where(
+			and(
+				inArray(providerApiKeys.provider, PROCESSOR_PROVIDERS),
+				eq(providerApiKeys.disabled, false),
+			),
+		)
+		.orderBy(...KEY_ORDER);
+
+	// Group by provider, then apply active-first logic per group.
+	const grouped = new Map<AiProviderKind, typeof rows>(
+		PROCESSOR_PROVIDERS.map((p) => [p, []]),
+	);
+	for (const row of rows) {
+		grouped.get(row.provider as AiProviderKind)?.push(row);
+	}
+
+	const now = new Date();
+	const result = {} as Record<AiProviderKind, ProviderApiKeyCredential[]>;
+	for (const provider of PROCESSOR_PROVIDERS) {
+		const all = grouped.get(provider) ?? [];
+		const active = all.filter(
+			(r) => r.cooldownUntil === null || r.cooldownUntil < now,
+		);
+		result[provider] = (active.length > 0 ? active : all).map(toCredential);
+	}
+	return result;
 }
 
 /**

@@ -13,8 +13,6 @@ import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-con
 import { getChannelForUser } from "@/features/channels/channels.service.server";
 import { dispatchPlatformPublishAfterRender } from "@/features/publishing/publish-dispatch.server";
 import type { MeResponse } from "@/features/user/types/me";
-import { WorkerEnqueueFailedError } from "@/lib/worker/enqueue.server";
-
 import { getTransactionEmailFrom, sendEmail } from "@/lib/email";
 import {
 	FREE_TIER_RETENTION_HOURS,
@@ -23,6 +21,7 @@ import {
 	PAID_TIER_RETENTION_HOURS,
 } from "@/lib/format-output-retention";
 import { expiringAssetRowId } from "@/lib/id";
+import { WorkerEnqueueFailedError } from "@/lib/worker/enqueue.server";
 
 function escapeHtml(text: string): string {
 	return text
@@ -49,7 +48,12 @@ export async function runAfterVideoRenderComplete(input: {
 	const [existing] = await db
 		.select({ id: expiringAssets.id })
 		.from(expiringAssets)
-		.where(and(eq(expiringAssets.videoJobId, jobId), eq(expiringAssets.kind, "output")))
+		.where(
+			and(
+				eq(expiringAssets.videoJobId, jobId),
+				eq(expiringAssets.kind, "output"),
+			),
+		)
 		.limit(1);
 	if (existing) {
 		return;
@@ -83,10 +87,7 @@ export async function runAfterVideoRenderComplete(input: {
 		return;
 	}
 
-	if (
-		planAllowsPaidPublishingConnections(plan) &&
-		!channel.config.auto_post
-	) {
+	if (planAllowsPaidPublishingConnections(plan) && !channel.config.auto_post) {
 		await db
 			.update(videoJobs)
 			.set({
