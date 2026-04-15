@@ -37,6 +37,7 @@ export async function runAssembleStage(
 				segmentDur,
 				spec.aspectRatio,
 				segPath,
+				i,
 			),
 		);
 		segPaths.push(segPath);

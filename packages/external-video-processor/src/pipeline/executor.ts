@@ -46,19 +46,19 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 
 	try {
 		// Stage 1: Script generation.
-		const { scriptMarkdown, ttsText } = await withTiming(
+		const { scriptMarkdown, ttsText, imagePrompts } = await withTiming(
 			"executor",
 			"stage.script",
 			() => runScriptStage(spec).catch(rethrowWithStage("script")),
 			ctx,
 		);
 
-		// Stage 2: TTS + images + sound generation → R2 upload.
+		// Stage 2: TTS + images + sound generation.
 		const assets = await withTiming(
 			"executor",
 			"stage.prepare",
 			() =>
-				runPrepareStage(spec, scriptMarkdown, ttsText, tmpDir).catch(
+				runPrepareStage(spec, imagePrompts, ttsText, tmpDir).catch(
 					rethrowWithStage("prepare"),
 				),
 			ctx,

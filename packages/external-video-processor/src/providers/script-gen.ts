@@ -26,6 +26,7 @@ async function callOpenRouterText(
 			provider: { allow_fallbacks: true },
 			temperature: 0.7,
 			max_tokens: 8192,
+			response_format: { type: "json_object" },
 			messages: [
 				{ role: "system", content: system },
 				{ role: "user", content: user },

@@ -49,7 +49,7 @@ export async function generateImageReplicate(input: {
 						version: credential.modelId ?? FLUX_SCHNELL_MODEL,
 						input: {
 							prompt: input.prompt,
-							aspect_ratio: input.aspectRatio ?? "16:9",
+							aspect_ratio: input.aspectRatio ?? "9:16",
 							output_format: "webp",
 							output_quality: 85,
 							num_outputs: 1,

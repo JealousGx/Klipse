@@ -131,7 +131,7 @@ export async function buildProcessorJobSpec(
 		openrouterImageModel: DEFAULT_MODEL_IDS.openRouterImage,
 		ttsVoice: selectVoiceForChannelTone(config.tone),
 		targetDuration,
-		aspectRatio: config.aspect_ratio ?? "16:9",
+		aspectRatio: config.aspect_ratio ?? "9:16",
 		soundPrompt,
 		soundDurationSeconds: Math.min(targetDuration, 22),
 		freeTierWatermark: plan === "free",

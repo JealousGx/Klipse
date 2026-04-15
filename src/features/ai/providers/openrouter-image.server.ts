@@ -44,7 +44,7 @@ export async function generateImageOpenRouter(input: {
 					model,
 					modalities: ["image"],
 					image_config: {
-						aspect_ratio: input.aspectRatio ?? "16:9",
+						aspect_ratio: input.aspectRatio ?? "9:16",
 					},
 					messages: [{ role: "user", content: input.prompt }],
 				}),

@@ -10,6 +10,31 @@ const REPLICATE_BASE = "https://api.replicate.com/v1";
 const FLUX_SCHNELL_MODEL = "black-forest-labs/flux-schnell";
 const MAX_BURST_RETRIES = 4;
 
+/**
+ * Explicit dimensions for models that use width/height instead of aspect_ratio (e.g. SDXL).
+ * Chosen to match SDXL's optimal resolutions (multiples of 64).
+ */
+const ASPECT_DIMENSIONS: Record<string, [number, number]> = {
+	"16:9": [1344, 768],
+	"9:16": [768, 1344],
+	"1:1": [1024, 1024],
+};
+
+/** Flux models use `aspect_ratio` string; all others (SDXL, etc.) use `width`/`height`. */
+function isFluxModel(modelId: string): boolean {
+	return /\bflux\b/i.test(modelId);
+}
+
+/**
+ * A modelId containing "/" is a model name (owner/name) — use the models endpoint.
+ * A plain hash string uses the versions endpoint.
+ */
+function replicateEndpoint(modelId: string): string {
+	return modelId.includes("/")
+		? `${REPLICATE_BASE}/models/${modelId}/predictions`
+		: `${REPLICATE_BASE}/predictions`;
+}
+
 function isHttpErr(e: unknown): e is Error & {
 	httpStatus: number;
 	bodySnippet: string;
@@ -84,8 +109,23 @@ async function replicateImage(
 	aspectRatio: string,
 ): Promise<ArrayBuffer> {
 	const modelId = key.modelId?.trim() || FLUX_SCHNELL_MODEL;
+	const isModelName = modelId.includes("/");
+	const url = replicateEndpoint(modelId);
+	const flux = isFluxModel(modelId);
+	const [imgW, imgH] = ASPECT_DIMENSIONS[aspectRatio] ?? [1024, 1024];
+
+	// Build model-specific input params.
+	const imageParams = flux
+		? { aspect_ratio: aspectRatio, output_format: "webp", output_quality: 85 }
+		: {
+				width: imgW,
+				height: imgH,
+				num_inference_steps: 30,
+				guidance_scale: 7.5,
+			};
+
 	for (let attempt = 0; ; attempt++) {
-		const res = await fetch(`${REPLICATE_BASE}/predictions`, {
+		const res = await fetch(url, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -93,15 +133,14 @@ async function replicateImage(
 				Prefer: "wait=60",
 			},
 			body: JSON.stringify({
-				version: modelId,
+				// version field only for hash-based calls; model-name calls don't need it
+				...(isModelName ? {} : { version: modelId }),
 				input: {
 					prompt,
 					negative_prompt:
 						"nsfw, nudity, explicit, sexual content, inappropriate",
-					aspect_ratio: aspectRatio,
-					output_format: "webp",
-					output_quality: 85,
 					num_outputs: 1,
+					...imageParams,
 				},
 			}),
 			signal: AbortSignal.timeout(90_000),
@@ -186,7 +225,7 @@ export async function generateImage(
 	spec: ProcessorJobSpec,
 	prompt: string,
 ): Promise<ArrayBuffer> {
-	const aspectRatio = spec.aspectRatio ?? "16:9";
+	const aspectRatio = spec.aspectRatio ?? "9:16";
 	const imageModel = spec.openrouterImageModel;
 	let lastError: unknown;
 

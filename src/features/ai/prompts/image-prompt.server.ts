@@ -18,7 +18,7 @@ const NEUTRAL_SURFACE_FALLBACK = "video for your audience";
 export function buildImageGenerationPrompt(input: ImagePromptIntent): string {
 	const { brief, subject } = input;
 
-	const aspectRatio = brief.aspectRatio ?? "16:9";
+	const aspectRatio = brief.aspectRatio ?? "9:16";
 
 	const aspectCopy =
 		aspectRatio === "9:16"

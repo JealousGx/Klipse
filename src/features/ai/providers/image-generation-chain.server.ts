@@ -37,7 +37,7 @@ function resolveImagePrompt(input: GenerateImageInput): string {
 function resolveAspectRatio(
 	input: GenerateImageInput,
 ): "1:1" | "16:9" | "9:16" | "4:3" | "3:4" {
-	return input.aspectRatio ?? "16:9";
+	return input.aspectRatio ?? "9:16";
 }
 
 /**
