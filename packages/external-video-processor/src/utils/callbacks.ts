@@ -84,12 +84,14 @@ export async function reportComplete(
 	spec: ProcessorJobSpec,
 	status: "completed" | "failed",
 	error?: string,
+	scriptText?: string,
 ): Promise<void> {
 	const body: ProcessorCompletePayload = {
 		jobId: spec.jobId,
 		userId: spec.userId,
 		status,
 		error,
+		scriptText,
 	};
 	await postCallback(
 		spec.callbackBaseUrl,

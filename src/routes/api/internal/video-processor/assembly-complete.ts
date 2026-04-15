@@ -10,6 +10,7 @@ const bodySchema = z.object({
 	userId: z.string().trim().min(1).max(64),
 	status: z.enum(["completed", "failed"]),
 	error: z.string().max(4000).optional(),
+	scriptText: z.string().max(50000).optional(),
 });
 
 /**

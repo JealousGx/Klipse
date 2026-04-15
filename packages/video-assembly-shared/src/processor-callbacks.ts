@@ -35,4 +35,6 @@ export type ProcessorCompletePayload = {
 	userId: string;
 	status: "completed" | "failed";
 	error?: string;
+	/** Generated script text — present on success, absent on failure. */
+	scriptText?: string;
 };

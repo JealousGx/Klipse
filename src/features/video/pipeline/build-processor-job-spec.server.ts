@@ -117,7 +117,6 @@ export async function buildProcessorJobSpec(
 				generateJobPresignedUrls({
 					userId: job.userId,
 					jobId: id,
-					withSound: isSoundEligible,
 				}),
 			]),
 	);

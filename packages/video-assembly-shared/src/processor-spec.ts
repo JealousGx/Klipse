@@ -16,13 +16,8 @@ export type ProcessorProviderKeys = {
 	elevenlabs: ProcessorProviderKey[];
 };
 
-/** Pre-generated presigned PUT URLs (1h TTL) for the processor to upload directly to R2. */
+/** Pre-generated presigned PUT URL (1h TTL) for the processor to upload the final video to R2. */
 export type ProcessorPresignedUrls = {
-	ttsAudio: string;
-	/** One per image (IMAGE_COUNT = 3). */
-	images: string[];
-	/** null when sound generation is skipped. */
-	soundAudio: string | null;
 	outputVideo: string;
 };
 
