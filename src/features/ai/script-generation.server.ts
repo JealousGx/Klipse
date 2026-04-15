@@ -129,6 +129,17 @@ function userPrompt(ctx: ScriptGenerationContext): string {
 // ---------------------------------------------------------------------------
 
 /**
+ * Returns the pre-built system and user prompts for a given context.
+ * Used by `build-processor-job-spec.server.ts` to include prompts in the ProcessorJobSpec
+ * so the external processor doesn't need to replicate prompt logic.
+ */
+export function buildScriptPrompts(
+	ctx: ScriptGenerationContext,
+): { system: string; user: string } {
+	return { system: systemPromptForBrief(ctx), user: userPrompt(ctx) };
+}
+
+/**
  * Script generation via OpenRouter.
  * OpenRouter handles model fallbacks internally via the `models[]` array
  * (primary → OPENROUTER_SCRIPT_FALLBACK_MODELS) — no manual retry chain needed.

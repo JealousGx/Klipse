@@ -38,6 +38,8 @@ import { Route as ApiInternalWorkerYoutubePublishRouteImport } from './routes/ap
 import { Route as ApiInternalVideoProcessorAssemblyCompleteRouteImport } from './routes/api/internal/video-processor/assembly-complete'
 import { Route as AuthedDashboardPublishingDestinationIdRouteImport } from './routes/_authed/dashboard/publishing.$destinationId'
 import { Route as ApiInternalWorkerVideoJobsDispatchRouteImport } from './routes/api/internal/worker/video-jobs/dispatch'
+import { Route as ApiInternalProcessorProgressRouteImport } from './routes/api/internal/processor/progress'
+import { Route as ApiInternalProcessorKeyFailureRouteImport } from './routes/api/internal/processor/key-failure'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -192,6 +194,18 @@ const ApiInternalWorkerVideoJobsDispatchRoute =
     path: '/api/internal/worker/video-jobs/dispatch',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiInternalProcessorProgressRoute =
+  ApiInternalProcessorProgressRouteImport.update({
+    id: '/api/internal/processor/progress',
+    path: '/api/internal/processor/progress',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiInternalProcessorKeyFailureRoute =
+  ApiInternalProcessorKeyFailureRouteImport.update({
+    id: '/api/internal/processor/key-failure',
+    path: '/api/internal/processor/key-failure',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -222,6 +236,8 @@ export interface FileRoutesByFullPath {
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/dashboard/publishing/': typeof AuthedDashboardPublishingIndexRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
+  '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
+  '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -249,6 +265,8 @@ export interface FileRoutesByTo {
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/dashboard/publishing': typeof AuthedDashboardPublishingIndexRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
+  '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
+  '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -281,6 +299,8 @@ export interface FileRoutesById {
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/_authed/dashboard/publishing/': typeof AuthedDashboardPublishingIndexRoute
   '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
+  '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
+  '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -313,6 +333,8 @@ export interface FileRouteTypes {
     | '/api/youtube/oauth/start'
     | '/dashboard/publishing/'
     | '/api/internal/worker/video-jobs/dispatch'
+    | '/api/internal/processor/progress'
+    | '/api/internal/processor/key-failure'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -340,6 +362,8 @@ export interface FileRouteTypes {
     | '/api/youtube/oauth/start'
     | '/dashboard/publishing'
     | '/api/internal/worker/video-jobs/dispatch'
+    | '/api/internal/processor/progress'
+    | '/api/internal/processor/key-failure'
   id:
     | '__root__'
     | '/'
@@ -371,6 +395,8 @@ export interface FileRouteTypes {
     | '/api/youtube/oauth/start'
     | '/_authed/dashboard/publishing/'
     | '/api/internal/worker/video-jobs/dispatch'
+    | '/api/internal/processor/progress'
+    | '/api/internal/processor/key-failure'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -387,6 +413,8 @@ export interface RootRouteChildren {
   ApiYoutubeOauthCallbackRoute: typeof ApiYoutubeOauthCallbackRoute
   ApiYoutubeOauthStartRoute: typeof ApiYoutubeOauthStartRoute
   ApiInternalWorkerVideoJobsDispatchRoute: typeof ApiInternalWorkerVideoJobsDispatchRoute
+  ApiInternalProcessorProgressRoute: typeof ApiInternalProcessorProgressRoute
+  ApiInternalProcessorKeyFailureRoute: typeof ApiInternalProcessorKeyFailureRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -594,6 +622,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInternalWorkerVideoJobsDispatchRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/internal/processor/progress': {
+      id: '/api/internal/processor/progress'
+      path: '/api/internal/processor/progress'
+      fullPath: '/api/internal/processor/progress'
+      preLoaderRoute: typeof ApiInternalProcessorProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/internal/processor/key-failure': {
+      id: '/api/internal/processor/key-failure'
+      path: '/api/internal/processor/key-failure'
+      fullPath: '/api/internal/processor/key-failure'
+      preLoaderRoute: typeof ApiInternalProcessorKeyFailureRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -686,6 +728,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiYoutubeOauthStartRoute: ApiYoutubeOauthStartRoute,
   ApiInternalWorkerVideoJobsDispatchRoute:
     ApiInternalWorkerVideoJobsDispatchRoute,
+  ApiInternalProcessorProgressRoute: ApiInternalProcessorProgressRoute,
+  ApiInternalProcessorKeyFailureRoute: ApiInternalProcessorKeyFailureRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
