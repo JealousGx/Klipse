@@ -104,8 +104,12 @@ export const env = createEnv({
 
 		/** Comma-separated Google Cloud API keys for Text-to-Speech. */
 		GOOGLE_TTS_API_KEYS: z.string().optional(),
-		/** @default en-US-Chirp-HD-F */
-		GOOGLE_TTS_VOICE_NAME: z.string().min(1).optional(),
+		/** @default en-US-Wavenet-G */
+		GOOGLE_TTS_VOICE_NAME: z
+			.string()
+			.min(1)
+			.optional()
+			.default("en-US-Wavenet-G"),
 
 		// -------------------------------------------------------------------------
 		// Replicate — image fallback (FLUX Schnell ~$0.003/image)

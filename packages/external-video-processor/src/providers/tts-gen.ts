@@ -10,7 +10,7 @@ const GOOGLE_TTS_BASE =
 const UNREAL_SPEECH_BASE = "https://api.v8.unrealspeech.com";
 const STREAM_CHAR_LIMIT = 950;
 const DEFAULT_GOOGLE_VOICE =
-	process.env.GOOGLE_TTS_VOICE_NAME?.trim() || "en-US-Chirp-HD-F";
+	process.env.GOOGLE_TTS_VOICE_NAME?.trim() || "en-US-Wavenet-G";
 
 function makeHttpErr(
 	status: number,
