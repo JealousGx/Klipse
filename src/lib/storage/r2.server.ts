@@ -29,11 +29,16 @@ const R2_PUBLIC_BASE_URL = env.R2_PUBLIC_BASE_URL;
 
 const S3 = new S3Client({
 	region: "auto",
-	endpoint: R2_PUBLIC_BASE_URL,
+	endpoint: `https://${R2_ACCOUNT_ID}.eu.r2.cloudflarestorage.com`, // bucket is in EU region.
 	credentials: {
 		accessKeyId: R2_ACCESS_KEY_ID,
 		secretAccessKey: R2_SECRET_ACCESS_KEY,
 	},
+	// Disable automatic CRC32 checksums. AWS SDK v3 adds x-amz-checksum-crc32
+	// to presigned URLs by default, but our upload client doesn't compute/send
+	// the checksum header → Cloudflare R2 rejects the PUT with 403.
+	requestChecksumCalculation: "WHEN_REQUIRED",
+	responseChecksumValidation: "WHEN_REQUIRED",
 });
 
 /** Prefix object keys by deploy environment (`production` / `qa`) so buckets can be shared safely. */
@@ -45,7 +50,7 @@ export function withR2EnvPrefix(key: string): string {
 /** Public URL for a **logical** key (prefix applied). Uses `R2_PUBLIC_BASE_URL`. */
 export function publicUrlForLogicalKey(logicalKey: string): string {
 	const prefixed = withR2EnvPrefix(logicalKey);
-	const base = env.R2_PUBLIC_BASE_URL.replace(/\/$/, "");
+	const base = R2_PUBLIC_BASE_URL.replace(/\/$/, "");
 	return `${base}/${prefixed}`;
 }
 
