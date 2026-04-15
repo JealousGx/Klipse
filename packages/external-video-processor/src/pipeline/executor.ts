@@ -10,6 +10,16 @@ function makeTmpDir(jobId: string) {
 	return { path: (suffix: string) => tmpPath(`${jobId}-${suffix}`) };
 }
 
+/** Rethrows any error with the pipeline stage name prepended to the message. */
+function rethrowWithStage(stage: string): (e: unknown) => never {
+	return (e: unknown): never => {
+		const base = e instanceof Error ? e.message : String(e);
+		const err = new Error(`[${stage}] ${base}`);
+		if (e instanceof Error) err.stack = e.stack;
+		throw err;
+	};
+}
+
 function formatError(e: unknown): string {
 	if (e instanceof Error) {
 		const base = e.message.trim();
@@ -39,7 +49,7 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 		const { scriptMarkdown, ttsText } = await withTiming(
 			"executor",
 			"stage.script",
-			() => runScriptStage(spec),
+			() => runScriptStage(spec).catch(rethrowWithStage("script")),
 			ctx,
 		);
 
@@ -47,7 +57,10 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 		const assets = await withTiming(
 			"executor",
 			"stage.prepare",
-			() => runPrepareStage(spec, scriptMarkdown, ttsText, tmpDir),
+			() =>
+				runPrepareStage(spec, scriptMarkdown, ttsText, tmpDir).catch(
+					rethrowWithStage("prepare"),
+				),
 			ctx,
 		);
 		cleanup.push(assets.ttsAudioPath, ...assets.imagePaths);
@@ -57,7 +70,10 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 		await withTiming(
 			"executor",
 			"stage.assemble",
-			() => runAssembleStage(spec, assets, tmpDir, cleanup),
+			() =>
+				runAssembleStage(spec, assets, tmpDir, cleanup).catch(
+					rethrowWithStage("assemble"),
+				),
 			ctx,
 		);
 
