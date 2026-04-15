@@ -35,7 +35,7 @@ export const DEFAULT_MODEL_IDS = {
 	/** OpenRouter FLUX.2 Pro — currently free. */
 	openRouterImage: "black-forest-labs/flux.2-pro",
 	/** Google Cloud TTS default voice (Chirp HD = highest quality free tier). */
-	googleTtsVoice: "en-US-Chirp-HD-F",
+	googleTtsVoice: "en-US-Wavenet-G",
 	/** Unreal Speech default voice. Options: Scarlett | Dan | Liv | Will | Amy */
 	unrealSpeechVoice: "Scarlett",
 } as const;
