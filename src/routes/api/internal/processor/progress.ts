@@ -4,9 +4,8 @@ import { z } from "zod";
 
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
-import { env } from "@/env";
 import { PIPELINE_STAGE } from "@/features/video/pipeline/pipeline-kind";
-import { isAuthorizedVideoProcessorWebhook } from "@/lib/video-processor/verify-webhook.server";
+import { videoProcessorAuthMiddleware } from "@/lib/server-route-auth.server";
 
 const bodySchema = z.object({
 	jobId: z.string().trim().min(1).max(64),
@@ -23,26 +22,14 @@ const STAGE_MAP: Record<string, string> = {
 /** Processor → app: update job progress during pipeline execution. */
 export const Route = createFileRoute("/api/internal/processor/progress")({
 	server: {
+		middleware: [videoProcessorAuthMiddleware],
 		handlers: {
 			POST: async ({ request }) => {
-				if (!env.VIDEO_PROCESSOR_WEBHOOK_SECRET) {
-					return Response.json(
-						{ ok: false, error: "webhook_not_configured" },
-						{ status: 503 },
-					);
-				}
-				if (!isAuthorizedVideoProcessorWebhook(request)) {
-					return Response.json(
-						{ ok: false, error: "unauthorized" },
-						{ status: 401 },
-					);
-				}
-
 				const raw: unknown = await request.json().catch(() => null);
 				const parsed = bodySchema.safeParse(raw);
 				if (!parsed.success) {
 					return Response.json(
-						{ ok: false, error: "invalid_body" },
+						{ ok: false as const, error: "invalid_body" },
 						{ status: 400 },
 					);
 				}
@@ -62,7 +49,7 @@ export const Route = createFileRoute("/api/internal/processor/progress")({
 						),
 					);
 
-				return Response.json({ ok: true });
+				return Response.json({ ok: true as const });
 			},
 		},
 	},

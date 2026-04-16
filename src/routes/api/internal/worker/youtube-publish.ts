@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { z } from "zod";
 
 import { runYoutubePublishForJob } from "@/features/publishing/youtube/run-youtube-publish-for-job.server";
-import { isAuthorizedWorkerOrInternalCron } from "@/lib/worker/verify-bearer.server";
+import { workerAuthMiddleware } from "@/lib/server-route-auth.server";
 
 const bodySchema = z.object({
 	jobId: z.string().trim().min(1).max(64),
@@ -14,15 +14,9 @@ const bodySchema = z.object({
  */
 export const Route = createFileRoute("/api/internal/worker/youtube-publish")({
 	server: {
+		middleware: [workerAuthMiddleware],
 		handlers: {
 			POST: async ({ request }) => {
-				if (!isAuthorizedWorkerOrInternalCron(request)) {
-					return Response.json(
-						{ ok: false as const, error: "unauthorized" },
-						{ status: 401 },
-					);
-				}
-
 				const raw: unknown = await request.json().catch(() => null);
 				const parsed = bodySchema.safeParse(raw);
 				if (!parsed.success) {

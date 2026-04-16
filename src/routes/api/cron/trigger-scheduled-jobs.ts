@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { triggerDueSchedules } from "@/features/scheduling/scheduling.service.server";
-import { isAuthorizedWorkerOrInternalCron } from "@/lib/worker/verify-bearer.server";
+import { workerAuthMiddleware } from "@/lib/server-route-auth.server";
 
 /**
  * Fires content pipeline jobs for all due schedules and advances their `nextRunAt`.
@@ -10,15 +10,9 @@ import { isAuthorizedWorkerOrInternalCron } from "@/lib/worker/verify-bearer.ser
  */
 export const Route = createFileRoute("/api/cron/trigger-scheduled-jobs")({
 	server: {
+		middleware: [workerAuthMiddleware],
 		handlers: {
-			POST: async ({ request }) => {
-				if (!isAuthorizedWorkerOrInternalCron(request)) {
-					return Response.json(
-						{ ok: false as const, error: "unauthorized" },
-						{ status: 401 },
-					);
-				}
-
+			POST: async () => {
 				const result = await triggerDueSchedules();
 				return Response.json({ ok: true as const, ...result });
 			},

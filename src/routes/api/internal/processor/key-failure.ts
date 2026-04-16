@@ -4,12 +4,11 @@ import { z } from "zod";
 
 import { getDb } from "@/db";
 import { providerApiKeys } from "@/db/schema/provider-api-keys";
-import { env } from "@/env";
 import { recordProviderKeyFailure } from "@/features/ai/lib/provider-api-key-state.server";
 import { ProviderHttpError } from "@/features/ai/lib/provider-http-error.server";
 import { classifyProviderHttpFailure } from "@/features/ai/lib/provider-key-failure-classify.server";
 import { parseRetryAfterHeader } from "@/features/ai/lib/provider-quota-reset-parse.server";
-import { isAuthorizedVideoProcessorWebhook } from "@/lib/video-processor/verify-webhook.server";
+import { videoProcessorAuthMiddleware } from "@/lib/server-route-auth.server";
 
 const bodySchema = z.object({
 	jobId: z.string().trim().min(1).max(64),
@@ -29,26 +28,14 @@ const bodySchema = z.object({
 /** Processor → app: a provider key failed; update DB cooldown for future requests. */
 export const Route = createFileRoute("/api/internal/processor/key-failure")({
 	server: {
+		middleware: [videoProcessorAuthMiddleware],
 		handlers: {
 			POST: async ({ request }) => {
-				if (!env.VIDEO_PROCESSOR_WEBHOOK_SECRET) {
-					return Response.json(
-						{ ok: false, error: "webhook_not_configured" },
-						{ status: 503 },
-					);
-				}
-				if (!isAuthorizedVideoProcessorWebhook(request)) {
-					return Response.json(
-						{ ok: false, error: "unauthorized" },
-						{ status: 401 },
-					);
-				}
-
 				const raw: unknown = await request.json().catch(() => null);
 				const parsed = bodySchema.safeParse(raw);
 				if (!parsed.success) {
 					return Response.json(
-						{ ok: false, error: "invalid_body" },
+						{ ok: false as const, error: "invalid_body" },
 						{ status: 400 },
 					);
 				}
@@ -66,13 +53,14 @@ export const Route = createFileRoute("/api/internal/processor/key-failure")({
 					.where(eq(providerApiKeys.id, keyId))
 					.limit(1);
 
-				if (!key) return Response.json({ ok: true, skipped: "key_not_found" });
+				if (!key)
+					return Response.json({ ok: true as const, skipped: "key_not_found" });
 
 				// Guard against provider mismatch — a wrong provider string would apply
 				// incorrect cooldown/quotaReset logic.
 				if (key.provider !== provider) {
 					return Response.json(
-						{ ok: false, error: "provider_mismatch" },
+						{ ok: false as const, error: "provider_mismatch" },
 						{ status: 400 },
 					);
 				}
@@ -105,7 +93,7 @@ export const Route = createFileRoute("/api/internal/processor/key-failure")({
 					);
 				}
 
-				return Response.json({ ok: true });
+				return Response.json({ ok: true as const });
 			},
 		},
 	},

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { purgeExpiredAssets } from "@/features/video/pipeline/purge-expiring-assets-process.server";
-import { isAuthorizedWorkerOrInternalCron } from "@/lib/worker/verify-bearer.server";
+import { workerAuthMiddleware } from "@/lib/server-route-auth.server";
 
 /**
  * Deletes R2 objects past TTL and removes `expiring_assets` rows.
@@ -9,15 +9,9 @@ import { isAuthorizedWorkerOrInternalCron } from "@/lib/worker/verify-bearer.ser
  */
 export const Route = createFileRoute("/api/cron/purge-expiring-assets")({
 	server: {
+		middleware: [workerAuthMiddleware],
 		handlers: {
-			POST: async ({ request }) => {
-				if (!isAuthorizedWorkerOrInternalCron(request)) {
-					return Response.json(
-						{ ok: false as const, error: "unauthorized" },
-						{ status: 401 },
-					);
-				}
-
+			POST: async () => {
 				const result = await purgeExpiredAssets();
 				return Response.json({ ok: true as const, ...result });
 			},
