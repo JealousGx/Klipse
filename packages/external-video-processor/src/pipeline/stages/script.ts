@@ -147,7 +147,13 @@ function sanitizeForTts(raw: string): string {
 // JSON parsing (primary path)
 // ---------------------------------------------------------------------------
 
-type ScriptJson = { voiceover: string; imagePrompts: string[] };
+type ScriptJson = {
+	voiceover: string;
+	imagePrompts: string[];
+	title?: string;
+	description?: string;
+	tags?: string[];
+};
 
 function parseScriptJson(raw: string): ScriptJson | null {
 	try {
@@ -176,6 +182,9 @@ export type ScriptResult = {
 	scriptMarkdown: string;
 	ttsText: string;
 	imagePrompts: string[];
+	title?: string;
+	description?: string;
+	tags?: string[];
 };
 
 /**
@@ -200,6 +209,9 @@ export async function runScriptStage(
 
 	let ttsText: string;
 	let imagePrompts: string[];
+	let title: string | undefined;
+	let description: string | undefined;
+	let tags: string[] | undefined;
 
 	if (parsed) {
 		// Clean path: structured JSON from model.
@@ -223,12 +235,20 @@ export async function runScriptStage(
 				imagePrompts[0] ?? "cinematic imagery, dramatic lighting, high detail",
 			);
 		}
+		title = parsed.title?.trim().slice(0, 100) || undefined;
+		description = parsed.description?.trim().slice(0, 2000) || undefined;
+		tags = Array.isArray(parsed.tags)
+			? (parsed.tags as unknown[])
+					.map((t) => String(t).toLowerCase().trim())
+					.filter((t) => t.length > 0)
+					.slice(0, 10)
+			: undefined;
 	} else {
-		// Fallback: tag/regex sanitization.
+		// Fallback: tag/regex sanitization — title/description/tags unavailable.
 		ttsText = truncateToWords(sanitizeForTts(raw), maxWords);
 		imagePrompts = visualPromptsFromScript(raw);
 	}
 
 	await reportProgress(spec, "script", 100);
-	return { scriptMarkdown: raw, ttsText, imagePrompts };
+	return { scriptMarkdown: raw, ttsText, imagePrompts, title, description, tags };
 }

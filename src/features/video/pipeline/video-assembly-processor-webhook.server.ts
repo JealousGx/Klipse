@@ -18,6 +18,9 @@ export type VideoProcessorWebhookInput = {
 	status: "completed" | "failed";
 	error?: string;
 	scriptText?: string;
+	title?: string;
+	description?: string;
+	tags?: string[];
 };
 
 export type VideoProcessorWebhookResult =
@@ -82,8 +85,17 @@ export async function applyVideoProcessorWebhook(
 				outputUrl,
 				errorMessage: null,
 				updatedAt: new Date(),
-				...(input.scriptText
-					? { artifacts: { scriptText: input.scriptText } }
+				...(input.scriptText || input.title || input.description || input.tags
+					? {
+							artifacts: {
+								...(input.scriptText ? { scriptText: input.scriptText } : {}),
+								...(input.title ? { title: input.title } : {}),
+								...(input.description
+									? { description: input.description }
+									: {}),
+								...(input.tags ? { tags: input.tags } : {}),
+							},
+						}
 					: {}),
 			})
 			.where(

@@ -37,4 +37,10 @@ export type ProcessorCompletePayload = {
 	error?: string;
 	/** Generated script text — present on success, absent on failure. */
 	scriptText?: string;
+	/** AI-generated video title (60–100 chars). */
+	title?: string;
+	/** AI-generated short caption — suitable for YouTube description, TikTok, Instagram. */
+	description?: string;
+	/** AI-generated tags (lowercase strings, no # prefix). */
+	tags?: string[];
 };

@@ -85,6 +85,9 @@ export async function reportComplete(
 	status: "completed" | "failed",
 	error?: string,
 	scriptText?: string,
+	title?: string,
+	description?: string,
+	tags?: string[],
 ): Promise<void> {
 	const body: ProcessorCompletePayload = {
 		jobId: spec.jobId,
@@ -92,6 +95,9 @@ export async function reportComplete(
 		status,
 		error,
 		scriptText,
+		title,
+		description,
+		tags,
 	};
 	await postCallback(
 		spec.callbackBaseUrl,

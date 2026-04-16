@@ -123,7 +123,7 @@ export async function runYoutubePublishForJob(input: {
 		return { ok: true, skipped: true, reason: claimResult.reason };
 	}
 
-	const { job, channelName, niche } = claimResult;
+	const { job, channelName } = claimResult;
 
 	let refreshToken: string | null;
 	try {
@@ -177,7 +177,6 @@ export async function runYoutubePublishForJob(input: {
 
 	const metadata = buildYoutubeVideoMetadata({
 		channelName,
-		niche,
 		artifacts: job.artifacts,
 		inputPayload: job.inputPayload,
 		aiDisclosure: true,

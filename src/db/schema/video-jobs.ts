@@ -18,9 +18,15 @@ export type VideoJobInputPayload = {
 	idea: string;
 };
 
-/** Intermediate outputs produced by multi-stage pipelines (script text, etc.). */
+/** Intermediate outputs produced by multi-stage pipelines (script text, AI metadata, etc.). */
 export type VideoJobArtifacts = {
 	scriptText?: string;
+	/** AI-generated video title. */
+	title?: string;
+	/** AI-generated short caption — usable as YouTube description, TikTok/Instagram caption. */
+	description?: string;
+	/** AI-generated tags (lowercase, no # prefix). */
+	tags?: string[];
 };
 
 export const videoJobs = mysqlTable(

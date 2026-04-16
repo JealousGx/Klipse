@@ -1,5 +1,6 @@
 import "@tanstack/react-start/server-only";
 
+import { siteConfig } from "@/config/site";
 import type {
 	VideoJobArtifacts,
 	VideoJobInputPayload,
@@ -7,66 +8,75 @@ import type {
 
 import type { YoutubeVideoMetadataInput } from "./youtube-upload-api.server";
 
-/** Default visibility for automated uploads (FEATURE_DOC §2.12 metadata.visibility). */
-export const YOUTUBE_DEFAULT_PRIVACY_STATUS: YoutubeVideoMetadataInput["privacyStatus"] =
-	"unlisted";
-
 function firstLineFromScript(script: string | undefined): string | null {
-	if (!script?.trim()) {
-		return null;
-	}
+	if (!script?.trim()) return null;
 	const line = script.split(/\r?\n/).find((l) => l.trim().length > 0);
 	const t = line?.replace(/^#+\s*/, "").trim();
 	return t ? t.slice(0, 80) : null;
 }
 
-function tagsFromNiche(niche: string): string[] {
-	const words = niche
-		.split(/[\s,]+/)
-		.map((w) => w.trim().toLowerCase())
-		.filter(Boolean)
-		.slice(0, 8);
-	return words.length ? words : ["klipse"];
+function buildHashtags(tags: string[]): string {
+	return tags.map((t) => `#${t.replace(/\s+/g, "")}`).join(" ");
 }
 
 /**
- * Builds title / description / tags per FEATURE_DOC §2.12 (metadata block).
+ * Builds YouTube video metadata from AI-generated artifacts.
+ *
+ * Title: AI title → first script line → idea string → channel fallback.
+ * Description: AI caption + hashtags + app footer.
+ * Tags: AI tags array.
+ * Privacy: always "public".
  */
 export function buildYoutubeVideoMetadata(input: {
 	channelName: string;
-	niche: string;
 	artifacts: VideoJobArtifacts | null;
 	inputPayload: VideoJobInputPayload | null;
 	aiDisclosure: boolean;
 }): YoutubeVideoMetadataInput {
+	const art = input.artifacts;
 	const idea = input.inputPayload?.idea?.trim() ?? "";
-	const scriptLine = firstLineFromScript(input.artifacts?.scriptText);
-	const titleBase =
-		scriptLine ??
-		(idea ? idea.slice(0, 72) : `${input.channelName.trim()} — video`);
+
+	// Title — AI first, then fallbacks.
+	const titleRaw =
+		art?.title?.trim() ||
+		firstLineFromScript(art?.scriptText) ||
+		(idea ? idea.slice(0, 72) : null) ||
+		`${input.channelName.trim()} — video`;
 	const title =
-		titleBase.trim().slice(0, 100) || `${input.channelName.trim()} — Klipse`;
+		titleRaw.trim().slice(0, 100) || `${input.channelName.trim()} — Klipse`;
 
-	const tags = tagsFromNiche(input.niche);
+	// Tags — AI array, fallback to app name.
+	const tags: string[] =
+		art?.tags && art.tags.length > 0 ? art.tags : ["klipse"];
 
-	let description = [
-		`Created with Klipse for “${input.channelName.trim()}”.`,
-		`Niche: ${input.niche.trim()}`,
-		"",
-		idea ? `Idea: ${idea}` : "",
-	]
-		.filter(Boolean)
-		.join("\n");
+	// Description — AI caption + hashtags + app footer.
+	const hashtagLine = buildHashtags(tags);
+	const appName = siteConfig.name || "Klipse";
+	const appUrl = siteConfig.origin || "https://klipse.app";
+
+	const parts: string[] = [];
+
+	if (art?.description?.trim()) {
+		parts.push(art.description.trim());
+	} else if (idea) {
+		parts.push(idea);
+	}
+
+	if (hashtagLine) parts.push(hashtagLine);
 
 	if (input.aiDisclosure) {
-		description += "\n\nIncludes AI-generated or assisted content.";
+		parts.push("Includes AI-generated or assisted content.");
 	}
+
+	parts.push(`Made with ${appName} AI · ${appUrl}`);
+
+	const description = parts.join("\n\n").slice(0, 5000);
 
 	return {
 		title,
-		description: description.slice(0, 5000),
+		description,
 		tags,
-		privacyStatus: YOUTUBE_DEFAULT_PRIVACY_STATUS,
+		privacyStatus: "public",
 		selfDeclaredMadeForKids: false,
 	};
 }
