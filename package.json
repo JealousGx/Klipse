@@ -11,8 +11,10 @@
   "packageManager": "pnpm@10.31.0",
   "scripts": {
     "dev": "NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --port 3000",
-    "build": "vite build",
+    "build": "NODE_OPTIONS=--max-old-space-size=4096 vite build && tsc --noEmit",
     "preview": "vite preview",
+    "deploy": "NODE_OPTIONS=--max-old-space-size=4096 npm run build && wrangler deploy",
+    "cf-typegen": "wrangler types",
     "test": "vitest run",
     "db:setup": "docker-compose down -v && docker-compose up -d",
     "db:generate": "drizzle-kit generate",
@@ -73,6 +75,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.4.5",
+    "@cloudflare/vite-plugin": "^1.32.3",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-event-client": "latest",
     "@tanstack/devtools-vite": "latest",
@@ -90,7 +93,8 @@
     "typescript": "^5.7.2",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^5.1.4",
-    "vitest": "^3.0.5"
+    "vitest": "^3.0.5",
+    "wrangler": "^4.83.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
