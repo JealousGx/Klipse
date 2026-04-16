@@ -165,6 +165,19 @@ export const env = createEnv({
 		ADMIN_EMAILS: z.string().optional(),
 
 		DISCORD_BUG_REPORT_WEBHOOK_URL: z.url(),
+
+		// -------------------------------------------------------------------------
+		// Sentry — error tracking (optional; no-op when absent)
+		// https://sentry.io
+		// -------------------------------------------------------------------------
+		/** Server-side Sentry DSN. Get from: Sentry project → Settings → Client Keys. */
+		SENTRY_DSN: z.url().optional(),
+		/**
+		 * Sentry auth token for source map upload during `vite build`.
+		 * Get from: Sentry → Settings → Auth Tokens → Create Internal Token (project:releases + org:read).
+		 * Only needed at build time — never sent to browser.
+		 */
+		SENTRY_AUTH_TOKEN: z.string().min(1).optional(),
 	},
 
 	/**
@@ -180,6 +193,8 @@ export const env = createEnv({
 		VITE_APP_SUPPORT_EMAIL: z.email(),
 		VITE_APP_DISCORD_URL: z.url().optional(),
 		VITE_APP_FEATURE_BASE_URL: z.url().optional(),
+		/** Client-side Sentry DSN (safe to expose — public key only). */
+		VITE_APP_SENTRY_DSN: z.url().optional(),
 	},
 
 	/**

@@ -19,6 +19,7 @@ import {
 } from "@/features/youtube/youtube-oauth-tokens.server";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
 
+import { captureException } from "@/lib/sentry";
 import { buildYoutubeVideoMetadata } from "./build-youtube-video-metadata.server";
 import { uploadMp4ToYoutube } from "./youtube-upload-api.server";
 
@@ -148,6 +149,7 @@ export async function runYoutubePublishForJob(input: {
 			});
 		}
 		const msg = e instanceof Error ? e.message : "youtube_token_refresh_failed";
+		captureException(e, { jobId, userId, stage: "youtube_token_refresh" });
 		await clearPublishAttempt(jobId, userId, msg);
 		return { ok: false, error: msg };
 	}
@@ -171,6 +173,12 @@ export async function runYoutubePublishForJob(input: {
 		videoBytes = Buffer.from(ab);
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : "fetch_output_failed";
+		captureException(e, {
+			jobId,
+			userId,
+			stage: "fetch_output_url",
+			outputUrl,
+		});
 		await clearPublishAttempt(jobId, userId, msg);
 		return { ok: false, error: msg };
 	}
@@ -203,6 +211,7 @@ export async function runYoutubePublishForJob(input: {
 		return { ok: true, skipped: false, youtubeVideoId: videoId };
 	} catch (e) {
 		const msg = e instanceof Error ? e.message : "youtube_upload_failed";
+		captureException(e, { jobId, userId, stage: "youtube_upload" });
 		await clearPublishAttempt(jobId, userId, msg);
 		return { ok: false, error: msg };
 	}

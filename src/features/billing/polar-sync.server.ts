@@ -13,6 +13,7 @@ import { resetDestinationReplacementsUsedForUser } from "@/features/channels/des
 
 import { creditTransactionId } from "@/lib/id";
 
+import { captureException } from "@/lib/sentry";
 import {
 	type AppPlan,
 	monthlyCreditsForPlan,
@@ -84,11 +85,19 @@ export async function handlePolarSubscriptionActive(
 ) {
 	const userId = resolveUserIdFromExternalId(payload.data.customer.externalId);
 	if (!userId) {
+		captureException(
+			new Error("polar_subscription_active: missing externalId"),
+			{ subscriptionId: payload.data.id, productId: payload.data.productId },
+		);
 		return;
 	}
 
 	const plan = polarProductToPlan(payload.data.productId);
 	if (!plan) {
+		captureException(
+			new Error("polar_subscription_active: unknown productId"),
+			{ userId, productId: payload.data.productId },
+		);
 		return;
 	}
 
@@ -169,6 +178,10 @@ export async function handlePolarSubscriptionRevoked(
 ) {
 	const userId = resolveUserIdFromExternalId(payload.data.customer.externalId);
 	if (!userId) {
+		captureException(
+			new Error("polar_subscription_revoked: missing externalId"),
+			{ subscriptionId: payload.data.id },
+		);
 		return;
 	}
 	await setPlanFree(userId);

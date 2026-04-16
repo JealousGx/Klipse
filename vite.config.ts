@@ -1,9 +1,10 @@
-import { resolve } from "node:path";
+import { sentryTanstackStart } from "@sentry/tanstackstart-react/vite";
 import tailwindcss from "@tailwindcss/vite";
 import { devtools } from "@tanstack/devtools-vite";
 import { tanstackStart } from "@tanstack/react-start/plugin/vite";
 import viteReact from "@vitejs/plugin-react";
 import { config as loadDotenv } from "dotenv";
+import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 
@@ -28,6 +29,11 @@ const config = defineConfig({
 			babel: {
 				plugins: ["babel-plugin-react-compiler"],
 			},
+		}),
+		sentryTanstackStart({
+			org: "klipse",
+			project: "klipse-main",
+			authToken: process.env.SENTRY_AUTH_TOKEN,
 		}),
 	],
 });
