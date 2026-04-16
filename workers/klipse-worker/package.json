@@ -9,7 +9,8 @@
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
-		"@klipse/worker-contracts": "workspace:*"
+		"@klipse/worker-contracts": "workspace:*",
+		"@sentry/cloudflare": "^10.48.0"
 	},
 	"devDependencies": {
 		"@cloudflare/workers-types": "^4.20250525.0",
