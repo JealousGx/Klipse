@@ -1,6 +1,7 @@
 name = "klipse-worker"
 main = "src/index.ts"
 compatibility_date = "2025-04-01"
+compatibility_flags = [ "nodejs_compat" ]
 # Disable wrangler's framework auto-detection (monorepo root has @tanstack/react-start
 # which wrangler 4.x mistakes for a TanStack Start app).
 no_bundle = false
