@@ -163,6 +163,8 @@ export const env = createEnv({
 
 		// Comma-separated list of emails that should be auto-promoted to admin on login. Only used if the `admin` plugin is enabled.
 		ADMIN_EMAILS: z.string().optional(),
+
+		DISCORD_BUG_REPORT_WEBHOOK_URL: z.url(),
 	},
 
 	/**
@@ -176,6 +178,8 @@ export const env = createEnv({
 		VITE_APP_URL: z.url(),
 		VITE_APP_R2_PUBLIC_BASE_URL: z.url(),
 		VITE_APP_SUPPORT_EMAIL: z.email(),
+		VITE_APP_DISCORD_URL: z.url().optional(),
+		VITE_APP_FEATURE_BASE_URL: z.url().optional(),
 	},
 
 	/**

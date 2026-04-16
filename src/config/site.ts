@@ -10,6 +10,7 @@ export function getSiteUrl() {
 
 export const siteConfig = {
 	name: env.VITE_APP_TITLE ?? "Klipse",
+	discord: env.VITE_APP_DISCORD_URL,
 	description:
 		"Queue-driven AI video pipelines for operators—script to generate to schedule to publish. Platform-native workflows, full visibility, retries, and hybrid pricing.",
 	tagline: "Content infrastructure for operators",
