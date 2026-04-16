@@ -1,13 +1,8 @@
 import "@tanstack/react-start/server-only";
 
 import { pipelineModelContextBlock } from "./config/model-routing";
-import { ScriptGenerationFailedError } from "./errors";
 import type { ChannelCreativeBrief } from "./prompts/creative-brief.types";
 import { isShortFormTargetSeconds } from "./prompts/video-format-surface";
-import {
-	generateTextOpenRouter,
-	isOpenRouterConfigured,
-} from "./providers/openrouter-text.server";
 
 export type ScriptGenerationContext = ChannelCreativeBrief & { idea: string };
 export type ScriptGenerationMode = "openrouter";
@@ -131,26 +126,4 @@ export function buildScriptPrompts(ctx: ScriptGenerationContext): {
 	user: string;
 } {
 	return { system: systemPromptForBrief(ctx), user: userPrompt(ctx) };
-}
-
-/**
- * Script generation via OpenRouter.
- * OpenRouter handles model fallbacks internally via the `models[]` array
- * (primary → OPENROUTER_SCRIPT_FALLBACK_MODELS) — no manual retry chain needed.
- */
-export async function generateVideoScript(
-	ctx: ScriptGenerationContext,
-): Promise<{ text: string; mode: ScriptGenerationMode }> {
-	const system = systemPromptForBrief(ctx);
-	const user = userPrompt(ctx);
-
-	if (!(await isOpenRouterConfigured())) {
-		throw new ScriptGenerationFailedError(
-			"Script generation failed: no OpenRouter API keys configured. Add keys via the admin panel.",
-			["openrouter_not_configured"],
-		);
-	}
-
-	const text = await generateTextOpenRouter({ system, user });
-	return { text, mode: "openrouter" };
 }

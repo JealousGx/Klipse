@@ -8,10 +8,7 @@ import { getDb } from "@/db";
 import { channels } from "@/db/schema/channels";
 import { users } from "@/db/schema/users";
 import { videoJobs } from "@/db/schema/video-jobs";
-import {
-	buildOpenRouterModelChain,
-	DEFAULT_MODEL_IDS,
-} from "@/features/ai/config/model-routing";
+import { buildOpenRouterModelChain } from "@/features/ai/config/model-routing";
 import { bundleProviderKeysForProcessor } from "@/features/ai/lib/provider-key-bundle.server";
 import { channelToCreativeBrief } from "@/features/ai/prompts/channel-brief.server";
 import { selectVoiceForChannelTone } from "@/features/ai/prompts/voiceover-prompt.server";
