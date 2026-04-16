@@ -13,7 +13,6 @@ import {
 	Target,
 	Video,
 } from "lucide-react";
-
 import { GetStartedButton } from "@/components/get-started-button";
 import {
 	PipelineObservabilityPanel,
@@ -31,10 +30,56 @@ import {
 } from "@/components/ui/card";
 import { Link } from "@/components/ui/link";
 import { Separator } from "@/components/ui/separator";
+import { siteConfig } from "@/config/site";
 import type { PolarCheckoutSlug } from "@/lib/billing/polar-checkout-slugs";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/")({ component: LandingPage });
+const PAGE_TITLE = `${siteConfig.name} — AI Video Pipeline for Content Operators`;
+const PAGE_DESC = siteConfig.description;
+const PAGE_URL = siteConfig.origin;
+const OG_IMAGE = `${siteConfig.origin}${siteConfig.og.image}`;
+
+export const Route = createFileRoute("/")({
+	head: () => ({
+		meta: [
+			{ title: PAGE_TITLE },
+			{ name: "description", content: PAGE_DESC },
+			{ property: "og:title", content: PAGE_TITLE },
+			{ property: "og:description", content: PAGE_DESC },
+			{ property: "og:url", content: PAGE_URL },
+			{ property: "og:image", content: OG_IMAGE },
+			{ name: "twitter:title", content: PAGE_TITLE },
+			{ name: "twitter:description", content: PAGE_DESC },
+			{ name: "twitter:image", content: OG_IMAGE },
+		],
+		links: [{ rel: "canonical", href: PAGE_URL }],
+		scripts: [
+			{
+				type: "application/ld+json",
+				innerHTML: JSON.stringify({
+					"@context": "https://schema.org",
+					"@type": "SoftwareApplication",
+					name: siteConfig.name,
+					description: PAGE_DESC,
+					url: PAGE_URL,
+					applicationCategory: "BusinessApplication",
+					operatingSystem: "Web",
+					offers: {
+						"@type": "Offer",
+						price: "0",
+						priceCurrency: "USD",
+					},
+					creator: {
+						"@type": "Organization",
+						name: siteConfig.name,
+						url: PAGE_URL,
+					},
+				}),
+			},
+		],
+	}),
+	component: LandingPage,
+});
 
 const outcomes = [
 	{
