@@ -23,13 +23,12 @@ import {
 	humanizeRetentionHours,
 	PAID_TIER_RETENTION_HOURS,
 } from "@/lib/format-output-retention";
-
-import { cn } from "@/lib/utils";
 import {
 	platformChannelUrl,
 	platformDisplayName as platformDisplayNameUtil,
 	platformVideoUrl,
 } from "@/lib/platform-publishing";
+import { cn } from "@/lib/utils";
 
 export function shortJobId(id: string): string {
 	const t = id.trim();
@@ -112,9 +111,10 @@ export function JobQueueStoryCard({
 	const title = `${selected?.channelName ?? "Job"} · ${shortJobId(selected?.id ?? "")}`;
 	const tags = selected
 		? [
-				...tagFromNiche(selected.channelNiche),
+				...(selected.artifacts?.tags?.length
+					? selected.artifacts.tags.slice(0, 4)
+					: tagFromNiche(selected.channelNiche)),
 				labelForPipelineKind(selected.pipelineKind),
-				labelForPipelineStage(selected.currentStage),
 				`${selected.costCredits} credits`,
 			]
 		: [];
@@ -289,6 +289,7 @@ function JobDetailPane({
 					<div className="flex flex-wrap gap-2">
 						<a
 							href={job.outputUrl}
+							target="_blank"
 							download
 							className="inline-flex h-8 items-center gap-1.5 rounded-md border border-border bg-background px-3 text-xs font-semibold text-foreground shadow-sm hover:bg-muted/60"
 						>
@@ -319,17 +320,31 @@ function JobDetailPane({
 							: null}
 					</div>
 				) : null}
-				{job.publishLastError && job.status === "completed" && !job.publishedVideoId ? (
+				{job.publishLastError &&
+				job.status === "completed" &&
+				!job.publishedVideoId ? (
 					<p className="text-xs text-destructive">
 						Publish failed: {job.publishLastError}
 					</p>
 				) : null}
 				<div>
 					<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-						Title
+						Video Title
 					</p>
-					<p className="mt-0.5 font-medium text-foreground">{title}</p>
+					<p className="mt-0.5 font-medium text-foreground">
+						{job.artifacts?.title ?? title}
+					</p>
 				</div>
+				{job.artifacts?.description ? (
+					<div>
+						<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+							Description
+						</p>
+						<p className="mt-0.5 text-sm leading-relaxed text-muted-foreground">
+							{job.artifacts.description}
+						</p>
+					</div>
+				) : null}
 				<div>
 					<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
 						Tags

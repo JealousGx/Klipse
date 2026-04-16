@@ -39,6 +39,7 @@ export async function listVideoJobsForUser(
 			retryCount: videoJobs.retryCount,
 			outputStorageExpiresAt: expiringAssets.expiresAt,
 			createdAt: videoJobs.createdAt,
+			artifacts: videoJobs.artifacts,
 		})
 		.from(videoJobs)
 		.innerJoin(channels, eq(videoJobs.channelId, channels.id))

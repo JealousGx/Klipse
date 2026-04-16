@@ -1,3 +1,10 @@
+/** Minimal artifacts subset safe for client consumption. */
+export type VideoJobListRowArtifacts = {
+	title?: string;
+	description?: string;
+	tags?: string[];
+};
+
 /** Shared shape for `listVideoJobsForUser` / jobs list UI (no server-only import). */
 export type VideoJobListRow = {
 	id: string;
@@ -26,4 +33,6 @@ export type VideoJobListRow = {
 	/** When the output video is scheduled for purge (R2 TTL), if tracked. */
 	outputStorageExpiresAt: Date | null;
 	createdAt: Date;
+	/** AI-generated metadata (title, description, tags). Null for older jobs. */
+	artifacts: VideoJobListRowArtifacts | null;
 };
