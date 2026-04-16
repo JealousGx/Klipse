@@ -1,4 +1,9 @@
 import { serve } from "@hono/node-server";
+import { initSentry } from "./sentry";
+
+// Init Sentry before anything else so it catches startup errors too
+initSentry();
+
 import type {
 	ProcessorJobSpec,
 	VideoProcessorHandoffPayload,

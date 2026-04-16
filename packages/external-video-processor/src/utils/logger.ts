@@ -1,11 +1,76 @@
 /**
  * Structured JSON-line logger for the external video processor.
- * Mirrors src/lib/perf-timing.ts (main app) but uses Date.now() for compatibility
- * in Docker/Cloud Run without depending on node:perf_hooks precision overhead.
  *
- * Output format: { type, tag, event, ms?, ...fields }
- * Enable in production with KLIPSE_PERF_LOG=1; always on in development.
+ * Two concerns, one file:
+ *
+ * 1. Application-level logging (`logger.*`) — structured JSON, always emits
+ *    error/warn, gates info/debug on KLIPSE_PERF_LOG or NODE_ENV.
+ *    GCP Cloud Logging captures stdout/stderr automatically on Cloud Run.
+ *
+ * 2. Performance timing (`logEvent`, `logTiming`, `withTiming`) — perf-gated
+ *    JSON lines for pipeline stage instrumentation. Kept for backward compat.
+ *
+ * Output: one JSON line per call — easy to grep locally, parses in Axiom.
  */
+
+// ─── Level-based logger ─────────────────────────────────────────────────────
+
+export type LogLevel = "debug" | "info" | "warn" | "error";
+
+export interface LogContext {
+	/** Video generation job ID */
+	jobId?: string;
+	/** Stage name (script / prepare / assemble) */
+	stage?: string;
+	/** Duration in milliseconds */
+	durationMs?: number;
+	/** HTTP status code */
+	status?: number;
+	/** Arbitrary extra fields */
+	[key: string]: unknown;
+}
+
+function shouldLog(level: LogLevel): boolean {
+	if (level === "error" || level === "warn") return true;
+	const perfLog = process.env.KLIPSE_PERF_LOG === "1";
+	const isDev = process.env.NODE_ENV !== "production";
+	if (level === "info") return perfLog || isDev;
+	return process.env.NODE_ENV === "development";
+}
+
+function emitLevel(level: LogLevel, message: string, ctx?: LogContext): void {
+	if (!shouldLog(level)) return;
+	try {
+		const line = JSON.stringify({
+			level,
+			message,
+			service: "klipse-processor",
+			env: process.env.NODE_ENV ?? "unknown",
+			t: Date.now(),
+			...ctx,
+		});
+		if (level === "error") {
+			console.error(line);
+		} else if (level === "warn") {
+			console.warn(line);
+		} else {
+			console.log(line);
+		}
+	} catch {
+		// Never throw from logger
+	}
+}
+
+export const logger = {
+	debug: (message: string, ctx?: LogContext) =>
+		emitLevel("debug", message, ctx),
+	info: (message: string, ctx?: LogContext) => emitLevel("info", message, ctx),
+	warn: (message: string, ctx?: LogContext) => emitLevel("warn", message, ctx),
+	error: (message: string, ctx?: LogContext) =>
+		emitLevel("error", message, ctx),
+} as const;
+
+// ─── Legacy perf-timing API (kept for backward compat) ─────────────────────
 
 const LOG_TYPE = "klipse.perf";
 
