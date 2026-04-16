@@ -1,3 +1,4 @@
+import { FeedbackButton } from "@/components/feedback";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import { Link } from "@/components/ui/link";
 import { Separator } from "@/components/ui/separator";
@@ -43,9 +44,12 @@ export default function Footer() {
 					</nav>
 				</div>
 				<Separator className="my-8" />
-				<p className="m-0 text-xs font-medium text-muted-foreground">
-					© {year} {siteConfig.name}. All rights reserved.
-				</p>
+				<div className="flex items-center justify-between gap-4">
+					<p className="m-0 text-xs font-medium text-muted-foreground">
+						© {year} {siteConfig.name}. All rights reserved.
+					</p>
+					<FeedbackButton />
+				</div>
 			</div>
 		</footer>
 	);

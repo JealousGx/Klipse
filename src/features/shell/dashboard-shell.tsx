@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
+import { FeedbackButton } from "@/components/feedback";
 import { BrandLogo } from "@/components/shared/BrandLogo";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
@@ -143,6 +144,7 @@ export function DashboardShell() {
 				</nav>
 
 				<div className="border-t border-border/80 p-3">
+					<FeedbackButton className="mb-2" />
 					<div className="rounded-lg border border-border/60 bg-muted/40 px-3 py-2.5 dark:bg-muted/25">
 						<p className="truncate text-xs font-medium text-foreground">
 							{email || "…"}
