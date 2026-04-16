@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	ArrowUpRight,
 	Coins,
@@ -115,18 +115,18 @@ function BillingPage() {
 	/** One DB-backed session load after Polar redirects here (webhook may lag cookie cache). */
 	useEffect(() => {
 		if (search.checkout !== "success" || checkoutRefreshDone.current) {
-			return
+			return;
 		}
 		checkoutRefreshDone.current = true;
 		void refetch({ query: { disableCookieCache: true } }).finally(() => {
 			void navigate({
 				search: (prev) => {
 					const { checkout: _c, ...rest } = prev;
-					return rest
+					return rest;
 				},
 				replace: true,
-			})
-		})
+			});
+		});
 	}, [search.checkout, refetch, navigate]);
 
 	const runCheckout = async (slug: string) => {
@@ -136,7 +136,7 @@ function BillingPage() {
 		} finally {
 			setLoadingSlug(null);
 		}
-	}
+	};
 
 	const openPortal = async () => {
 		setPortalLoading(true);
@@ -145,8 +145,8 @@ function BillingPage() {
 			if (res.error) {
 				toast.error("Couldn’t open portal", {
 					description: res.error.message ?? "Try again in a moment.",
-				})
-				return
+				});
+				return;
 			}
 			const url = res.data?.url;
 			if (url) {
@@ -155,7 +155,7 @@ function BillingPage() {
 		} finally {
 			setPortalLoading(false);
 		}
-	}
+	};
 
 	const credits = user.creditsRemaining ?? 0;
 
@@ -163,7 +163,7 @@ function BillingPage() {
 
 	const currentMonth = new Date().toLocaleString(undefined, {
 		month: "long",
-	})
+	});
 	const videosThisMonth = analyticsQuery.data?.totalCompleted ?? null;
 
 	return (
@@ -259,15 +259,15 @@ function BillingPage() {
 						const tierRank = PLAN_RANK[tier.slug];
 						const loading = loadingSlug === tier.slug;
 
-						let cta: string
+						let cta: string;
 						if (isCurrent) {
-							cta = "Your plan"
+							cta = "Your plan";
 						} else if (userRank === 0) {
 							cta = `Get ${tier.title}`;
 						} else if (tierRank > userRank) {
-							cta = "Upgrade"
+							cta = "Upgrade";
 						} else {
-							cta = "Switch plan"
+							cta = "Switch plan";
 						}
 
 						return (
@@ -345,7 +345,7 @@ function BillingPage() {
 									</Button>
 								</CardFooter>
 							</Card>
-						)
+						);
 					})}
 				</div>
 			</section>
@@ -422,8 +422,33 @@ function BillingPage() {
 					</Button>
 				</div>
 			</section>
+
+			<p className="text-center text-xs text-muted-foreground/70">
+				By purchasing you agree to our{" "}
+				<Link
+					to="/terms"
+					className="underline underline-offset-2 hover:text-muted-foreground transition-colors"
+				>
+					Terms of Service
+				</Link>
+				,{" "}
+				<Link
+					to="/refund"
+					className="underline underline-offset-2 hover:text-muted-foreground transition-colors"
+				>
+					Refund Policy
+				</Link>
+				, and{" "}
+				<Link
+					to="/privacy"
+					className="underline underline-offset-2 hover:text-muted-foreground transition-colors"
+				>
+					Privacy Policy
+				</Link>
+				. All sales final — no refunds.
+			</p>
 		</div>
-	)
+	);
 }
 
 function CreditPackCard({
@@ -488,5 +513,5 @@ function CreditPackCard({
 				)}
 			</Button>
 		</div>
-	)
+	);
 }
