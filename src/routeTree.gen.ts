@@ -10,6 +10,8 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
+import { Route as RobotsDottxtRouteImport } from './routes/robots[.]txt'
 import { Route as RefundRouteImport } from './routes/refund'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as AuthedRouteRouteImport } from './routes/_authed/route'
@@ -44,6 +46,16 @@ import { Route as ApiInternalWorkerVideoJobsDispatchRouteImport } from './routes
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RobotsDottxtRoute = RobotsDottxtRouteImport.update({
+  id: '/robots.txt',
+  path: '/robots.txt',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RefundRoute = RefundRouteImport.update({
@@ -211,6 +223,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/admin': typeof AuthedAdminRouteRouteWithChildren
   '/dashboard': typeof AuthedDashboardRouteRouteWithChildren
@@ -243,6 +257,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/admin/jobs': typeof AuthedAdminJobsRoute
   '/admin/keys': typeof AuthedAdminKeysRoute
@@ -274,6 +290,8 @@ export interface FileRoutesById {
   '/_authed': typeof AuthedRouteRouteWithChildren
   '/privacy': typeof PrivacyRoute
   '/refund': typeof RefundRoute
+  '/robots.txt': typeof RobotsDottxtRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/_authed/admin': typeof AuthedAdminRouteRouteWithChildren
   '/_authed/dashboard': typeof AuthedDashboardRouteRouteWithChildren
@@ -308,6 +326,8 @@ export interface FileRouteTypes {
     | '/'
     | '/privacy'
     | '/refund'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/terms'
     | '/admin'
     | '/dashboard'
@@ -340,6 +360,8 @@ export interface FileRouteTypes {
     | '/'
     | '/privacy'
     | '/refund'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/terms'
     | '/admin/jobs'
     | '/admin/keys'
@@ -370,6 +392,8 @@ export interface FileRouteTypes {
     | '/_authed'
     | '/privacy'
     | '/refund'
+    | '/robots.txt'
+    | '/sitemap.xml'
     | '/terms'
     | '/_authed/admin'
     | '/_authed/dashboard'
@@ -404,6 +428,8 @@ export interface RootRouteChildren {
   AuthedRouteRoute: typeof AuthedRouteRouteWithChildren
   PrivacyRoute: typeof PrivacyRoute
   RefundRoute: typeof RefundRoute
+  RobotsDottxtRoute: typeof RobotsDottxtRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronPurgeExpiringAssetsRoute: typeof ApiCronPurgeExpiringAssetsRoute
@@ -424,6 +450,20 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/robots.txt': {
+      id: '/robots.txt'
+      path: '/robots.txt'
+      fullPath: '/robots.txt'
+      preLoaderRoute: typeof RobotsDottxtRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/refund': {
@@ -717,6 +757,8 @@ const rootRouteChildren: RootRouteChildren = {
   AuthedRouteRoute: AuthedRouteRouteWithChildren,
   PrivacyRoute: PrivacyRoute,
   RefundRoute: RefundRoute,
+  RobotsDottxtRoute: RobotsDottxtRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronPurgeExpiringAssetsRoute: ApiCronPurgeExpiringAssetsRoute,
