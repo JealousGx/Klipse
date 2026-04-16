@@ -6,7 +6,8 @@ import { reportKeyFailure } from "../utils/callbacks";
 import { sleep } from "../utils/retry";
 
 const REPLICATE_BASE = "https://api.replicate.com/v1";
-const FLUX_SCHNELL_MODEL = "black-forest-labs/flux-schnell";
+const DEFAULT_MODEL =
+	"stability-ai/sdxl:7762fd07cf82c948538e41f63f77d685e02b063e37e496e96eefd46c929f9bdc";
 const MAX_BURST_RETRIES = 4;
 
 /**
@@ -22,16 +23,6 @@ const ASPECT_DIMENSIONS: Record<string, [number, number]> = {
 /** Flux models use `aspect_ratio` string; all others (SDXL, etc.) use `width`/`height`. */
 function isFluxModel(modelId: string): boolean {
 	return /\bflux\b/i.test(modelId);
-}
-
-/**
- * A modelId containing "/" is a model name (owner/name) — use the models endpoint.
- * A plain hash string uses the versions endpoint.
- */
-function replicateEndpoint(modelId: string): string {
-	return modelId.includes("/")
-		? `${REPLICATE_BASE}/models/${modelId}/predictions`
-		: `${REPLICATE_BASE}/predictions`;
 }
 
 function isHttpErr(e: unknown): e is Error & {
@@ -63,9 +54,7 @@ async function replicateImage(
 	prompt: string,
 	aspectRatio: string,
 ): Promise<ArrayBuffer> {
-	const modelId = key.modelId?.trim() || FLUX_SCHNELL_MODEL;
-	const isModelName = modelId.includes("/");
-	const url = replicateEndpoint(modelId);
+	const modelId = key.modelId?.trim() || DEFAULT_MODEL;
 	const flux = isFluxModel(modelId);
 	const [imgW, imgH] = ASPECT_DIMENSIONS[aspectRatio] ?? [1024, 1024];
 
@@ -80,7 +69,7 @@ async function replicateImage(
 			};
 
 	for (let attempt = 0; ; attempt++) {
-		const res = await fetch(url, {
+		const res = await fetch(`${REPLICATE_BASE}/predictions`, {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
@@ -89,7 +78,7 @@ async function replicateImage(
 			},
 			body: JSON.stringify({
 				// version field only for hash-based calls; model-name calls don't need it
-				...(isModelName ? {} : { version: modelId }),
+				version: modelId,
 				input: {
 					prompt,
 					negative_prompt:

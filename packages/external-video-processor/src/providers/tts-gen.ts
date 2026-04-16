@@ -8,10 +8,13 @@ import { withTiming } from "../utils/logger";
 
 const GOOGLE_TTS_BASE =
 	"https://texttospeech.googleapis.com/v1/text:synthesize";
+const ELEVENLABS_BASE = "https://api.elevenlabs.io/v1";
 const UNREAL_SPEECH_BASE = "https://api.v8.unrealspeech.com";
 const STREAM_CHAR_LIMIT = 950;
 const DEFAULT_GOOGLE_VOICE =
 	process.env.GOOGLE_TTS_VOICE_NAME?.trim() || "en-US-Wavenet-G";
+/** Rachel — stable, neutral English voice available on all ElevenLabs plans. */
+const DEFAULT_ELEVENLABS_VOICE = "21m00Tcm4TlvDq8ikWAM";
 
 function makeHttpErr(
 	status: number,
@@ -66,6 +69,33 @@ async function googleTts(
 		buf.byteOffset,
 		buf.byteOffset + buf.byteLength,
 	) as ArrayBuffer;
+}
+
+async function elevenLabsTts(
+	key: ProcessorProviderKey,
+	text: string,
+): Promise<ArrayBuffer> {
+	const voiceId = key.modelId?.trim() || DEFAULT_ELEVENLABS_VOICE;
+	const res = await fetch(`${ELEVENLABS_BASE}/text-to-speech/${voiceId}`, {
+		method: "POST",
+		headers: {
+			"Content-Type": "application/json",
+			"xi-api-key": key.secret,
+		},
+		body: JSON.stringify({
+			text,
+			model_id: "eleven_turbo_v2_5",
+			voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+		}),
+		signal: AbortSignal.timeout(120_000),
+	});
+	if (!res.ok)
+		throw makeHttpErr(
+			res.status,
+			await res.text().catch(() => ""),
+			res.headers.get("retry-after"),
+		);
+	return res.arrayBuffer();
 }
 
 async function unrealStream(
@@ -137,7 +167,7 @@ async function unrealSpeechTts(
 		: unrealAsync(key.secret, text, v);
 }
 
-/** TTS synthesis: Google Cloud TTS (primary) → Unreal Speech (fallback). */
+/** TTS synthesis: Google Cloud TTS (primary) → ElevenLabs TTS → Unreal Speech (fallback). */
 export async function synthesizeSpeech(
 	spec: ProcessorJobSpec,
 	text: string,
@@ -155,6 +185,28 @@ export async function synthesizeSpeech(
 				await reportKeyFailure(
 					spec,
 					"google_tts",
+					key.id,
+					e.httpStatus,
+					e.bodySnippet,
+					e.retryAfterHeader,
+				);
+				continue;
+			}
+			throw e;
+		}
+	}
+
+	for (const key of spec.providerKeys.elevenlabs) {
+		try {
+			return await withTiming("tts-gen", "elevenlabs_tts.call", () =>
+				elevenLabsTts(key, text),
+			);
+		} catch (e) {
+			lastError = e;
+			if (isHttpErr(e)) {
+				await reportKeyFailure(
+					spec,
+					"elevenlabs",
 					key.id,
 					e.httpStatus,
 					e.bodySnippet,

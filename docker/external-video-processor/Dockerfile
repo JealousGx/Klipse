@@ -11,12 +11,17 @@ ENV CI=true
 
 RUN corepack enable && corepack prepare pnpm@10.31.0 --activate
 
+# Copy manifests only first — install layer only invalidates when deps change, not source.
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-COPY packages/external-video-processor ./packages/external-video-processor
-COPY packages/video-assembly-shared ./packages/video-assembly-shared
+COPY packages/external-video-processor/package.json ./packages/external-video-processor/package.json
+COPY packages/video-assembly-shared/package.json ./packages/video-assembly-shared/package.json
 
 RUN --mount=type=cache,id=pnpm,target=/root/.local/share/pnpm/store \
 	pnpm install --frozen-lockfile --filter @klipse/external-video-processor...
+
+# Copy source after install so code changes don't bust the install cache.
+COPY packages/external-video-processor ./packages/external-video-processor
+COPY packages/video-assembly-shared ./packages/video-assembly-shared
 
 RUN pnpm --filter @klipse/external-video-processor run build
 
