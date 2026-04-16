@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Download, RefreshCw } from "lucide-react";
+import { ArrowUpRight, Download, RefreshCw, Unplug } from "lucide-react";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
 
@@ -34,6 +34,20 @@ export function shortJobId(id: string): string {
 	const t = id.trim();
 	if (t.length <= 10) return t;
 	return `${t.slice(0, 6)}…${t.slice(-4)}`;
+}
+
+/**
+ * True when `publishLastError` indicates a revoked / expired OAuth token —
+ * used to show a friendly "Reconnect YouTube" prompt instead of a raw error.
+ */
+function isYoutubeTokenError(error: string): boolean {
+	const e = error.toLowerCase();
+	return (
+		e === "missing_oauth_refresh_token" ||
+		e.includes("invalid_grant") ||
+		e.includes("token has been") ||
+		e.includes("revoked")
+	);
 }
 
 const statusLabel: Record<VideoJobListRow["status"], string> = {
@@ -323,9 +337,30 @@ function JobDetailPane({
 				{job.publishLastError &&
 				job.status === "completed" &&
 				!job.publishedVideoId ? (
-					<p className="text-xs text-destructive">
-						Publish failed: {job.publishLastError}
-					</p>
+					isYoutubeTokenError(job.publishLastError) ? (
+						<div className="rounded-lg border border-amber-500/35 bg-amber-500/8 px-3 py-2.5">
+							<div className="flex items-center gap-2">
+								<Unplug className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
+								<p className="text-sm font-medium text-foreground">
+									YouTube access expired
+								</p>
+							</div>
+							<p className="mt-1 text-xs text-muted-foreground">
+								Google revoked Klipse's access. Reconnect to resume publishing.
+							</p>
+							<Link
+								to="/dashboard/publishing/$destinationId"
+								params={{ destinationId: job.channelId }}
+								className="mt-2 inline-block text-xs font-semibold text-primary hover:underline"
+							>
+								Reconnect YouTube →
+							</Link>
+						</div>
+					) : (
+						<p className="text-xs text-destructive">
+							Publish failed: {job.publishLastError}
+						</p>
+					)
 				) : null}
 				<div>
 					<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
