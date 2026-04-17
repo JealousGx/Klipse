@@ -1,6 +1,8 @@
 steps:
   # Build the processor image (context = repo root, Dockerfile in docker/)
   - name: "gcr.io/cloud-builders/docker"
+    env:
+      - "DOCKER_BUILDKIT=1"
     args:
       - "build"
       - "-t"
