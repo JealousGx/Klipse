@@ -1,3 +1,6 @@
+# docker container for local mysql database.
+# database url: mysql://klipse:klipse@localhost:3306/klipse
+
 services:
   mysql:
     image: mysql:8.0
