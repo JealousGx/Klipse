@@ -10,8 +10,8 @@ import * as schema from "@/db/schema";
 
 import { env } from "@/env";
 import { createPolarBillingPlugin } from "@/features/billing/polar-plugin.server";
-import { ac, adminRoles } from "@/lib/auth/admin-access-control";
 import { additionalUserFields } from "@/lib/auth/additional-user-fields";
+import { ac, adminRoles } from "@/lib/auth/admin-access-control";
 import { sendAuthOTPEmail } from "@/lib/email/auth-otp";
 import { accountId, sessionId, userId, verificationId } from "@/lib/id";
 
@@ -68,8 +68,9 @@ export const auth = betterAuth({
 			allowedAttempts: ALLOWED_OTP_ATTEMPTS,
 			sendVerificationOnSignUp: true,
 			sendVerificationOTP,
-			generateOTP:
-				process.env.NODE_ENV === "development" ? () => "123456" : undefined,
+			...(["local", "development"].includes(env.ENVIRONMENT) && {
+				generateOTP: () => "123456",
+			}), // hard coded OTP for local and development environments. default behavior for production.
 			overrideDefaultEmailVerification: true,
 		}),
 		createPolarBillingPlugin(),
@@ -111,8 +112,7 @@ async function sendVerificationOTP(
 ) {
 	const { email, otp, type } = data;
 
-	if (process.env.NODE_ENV === "development") {
-		// In dev, just log - don't actually send email
+	if (env.ENVIRONMENT === "local" || env.ENVIRONMENT === "development") {
 		console.log(`[dev OTP] ${otp} for ${email} (${type})`);
 		return;
 	}
