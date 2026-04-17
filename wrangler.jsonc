@@ -1,8 +1,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "klipse",
-  "compatibility_date": "2026-04-16",
-  "compatibility_flags": ["nodejs_compat", "enable_nodejs_tty_module"],
+  "compatibility_date": "2026-04-17",
+  "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
   "routes": [{
     "pattern": "klipse.app",
