@@ -7,8 +7,8 @@ export async function sendAuthOTPEmail(data: { email: string; otp: string }) {
 		template: {
 			id: "email-verification",
 			variables: {
-				OTP: data.otp,
-				CURR_YEAR: String(new Date().getFullYear()),
+				OTP_CODE: data.otp,
+				CURRENT_YEAR: new Date().getFullYear(),
 			},
 		},
 	});
