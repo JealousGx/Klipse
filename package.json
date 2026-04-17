@@ -26,6 +26,7 @@
     "lint": "biome lint",
     "check": "biome check",
     "worker:dev": "pnpm --filter @klipse/worker dev",
+    "worker:deploy": "pnpm run --filter @klipse/worker deploy",
     "worker:typecheck": "pnpm --filter @klipse/worker typecheck",
     "processor:typecheck": "pnpm --filter @klipse/external-video-processor typecheck",
     "processor:docker:build": "docker build -f docker/external-video-processor/Dockerfile -t klipse-external-video-processor:latest .",
