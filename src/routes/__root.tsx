@@ -14,6 +14,7 @@ import { AuthModalProvider } from "@/features/auth/AuthModalContext";
 import { getRootSession } from "@/features/auth/get-root-session";
 
 import { rootSearchSchema } from "@/lib/routes/root-search";
+import { captureException } from "@/lib/sentry";
 
 import { ErrorPage } from "../components/error-page";
 import { NotFoundPage } from "../components/not-found-page";
@@ -42,7 +43,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 	},
 	notFoundComponent: () => <NotFoundPage />,
 	errorComponent: ({ error, reset }) => {
-		// void captureException(error, { location: "root-error-boundary" });
+		void captureException(error, { location: "root-error-boundary" });
 		return <ErrorPage error={error} reset={reset} />;
 	},
 	head: () => {

@@ -6,7 +6,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
-// import { captureException } from "@/lib/sentry";
+import { captureException } from "@/lib/sentry";
 import { publicUrlForR2Key } from "@/lib/storage/r2.server";
 import { markFreeTierVideoConsumedIfNeeded } from "./free-tier-video-consumed.server";
 import { PIPELINE_STAGE } from "./pipeline-kind";
@@ -136,12 +136,7 @@ export async function applyVideoProcessorWebhook(
 	}
 
 	const message = (input.error ?? "processor_failed").trim().slice(0, 4000);
-	// captureException(new Error(`video_processor_job_failed: ${message}`), {
-	// 	jobId,
-	// 	userId,
-	// 	processorError: message,
-	// });
-	console.warn(`video_processor_job_failed: ${message}`, {
+	captureException(new Error(`video_processor_job_failed: ${message}`), {
 		jobId,
 		userId,
 		processorError: message,
