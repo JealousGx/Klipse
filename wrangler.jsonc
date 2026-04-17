@@ -5,34 +5,38 @@
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
   "vars": {
-    "ENVIRONMENT": "production"
+    "ENVIRONMENT": "production",
   },
-  "routes": [{
-    "pattern": "klipse.app",
-    "custom_domain": true
-  }],
+  "routes": [
+    {
+      "pattern": "klipse.app",
+      "custom_domain": true,
+    },
+  ],
   "env": {
     "staging": {
-        "name": "klipse-staging",
-        "vars": {
-          "ENVIRONMENT": "staging"
+      "name": "klipse-staging",
+      "vars": {
+        "ENVIRONMENT": "staging",
+      },
+      "routes": [
+        {
+          "pattern": "staging.klipse.app",
+          "custom_domain": true,
         },
-        "routes": [{
-            "pattern": "staging.klipse.app",
-            "custom_domain": true
-        }]
-    }
+      ],
+    },
   },
   "observability": {
     "traces": {
       "enabled": true,
       // Must match the destination name in the Cloudflare dashboard
-      "destinations": ["grafana-traces"]
+      "destinations": ["main-app-traces"],
     },
     "logs": {
       "enabled": true,
       // Must match the destination name in the Cloudflare dashboard
-      "destinations": ["grafana-logs"]
-    }
-  }
+      "destinations": ["main-app-logs"],
+    },
+  },
 }
