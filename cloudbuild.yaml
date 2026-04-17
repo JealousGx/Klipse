@@ -35,3 +35,6 @@ steps:
 images:
   - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA"
   - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest"
+
+options:
+  logging: CLOUD_LOGGING_ONLY
