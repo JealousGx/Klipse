@@ -8,7 +8,7 @@ export async function sendAuthOTPEmail(data: { email: string; otp: string }) {
 			id: "email-verification",
 			variables: {
 				OTP_CODE: data.otp,
-				CURRENT_YEAR: new Date().getFullYear(),
+				CURRENT_YEAR: String(new Date().getFullYear()),
 			},
 		},
 	});
