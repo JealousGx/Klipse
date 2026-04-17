@@ -34,3 +34,13 @@ queue = "klipse-jobs-free"
 max_batch_size = 8
 max_batch_timeout = 5
 max_retries = 15
+
+[observability.traces]
+enabled = true
+# Must match the destination name you configured in Cloudflare dashboard
+destinations = [ "grafana-traces" ]
+
+[observability.logs]
+enabled = true
+# Must match the destination name you configured in Cloudflare dashboard
+destinations = [ "grafana-logs" ]
