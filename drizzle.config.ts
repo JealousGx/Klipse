@@ -10,7 +10,7 @@ export default defineConfig({
   dbCredentials: {
     url: process.env.DATABASE_URL as string,
     ssl: {
-      rejectUnauthorized: true,
+      rejectUnauthorized: true, // for TiDb cloud only.
     },
   },
 })
