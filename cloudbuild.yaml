@@ -1,0 +1,37 @@
+steps:
+  # Build the processor image (context = repo root, Dockerfile in docker/)
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "build"
+      - "-t"
+      - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA"
+      - "-t"
+      - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest"
+      - "-f"
+      - "docker/external-video-processor/Dockerfile"
+      - "."
+
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA"
+
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest"
+
+  # Deploy new revision to Cloud Run
+  - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
+    entrypoint: gcloud
+    args:
+      - "run"
+      - "deploy"
+      - "klipse-processor"
+      - "--image=us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA"
+      - "--region=us-central1"
+      - "--project=klipse-492407"
+
+images:
+  - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA"
+  - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest"
