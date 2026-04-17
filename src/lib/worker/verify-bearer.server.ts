@@ -6,6 +6,11 @@ import { env } from "@/env";
  */
 export function isAuthorizedWorkerOrInternalCron(request: Request): boolean {
 	const auth = request.headers.get("authorization");
+	console.log("Checking worker/internal cron auth", {
+		auth,
+		expectedWorker: env.WORKER_SECRET,
+		expectedCron: env.INTERNAL_CRON_SECRET,
+	});
 	if (!auth?.startsWith("Bearer ")) {
 		return false;
 	}
