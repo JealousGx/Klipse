@@ -4,6 +4,9 @@
   "compatibility_date": "2026-04-17",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
+  "vars": {
+    "ENVIRONMENT": "production"
+  },
   "routes": [{
     "pattern": "klipse.app",
     "custom_domain": true
@@ -11,6 +14,9 @@
   "env": {
     "staging": {
         "name": "klipse-staging",
+        "vars": {
+          "ENVIRONMENT": "staging"
+        },
         "routes": [{
             "pattern": "staging.klipse.app",
             "custom_domain": true

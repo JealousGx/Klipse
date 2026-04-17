@@ -14,6 +14,16 @@ loadDotenv({ path: resolve(root, ".env"), override: true });
 loadDotenv({ path: resolve(root, ".env.local"), override: true });
 
 const config = defineConfig({
+	resolve: {
+		alias: {
+			// CF Workers' node:diagnostics_channel polyfill is incomplete and causes
+			// "Failed to publish diagnostics channel message" errors from Better Auth.
+			"node:diagnostics_channel": resolve(
+				root,
+				"src/lib/shims/node-diagnostics-channel.ts",
+			),
+		},
+	},
 	// So other processes (e.g. external-video-processor in Docker calling
 	// host.docker.internal:PORT) can reach the dev server. Default is localhost-only.
 	server: {
