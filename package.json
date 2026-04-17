@@ -10,6 +10,7 @@
   },
   "packageManager": "pnpm@10.31.0",
   "scripts": {
+    "prebuild": "pnpm install && pnpm run db:migrate",
     "dev": "NODE_OPTIONS='--import ./instrument.server.mjs' vite dev --port 3000",
     "build": "NODE_OPTIONS=--max-old-space-size=4096 vite build && tsc --noEmit",
     "preview": "vite preview",
