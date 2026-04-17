@@ -2,9 +2,8 @@
 	"name": "@klipse/external-video-processor",
 	"version": "0.0.0",
 	"private": true,
-	"type": "module",
 	"scripts": {
-		"build": "esbuild src/index.ts --bundle --platform=node --target=node23 --outfile=dist/index.js --format=esm",
+		"build": "esbuild src/index.ts --bundle --platform=node --target=node23 --outfile=dist/index.js --format=cjs",
 		"start": "node dist/index.js",
 		"typecheck": "tsc --noEmit"
 	},

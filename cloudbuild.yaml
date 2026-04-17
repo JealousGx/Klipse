@@ -1,10 +1,18 @@
 steps:
+  # Pull previous image for layer cache (allowed to fail on first build)
+  - name: "gcr.io/cloud-builders/docker"
+    entrypoint: "bash"
+    args:
+      - "-c"
+      - "docker pull us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest || true"
+
   # Build the processor image (context = repo root, Dockerfile in docker/)
   - name: "gcr.io/cloud-builders/docker"
     env:
       - "DOCKER_BUILDKIT=1"
     args:
       - "build"
+      - "--cache-from=us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest"
       - "-t"
       - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA"
       - "-t"
@@ -40,3 +48,4 @@ images:
 
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
+  machineType: E2_HIGHCPU_8
