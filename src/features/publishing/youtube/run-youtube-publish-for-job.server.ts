@@ -6,7 +6,7 @@ import { getDb } from "@/db";
 import { channels } from "@/db/schema/channels";
 import { users } from "@/db/schema/users";
 import { videoJobs } from "@/db/schema/video-jobs";
-
+import { env } from "@/env";
 import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config";
 import {
 	clearOAuthRefreshTokenOnly,
@@ -18,7 +18,7 @@ import {
 	refreshYoutubeAccessToken,
 } from "@/features/youtube/youtube-oauth-tokens.server";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
-
+import { sendYoutubeDisconnectEmail } from "@/lib/email/youtube-disconnect-email";
 import { captureException } from "@/lib/sentry";
 import { buildYoutubeVideoMetadata } from "./build-youtube-video-metadata.server";
 import { uploadMp4ToYoutube } from "./youtube-upload-api.server";
@@ -67,7 +67,7 @@ export async function runYoutubePublishForJob(input: {
 		}
 
 		const [u] = await tx
-			.select({ plan: users.plan })
+			.select({ plan: users.plan, email: users.email })
 			.from(users)
 			.where(eq(users.id, userId))
 			.limit(1);
@@ -117,6 +117,7 @@ export async function runYoutubePublishForJob(input: {
 			job,
 			channelName: ch.name,
 			niche: ch.niche,
+			userEmail: u?.email ?? null,
 		};
 	});
 
@@ -124,7 +125,13 @@ export async function runYoutubePublishForJob(input: {
 		return { ok: true, skipped: true, reason: claimResult.reason };
 	}
 
-	const { job, channelName } = claimResult;
+	const { job, channelName, userEmail } = claimResult;
+
+	const baseUrl =
+		env.SERVER_URL?.replace(/\/$/, "") ||
+		env.VITE_APP_URL?.replace(/\/$/, "") ||
+		"";
+	const publishingUrl = `${baseUrl}/dashboard/publishing`;
 
 	let refreshToken: string | null;
 	try {
@@ -133,6 +140,21 @@ export async function runYoutubePublishForJob(input: {
 		refreshToken = null;
 	}
 	if (!refreshToken?.trim()) {
+		// Only notify once — skip if the previous attempt already set this exact error.
+		const isFirstDisconnect =
+			job.publishLastError !== "missing_oauth_refresh_token";
+		if (isFirstDisconnect && userEmail) {
+			sendYoutubeDisconnectEmail({
+				to: userEmail,
+				channelName,
+				publishingUrl,
+			}).catch((err) =>
+				console.error("[youtube-publish] disconnect email failed", {
+					jobId,
+					error: err instanceof Error ? err.message : String(err),
+				}),
+			);
+		}
 		await clearPublishAttempt(jobId, userId, "missing_oauth_refresh_token");
 		return { ok: false, error: "missing_oauth_refresh_token" };
 	}
