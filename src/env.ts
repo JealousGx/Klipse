@@ -177,6 +177,15 @@ export const env = createEnv({
 		// Sentry — error tracking (optional; no-op when absent)
 		// https://sentry.io
 		// -------------------------------------------------------------------------
+		// -------------------------------------------------------------------------
+		// Axiom — structured log drain (optional; no-op when absent)
+		// https://axiom.co
+		// -------------------------------------------------------------------------
+		/** Axiom API token with Ingest permission on AXIOM_DATASET. */
+		AXIOM_API_TOKEN: z.string().min(1).optional(),
+		/** Axiom dataset name to ingest into. @default "klipse-logs" */
+		AXIOM_DATASET: z.string().min(1).default("klipse-logs"),
+
 		/** Server-side Sentry DSN. Get from: Sentry project → Settings → Client Keys. */
 		SENTRY_DSN: z.url().optional(),
 		/**
