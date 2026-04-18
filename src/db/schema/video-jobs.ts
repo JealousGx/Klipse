@@ -45,7 +45,7 @@ export const videoJobs = mysqlTable(
 		 */
 		pipelineKind: varchar("pipeline_kind", { length: 32 })
 			.notNull()
-			.default("stub_pipeline"),
+			.default("content_pipeline_v1"),
 		/**
 		 * User input at job creation (e.g. video idea). Null for older rows or stub-only jobs.
 		 */

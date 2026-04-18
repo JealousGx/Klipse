@@ -1,0 +1,1 @@
+ALTER TABLE `video_jobs` MODIFY COLUMN `pipeline_kind` varchar(32) NOT NULL DEFAULT 'content_pipeline_v1';
