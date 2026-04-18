@@ -31,6 +31,7 @@ import { Route as AuthedDashboardBillingRouteImport } from './routes/_authed/das
 import { Route as AuthedDashboardAnalyticsRouteImport } from './routes/_authed/dashboard/analytics'
 import { Route as AuthedAdminUsersRouteImport } from './routes/_authed/admin/users'
 import { Route as AuthedAdminSystemRouteImport } from './routes/_authed/admin/system'
+import { Route as AuthedAdminSettingsRouteImport } from './routes/_authed/admin/settings'
 import { Route as AuthedAdminKeysRouteImport } from './routes/_authed/admin/keys'
 import { Route as AuthedAdminJobsRouteImport } from './routes/_authed/admin/jobs'
 import { Route as AuthedDashboardPublishingIndexRouteImport } from './routes/_authed/dashboard/publishing.index'
@@ -156,6 +157,11 @@ const AuthedAdminSystemRoute = AuthedAdminSystemRouteImport.update({
   path: '/system',
   getParentRoute: () => AuthedAdminRouteRoute,
 } as any)
+const AuthedAdminSettingsRoute = AuthedAdminSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthedAdminRouteRoute,
+} as any)
 const AuthedAdminKeysRoute = AuthedAdminKeysRouteImport.update({
   id: '/keys',
   path: '/keys',
@@ -230,6 +236,7 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof AuthedDashboardRouteRouteWithChildren
   '/admin/jobs': typeof AuthedAdminJobsRoute
   '/admin/keys': typeof AuthedAdminKeysRoute
+  '/admin/settings': typeof AuthedAdminSettingsRoute
   '/admin/system': typeof AuthedAdminSystemRoute
   '/admin/users': typeof AuthedAdminUsersRoute
   '/dashboard/analytics': typeof AuthedDashboardAnalyticsRoute
@@ -262,6 +269,7 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/admin/jobs': typeof AuthedAdminJobsRoute
   '/admin/keys': typeof AuthedAdminKeysRoute
+  '/admin/settings': typeof AuthedAdminSettingsRoute
   '/admin/system': typeof AuthedAdminSystemRoute
   '/admin/users': typeof AuthedAdminUsersRoute
   '/dashboard/analytics': typeof AuthedDashboardAnalyticsRoute
@@ -297,6 +305,7 @@ export interface FileRoutesById {
   '/_authed/dashboard': typeof AuthedDashboardRouteRouteWithChildren
   '/_authed/admin/jobs': typeof AuthedAdminJobsRoute
   '/_authed/admin/keys': typeof AuthedAdminKeysRoute
+  '/_authed/admin/settings': typeof AuthedAdminSettingsRoute
   '/_authed/admin/system': typeof AuthedAdminSystemRoute
   '/_authed/admin/users': typeof AuthedAdminUsersRoute
   '/_authed/dashboard/analytics': typeof AuthedDashboardAnalyticsRoute
@@ -333,6 +342,7 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/admin/jobs'
     | '/admin/keys'
+    | '/admin/settings'
     | '/admin/system'
     | '/admin/users'
     | '/dashboard/analytics'
@@ -365,6 +375,7 @@ export interface FileRouteTypes {
     | '/terms'
     | '/admin/jobs'
     | '/admin/keys'
+    | '/admin/settings'
     | '/admin/system'
     | '/admin/users'
     | '/dashboard/analytics'
@@ -399,6 +410,7 @@ export interface FileRouteTypes {
     | '/_authed/dashboard'
     | '/_authed/admin/jobs'
     | '/_authed/admin/keys'
+    | '/_authed/admin/settings'
     | '/_authed/admin/system'
     | '/_authed/admin/users'
     | '/_authed/dashboard/analytics'
@@ -599,6 +611,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthedAdminSystemRouteImport
       parentRoute: typeof AuthedAdminRouteRoute
     }
+    '/_authed/admin/settings': {
+      id: '/_authed/admin/settings'
+      path: '/settings'
+      fullPath: '/admin/settings'
+      preLoaderRoute: typeof AuthedAdminSettingsRouteImport
+      parentRoute: typeof AuthedAdminRouteRoute
+    }
     '/_authed/admin/keys': {
       id: '/_authed/admin/keys'
       path: '/keys'
@@ -682,6 +701,7 @@ declare module '@tanstack/react-router' {
 interface AuthedAdminRouteRouteChildren {
   AuthedAdminJobsRoute: typeof AuthedAdminJobsRoute
   AuthedAdminKeysRoute: typeof AuthedAdminKeysRoute
+  AuthedAdminSettingsRoute: typeof AuthedAdminSettingsRoute
   AuthedAdminSystemRoute: typeof AuthedAdminSystemRoute
   AuthedAdminUsersRoute: typeof AuthedAdminUsersRoute
   AuthedAdminIndexRoute: typeof AuthedAdminIndexRoute
@@ -690,6 +710,7 @@ interface AuthedAdminRouteRouteChildren {
 const AuthedAdminRouteRouteChildren: AuthedAdminRouteRouteChildren = {
   AuthedAdminJobsRoute: AuthedAdminJobsRoute,
   AuthedAdminKeysRoute: AuthedAdminKeysRoute,
+  AuthedAdminSettingsRoute: AuthedAdminSettingsRoute,
   AuthedAdminSystemRoute: AuthedAdminSystemRoute,
   AuthedAdminUsersRoute: AuthedAdminUsersRoute,
   AuthedAdminIndexRoute: AuthedAdminIndexRoute,
