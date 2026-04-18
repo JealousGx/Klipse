@@ -16,15 +16,8 @@ export const POLAR_USAGE_CREDITS_METADATA_KEY = "credits" as const;
 
 /** Optional labels for `metadata.stage`. */
 export const POLAR_USAGE_STAGES = {
-	scriptGeneration: "script",
-	imageGeneration: "image",
-	tts: "tts",
-	videoAssembly: "assembly",
-	aiVideoSecond: "ai_video",
 	/** Script + encode vertical slice (single credit line item). */
 	contentPipeline: "content_pipeline",
-	/** Dashboard stub until real video pipeline metering exists. */
-	stubGenerate: "stub",
 } as const;
 
 /**

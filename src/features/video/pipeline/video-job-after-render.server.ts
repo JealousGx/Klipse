@@ -21,7 +21,6 @@ import {
 	PAID_TIER_RETENTION_HOURS,
 } from "@/lib/format-output-retention";
 import { expiringAssetRowId } from "@/lib/id";
-import { WorkerEnqueueFailedError } from "@/lib/worker/enqueue.server";
 
 function escapeHtml(text: string): string {
 	return text
@@ -146,27 +145,10 @@ export async function runAfterVideoRenderComplete(input: {
 		});
 	}
 
-	try {
-		await dispatchPlatformPublishAfterRender({
-			jobId,
-			userId,
-			channel,
-			plan,
-		});
-	} catch (e) {
-		if (e instanceof WorkerEnqueueFailedError) {
-			// Record the failure on the job so the user can see it and retry manually.
-			// The job stays `completed` (render succeeded); only the publish enqueue failed.
-			console.error("[after-render] publish enqueue failed", jobId, e);
-			await db
-				.update(videoJobs)
-				.set({
-					publishLastError: "publish_enqueue_failed",
-					updatedAt: new Date(),
-				})
-				.where(and(eq(videoJobs.id, jobId), eq(videoJobs.userId, userId)));
-			return;
-		}
-		throw e;
-	}
+	await dispatchPlatformPublishAfterRender({
+		jobId,
+		userId,
+		channel,
+		plan,
+	});
 }

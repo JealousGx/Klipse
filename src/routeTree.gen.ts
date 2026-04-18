@@ -22,6 +22,7 @@ import { Route as AuthedDashboardIndexRouteImport } from './routes/_authed/dashb
 import { Route as AuthedAdminIndexRouteImport } from './routes/_authed/admin/index'
 import { Route as ApiCronTriggerScheduledJobsRouteImport } from './routes/api/cron/trigger-scheduled-jobs'
 import { Route as ApiCronPurgeExpiringAssetsRouteImport } from './routes/api/cron/purge-expiring-assets'
+import { Route as ApiCronDispatchQueuedJobsRouteImport } from './routes/api/cron/dispatch-queued-jobs'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as AuthedDashboardSettingsRouteImport } from './routes/_authed/dashboard/settings'
 import { Route as AuthedDashboardPublishingRouteImport } from './routes/_authed/dashboard/publishing'
@@ -37,12 +38,10 @@ import { Route as AuthedAdminJobsRouteImport } from './routes/_authed/admin/jobs
 import { Route as AuthedDashboardPublishingIndexRouteImport } from './routes/_authed/dashboard/publishing.index'
 import { Route as ApiYoutubeOauthStartRouteImport } from './routes/api/youtube/oauth/start'
 import { Route as ApiYoutubeOauthCallbackRouteImport } from './routes/api/youtube/oauth/callback'
-import { Route as ApiInternalWorkerYoutubePublishRouteImport } from './routes/api/internal/worker/youtube-publish'
 import { Route as ApiInternalVideoProcessorAssemblyCompleteRouteImport } from './routes/api/internal/video-processor/assembly-complete'
 import { Route as ApiInternalProcessorProgressRouteImport } from './routes/api/internal/processor/progress'
 import { Route as ApiInternalProcessorKeyFailureRouteImport } from './routes/api/internal/processor/key-failure'
 import { Route as AuthedDashboardPublishingDestinationIdRouteImport } from './routes/_authed/dashboard/publishing.$destinationId'
-import { Route as ApiInternalWorkerVideoJobsDispatchRouteImport } from './routes/api/internal/worker/video-jobs/dispatch'
 
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
@@ -108,6 +107,12 @@ const ApiCronPurgeExpiringAssetsRoute =
   ApiCronPurgeExpiringAssetsRouteImport.update({
     id: '/api/cron/purge-expiring-assets',
     path: '/api/cron/purge-expiring-assets',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiCronDispatchQueuedJobsRoute =
+  ApiCronDispatchQueuedJobsRouteImport.update({
+    id: '/api/cron/dispatch-queued-jobs',
+    path: '/api/cron/dispatch-queued-jobs',
     getParentRoute: () => rootRouteImport,
   } as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
@@ -188,12 +193,6 @@ const ApiYoutubeOauthCallbackRoute = ApiYoutubeOauthCallbackRouteImport.update({
   path: '/api/youtube/oauth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ApiInternalWorkerYoutubePublishRoute =
-  ApiInternalWorkerYoutubePublishRouteImport.update({
-    id: '/api/internal/worker/youtube-publish',
-    path: '/api/internal/worker/youtube-publish',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 const ApiInternalVideoProcessorAssemblyCompleteRoute =
   ApiInternalVideoProcessorAssemblyCompleteRouteImport.update({
     id: '/api/internal/video-processor/assembly-complete',
@@ -218,12 +217,6 @@ const AuthedDashboardPublishingDestinationIdRoute =
     path: '/$destinationId',
     getParentRoute: () => AuthedDashboardPublishingRoute,
   } as any)
-const ApiInternalWorkerVideoJobsDispatchRoute =
-  ApiInternalWorkerVideoJobsDispatchRouteImport.update({
-    id: '/api/internal/worker/video-jobs/dispatch',
-    path: '/api/internal/worker/video-jobs/dispatch',
-    getParentRoute: () => rootRouteImport,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -246,6 +239,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/publishing': typeof AuthedDashboardPublishingRouteWithChildren
   '/dashboard/settings': typeof AuthedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/dispatch-queued-jobs': typeof ApiCronDispatchQueuedJobsRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
   '/admin/': typeof AuthedAdminIndexRoute
@@ -254,11 +248,9 @@ export interface FileRoutesByFullPath {
   '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
   '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
-  '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/dashboard/publishing/': typeof AuthedDashboardPublishingIndexRoute
-  '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -278,6 +270,7 @@ export interface FileRoutesByTo {
   '/dashboard/jobs': typeof AuthedDashboardJobsRoute
   '/dashboard/settings': typeof AuthedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/dispatch-queued-jobs': typeof ApiCronDispatchQueuedJobsRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
   '/admin': typeof AuthedAdminIndexRoute
@@ -286,11 +279,9 @@ export interface FileRoutesByTo {
   '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
   '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
-  '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/dashboard/publishing': typeof AuthedDashboardPublishingIndexRoute
-  '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -315,6 +306,7 @@ export interface FileRoutesById {
   '/_authed/dashboard/publishing': typeof AuthedDashboardPublishingRouteWithChildren
   '/_authed/dashboard/settings': typeof AuthedDashboardSettingsRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/dispatch-queued-jobs': typeof ApiCronDispatchQueuedJobsRoute
   '/api/cron/purge-expiring-assets': typeof ApiCronPurgeExpiringAssetsRoute
   '/api/cron/trigger-scheduled-jobs': typeof ApiCronTriggerScheduledJobsRoute
   '/_authed/admin/': typeof AuthedAdminIndexRoute
@@ -323,11 +315,9 @@ export interface FileRoutesById {
   '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
   '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
-  '/api/internal/worker/youtube-publish': typeof ApiInternalWorkerYoutubePublishRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/_authed/dashboard/publishing/': typeof AuthedDashboardPublishingIndexRoute
-  '/api/internal/worker/video-jobs/dispatch': typeof ApiInternalWorkerVideoJobsDispatchRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -352,6 +342,7 @@ export interface FileRouteTypes {
     | '/dashboard/publishing'
     | '/dashboard/settings'
     | '/api/auth/$'
+    | '/api/cron/dispatch-queued-jobs'
     | '/api/cron/purge-expiring-assets'
     | '/api/cron/trigger-scheduled-jobs'
     | '/admin/'
@@ -360,11 +351,9 @@ export interface FileRouteTypes {
     | '/api/internal/processor/key-failure'
     | '/api/internal/processor/progress'
     | '/api/internal/video-processor/assembly-complete'
-    | '/api/internal/worker/youtube-publish'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
     | '/dashboard/publishing/'
-    | '/api/internal/worker/video-jobs/dispatch'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -384,6 +373,7 @@ export interface FileRouteTypes {
     | '/dashboard/jobs'
     | '/dashboard/settings'
     | '/api/auth/$'
+    | '/api/cron/dispatch-queued-jobs'
     | '/api/cron/purge-expiring-assets'
     | '/api/cron/trigger-scheduled-jobs'
     | '/admin'
@@ -392,11 +382,9 @@ export interface FileRouteTypes {
     | '/api/internal/processor/key-failure'
     | '/api/internal/processor/progress'
     | '/api/internal/video-processor/assembly-complete'
-    | '/api/internal/worker/youtube-publish'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
     | '/dashboard/publishing'
-    | '/api/internal/worker/video-jobs/dispatch'
   id:
     | '__root__'
     | '/'
@@ -420,6 +408,7 @@ export interface FileRouteTypes {
     | '/_authed/dashboard/publishing'
     | '/_authed/dashboard/settings'
     | '/api/auth/$'
+    | '/api/cron/dispatch-queued-jobs'
     | '/api/cron/purge-expiring-assets'
     | '/api/cron/trigger-scheduled-jobs'
     | '/_authed/admin/'
@@ -428,11 +417,9 @@ export interface FileRouteTypes {
     | '/api/internal/processor/key-failure'
     | '/api/internal/processor/progress'
     | '/api/internal/video-processor/assembly-complete'
-    | '/api/internal/worker/youtube-publish'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
     | '/_authed/dashboard/publishing/'
-    | '/api/internal/worker/video-jobs/dispatch'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -444,15 +431,14 @@ export interface RootRouteChildren {
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiCronDispatchQueuedJobsRoute: typeof ApiCronDispatchQueuedJobsRoute
   ApiCronPurgeExpiringAssetsRoute: typeof ApiCronPurgeExpiringAssetsRoute
   ApiCronTriggerScheduledJobsRoute: typeof ApiCronTriggerScheduledJobsRoute
   ApiInternalProcessorKeyFailureRoute: typeof ApiInternalProcessorKeyFailureRoute
   ApiInternalProcessorProgressRoute: typeof ApiInternalProcessorProgressRoute
   ApiInternalVideoProcessorAssemblyCompleteRoute: typeof ApiInternalVideoProcessorAssemblyCompleteRoute
-  ApiInternalWorkerYoutubePublishRoute: typeof ApiInternalWorkerYoutubePublishRoute
   ApiYoutubeOauthCallbackRoute: typeof ApiYoutubeOauthCallbackRoute
   ApiYoutubeOauthStartRoute: typeof ApiYoutubeOauthStartRoute
-  ApiInternalWorkerVideoJobsDispatchRoute: typeof ApiInternalWorkerVideoJobsDispatchRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -546,6 +532,13 @@ declare module '@tanstack/react-router' {
       path: '/api/cron/purge-expiring-assets'
       fullPath: '/api/cron/purge-expiring-assets'
       preLoaderRoute: typeof ApiCronPurgeExpiringAssetsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cron/dispatch-queued-jobs': {
+      id: '/api/cron/dispatch-queued-jobs'
+      path: '/api/cron/dispatch-queued-jobs'
+      fullPath: '/api/cron/dispatch-queued-jobs'
+      preLoaderRoute: typeof ApiCronDispatchQueuedJobsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/auth/$': {
@@ -653,13 +646,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiYoutubeOauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/api/internal/worker/youtube-publish': {
-      id: '/api/internal/worker/youtube-publish'
-      path: '/api/internal/worker/youtube-publish'
-      fullPath: '/api/internal/worker/youtube-publish'
-      preLoaderRoute: typeof ApiInternalWorkerYoutubePublishRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/api/internal/video-processor/assembly-complete': {
       id: '/api/internal/video-processor/assembly-complete'
       path: '/api/internal/video-processor/assembly-complete'
@@ -687,13 +673,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/dashboard/publishing/$destinationId'
       preLoaderRoute: typeof AuthedDashboardPublishingDestinationIdRouteImport
       parentRoute: typeof AuthedDashboardPublishingRoute
-    }
-    '/api/internal/worker/video-jobs/dispatch': {
-      id: '/api/internal/worker/video-jobs/dispatch'
-      path: '/api/internal/worker/video-jobs/dispatch'
-      fullPath: '/api/internal/worker/video-jobs/dispatch'
-      preLoaderRoute: typeof ApiInternalWorkerVideoJobsDispatchRouteImport
-      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -782,17 +761,15 @@ const rootRouteChildren: RootRouteChildren = {
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiCronDispatchQueuedJobsRoute: ApiCronDispatchQueuedJobsRoute,
   ApiCronPurgeExpiringAssetsRoute: ApiCronPurgeExpiringAssetsRoute,
   ApiCronTriggerScheduledJobsRoute: ApiCronTriggerScheduledJobsRoute,
   ApiInternalProcessorKeyFailureRoute: ApiInternalProcessorKeyFailureRoute,
   ApiInternalProcessorProgressRoute: ApiInternalProcessorProgressRoute,
   ApiInternalVideoProcessorAssemblyCompleteRoute:
     ApiInternalVideoProcessorAssemblyCompleteRoute,
-  ApiInternalWorkerYoutubePublishRoute: ApiInternalWorkerYoutubePublishRoute,
   ApiYoutubeOauthCallbackRoute: ApiYoutubeOauthCallbackRoute,
   ApiYoutubeOauthStartRoute: ApiYoutubeOauthStartRoute,
-  ApiInternalWorkerVideoJobsDispatchRoute:
-    ApiInternalWorkerVideoJobsDispatchRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

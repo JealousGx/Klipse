@@ -19,9 +19,6 @@ export const env = createEnv({
 		/** HMAC secret for signed `state` in `/api/youtube/oauth/*` (min 32 chars). */
 		YOUTUBE_OAUTH_STATE_SECRET: z.string().min(32),
 
-		WORKER_API_URL: z.url(),
-		WORKER_SECRET: z.string(),
-
 		R2_ACCOUNT_ID: z.string(),
 		R2_ACCESS_KEY_ID: z.string(),
 		R2_SECRET_ACCESS_KEY: z.string(),
@@ -40,8 +37,8 @@ export const env = createEnv({
 		POLAR_PRODUCT_CREDITS: z.string(),
 		POLAR_PRODUCT_CREDITS_LARGE: z.string(),
 
-		/** Bearer token for optional crons (e.g. `POST /api/cron/purge-expiring-assets` — purges expired R2 assets). */
-		INTERNAL_CRON_SECRET: z.string().min(1).optional(),
+		/** Bearer token for all cron endpoints (cron-job.org or CF Cron Triggers). */
+		INTERNAL_CRON_SECRET: z.string().min(1),
 
 		/**
 		 * External encoder service (FFmpeg lives here only). Required for any assembly job;

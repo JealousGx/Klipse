@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 
 import { triggerDueSchedules } from "@/features/scheduling/scheduling.service.server";
-import { workerAuthMiddleware } from "@/lib/server-route-auth.server";
+import { cronAuthMiddleware } from "@/lib/server-route-auth.server";
 
 /**
  * Fires content pipeline jobs for all due schedules and advances their `nextRunAt`.
@@ -10,7 +10,7 @@ import { workerAuthMiddleware } from "@/lib/server-route-auth.server";
  */
 export const Route = createFileRoute("/api/cron/trigger-scheduled-jobs")({
 	server: {
-		middleware: [workerAuthMiddleware],
+		middleware: [cronAuthMiddleware],
 		handlers: {
 			POST: async () => {
 				const result = await triggerDueSchedules();

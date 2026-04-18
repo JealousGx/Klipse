@@ -3,17 +3,16 @@ import "@tanstack/react-start/server-only";
 import { createMiddleware } from "@tanstack/react-start";
 
 import { env } from "@/env";
+import { isAuthorizedCron } from "@/lib/auth/verify-cron.server";
 import { isAuthorizedVideoProcessorWebhook } from "@/lib/video-processor/verify-webhook.server";
-import { isAuthorizedWorkerOrInternalCron } from "@/lib/worker/verify-bearer.server";
 
 /**
- * Server-route middleware: requires a valid worker/cron bearer token.
- * Returns 401 if the `Authorization: Bearer` header doesn't match
- * `WORKER_SECRET` or `INTERNAL_CRON_SECRET`.
+ * Server-route middleware: requires `Authorization: Bearer <INTERNAL_CRON_SECRET>`.
+ * Used by all cron endpoints (cron-job.org or Cloudflare Cron Triggers).
  */
-export const workerAuthMiddleware = createMiddleware().server(
+export const cronAuthMiddleware = createMiddleware().server(
 	async ({ next, request }) => {
-		if (!isAuthorizedWorkerOrInternalCron(request)) {
+		if (!isAuthorizedCron(request)) {
 			return Response.json(
 				{ ok: false as const, error: "unauthorized" },
 				{ status: 401 },

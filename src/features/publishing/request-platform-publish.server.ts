@@ -1,23 +1,31 @@
 import "@tanstack/react-start/server-only";
 
-import type { PlatformPublishMessage } from "@klipse/worker-contracts";
-
-import { enqueuePlatformPublish } from "@/lib/worker/enqueue.server";
+import { runYoutubePublishForJob } from "@/features/publishing/youtube/run-youtube-publish-for-job.server";
 
 /**
- * Queue a platform publish for a completed job (Worker → main-app handler).
- * The worker routes to the correct internal endpoint based on `platform`.
+ * Trigger platform publish inline (no queue). Called after render completes.
+ * YouTube upload runs synchronously within the webhook response window.
  */
 export async function requestPlatformPublishForJob(input: {
 	jobId: string;
 	userId: string;
-	platform: PlatformPublishMessage["platform"];
+	platform: "youtube" | "tiktok" | "instagram";
 }): Promise<void> {
-	if (input.platform === "youtube" || input.platform === "tiktok" || input.platform === "instagram") {
-		await enqueuePlatformPublish({
-			jobId: input.jobId.trim(),
-			userId: input.userId.trim(),
-			platform: input.platform,
-		});
+	switch (input.platform) {
+		case "youtube":
+			await runYoutubePublishForJob({
+				jobId: input.jobId.trim(),
+				userId: input.userId.trim(),
+			});
+			return;
+		case "tiktok":
+		case "instagram":
+			// Not yet implemented — log and skip.
+			console.info(
+				"[request-platform-publish] platform not yet implemented, skipping",
+				input.platform,
+				input.jobId,
+			);
+			return;
 	}
 }

@@ -7,6 +7,7 @@ import { usageIdempotency } from "@/db/schema";
 import type { StubGenerateIdempotencyResult } from "@/db/schema/usage-idempotency";
 import type { VideoJobInputPayload } from "@/db/schema/video-jobs";
 import { videoJobs } from "@/db/schema/video-jobs";
+import { env } from "@/env";
 import {
 	applyUsageDeduction,
 	firePolarUsageIngestAfterDeduction,
@@ -20,9 +21,8 @@ import {
 	selectUserEntitlementSnapshotForUpdate,
 } from "@/features/entitlements";
 import { jobRowId, usageIdempotencyRowId } from "@/lib/id";
-import { enqueueVideoJobDispatch } from "@/lib/worker/enqueue.server";
-
 import { estimateContentPipelineCredits } from "./content-pipeline-estimate";
+import { dispatchContentJob } from "./pipeline/dispatch-content-job.server";
 import { PIPELINE_KIND, PIPELINE_STAGE } from "./pipeline/pipeline-kind";
 
 export const CONTENT_PIPELINE_IDEMPOTENCY_SCOPE = "content_pipeline";
@@ -40,7 +40,8 @@ export type ExecuteContentPipelineOutcome =
 	| { kind: "replay"; payload: StubGenerateIdempotencyResult };
 
 /**
- * Idempotent billing + `video_jobs` row (script → prepare → assembly) + Worker dispatch.
+ * Idempotent billing + `video_jobs` row (script → prepare → assembly).
+ * Job is created with status="queued"; cron dispatch picks it up within 1 minute.
  * Reuses free-tier single-assembly quota with standalone assembly jobs.
  */
 export async function executeContentPipelineWithIdempotency(input: {
@@ -206,11 +207,17 @@ export async function executeContentPipelineWithIdempotency(input: {
 			stage: POLAR_USAGE_STAGES.contentPipeline,
 			ref: outcome.payload.ref,
 		});
-		await enqueueVideoJobDispatch({
-			jobId: outcome.payload.ref,
-			userId: input.userId,
-			pipelineKind: PIPELINE_KIND.CONTENT_PIPELINE_V1,
-		});
+
+		if (env.ENVIRONMENT !== "production") {
+			// Local/dev: skip cron wait — dispatch immediately (fire-and-forget).
+			dispatchContentJob(outcome.payload.ref).catch((err) =>
+				console.error("[local-dispatch] immediate dispatch failed", {
+					jobId: outcome.payload.ref,
+					error: err instanceof Error ? err.message : String(err),
+				}),
+			);
+		}
+		// Production: status="queued" — cron dispatch picks it up within 1 minute.
 	}
 
 	return outcome;

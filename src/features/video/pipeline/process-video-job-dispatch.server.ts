@@ -6,16 +6,8 @@ import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
 
 import { captureException } from "@/lib/sentry";
-import { isVideoAssemblyPipelineKind, PIPELINE_KIND } from "./pipeline-kind";
+import { PIPELINE_KIND } from "./pipeline-kind";
 import { processContentPipelineJob } from "./process-content-pipeline.server";
-import {
-	markVideoJobFailed,
-	processStubPipelineJob,
-} from "./process-stub-pipeline.server";
-import {
-	handoffVideoAssemblyToExternalProcessor,
-	isExternalVideoProcessorConfigured,
-} from "./video-assembly-handoff.server";
 
 export type DispatchVideoJobInput = {
 	jobId: string;
@@ -24,9 +16,8 @@ export type DispatchVideoJobInput = {
 };
 
 /**
- * Worker (or local inline dispatch in dev) calls this after a `video_jobs` row is committed.
- * Verifies ownership + kind, then runs the pipeline handler. Safe to retry: no-op
- * if the job is already terminal.
+ * Cron dispatch calls this for each queued job. Verifies ownership + kind,
+ * then runs the pipeline handler. Safe to retry: no-op if already terminal.
  */
 export async function dispatchPipelineForJob(
 	input: DispatchVideoJobInput,
@@ -60,29 +51,10 @@ export async function dispatchPipelineForJob(
 	}
 
 	switch (row.pipelineKind) {
-		case PIPELINE_KIND.STUB_PIPELINE:
-			await processStubPipelineJob(jobId);
-			return;
 		case PIPELINE_KIND.CONTENT_PIPELINE_V1:
 			await processContentPipelineJob(jobId);
 			return;
 		default:
-			if (isVideoAssemblyPipelineKind(row.pipelineKind)) {
-				if (!isExternalVideoProcessorConfigured()) {
-					captureException(new Error("video_processor_not_configured"), {
-						jobId,
-						userId,
-						pipelineKind: row.pipelineKind,
-					});
-					await markVideoJobFailed({
-						jobId,
-						message: "video_processor_not_configured",
-					});
-					return;
-				}
-				await handoffVideoAssemblyToExternalProcessor(jobId);
-				return;
-			}
 			captureException(
 				new Error(`unsupported_pipeline_kind:${row.pipelineKind}`),
 				{ jobId, userId, pipelineKind: row.pipelineKind },

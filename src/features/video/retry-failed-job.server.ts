@@ -4,9 +4,10 @@ import { and, eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
+import { env } from "@/env";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
-import { enqueueVideoJobDispatch } from "@/lib/worker/enqueue.server";
 
+import { dispatchContentJob } from "./pipeline/dispatch-content-job.server";
 import { PIPELINE_STAGE } from "./pipeline/pipeline-kind";
 import { MAX_MANUAL_RETRIES } from "./video-job-constants";
 
@@ -80,11 +81,15 @@ export async function retryFailedJobForUser(input: {
 		return { ok: false, code: "not_failed" };
 	}
 
-	await enqueueVideoJobDispatch({
-		jobId,
-		userId: input.userId,
-		pipelineKind: row.pipelineKind,
-	});
-
+	if (env.ENVIRONMENT !== "production") {
+		// Local/dev: dispatch immediately instead of waiting for cron.
+		dispatchContentJob(jobId).catch((err) =>
+			console.error("[local-dispatch] retry dispatch failed", {
+				jobId,
+				error: err instanceof Error ? err.message : String(err),
+			}),
+		);
+	}
+	// Production: status="queued" — cron dispatch picks it up within 1 minute.
 	return { ok: true };
 }

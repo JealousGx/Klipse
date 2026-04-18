@@ -9,7 +9,7 @@ export type VideoJobListRowArtifacts = {
 export type VideoJobListRow = {
 	id: string;
 	channelId: string;
-	/** Which pipeline implementation produced this row (`stub_pipeline`, future kinds). */
+	/** Which pipeline implementation produced this row (e.g. `content_pipeline_v1`). */
 	pipelineKind: string;
 	channelName: string;
 	channelNiche: string;
