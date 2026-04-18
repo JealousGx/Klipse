@@ -126,7 +126,7 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
 				},
 			});
 
-			if (res.error) {
+			if ("error" in res) {
 				throw new Error(res.error || "Failed to submit report");
 			}
 
