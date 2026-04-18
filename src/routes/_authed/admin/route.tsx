@@ -12,6 +12,7 @@ import {
 	KeyRound,
 	LayoutDashboard,
 	LogOut,
+	Settings,
 	Shield,
 	Users,
 	Video,
@@ -42,7 +43,7 @@ export const Route = createFileRoute("/_authed/admin")({
 					email: session.user.email,
 					currentRole,
 				},
-			})
+			});
 			if (!promoted) throw notFound();
 		}
 
@@ -60,6 +61,7 @@ const nav = [
 	{ to: "/admin/users", label: "Users", icon: Users },
 	{ to: "/admin/jobs", label: "Jobs", icon: Video },
 	{ to: "/admin/system", label: "System", icon: BarChart3 },
+	{ to: "/admin/settings", label: "Settings", icon: Settings },
 ] as const;
 
 // ---------------------------------------------------------------------------
@@ -81,7 +83,7 @@ function AdminLayout() {
 			toast.error("Sign out failed.");
 			setIsSigningOut(false);
 		}
-	}
+	};
 
 	const userName = session.user.name || session.user.email;
 
@@ -139,7 +141,7 @@ function AdminLayout() {
 										)}
 									</Link>
 								</li>
-							)
+							);
 						})}
 					</ul>
 				</nav>
@@ -208,5 +210,5 @@ function AdminLayout() {
 				</main>
 			</div>
 		</div>
-	)
+	);
 }
