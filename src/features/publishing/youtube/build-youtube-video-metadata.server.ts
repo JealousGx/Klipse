@@ -45,9 +45,11 @@ export function buildYoutubeVideoMetadata(input: {
 	const title =
 		titleRaw.trim().slice(0, 100) || `${input.channelName.trim()} — Klipse`;
 
-	// Tags — AI array, fallback to app name.
-	const tags: string[] =
-		art?.tags && art.tags.length > 0 ? art.tags : ["klipse"];
+	// Tags — AI array, always append "klipse" brand tag at publish time.
+	const baseTags: string[] = art?.tags && art.tags.length > 0 ? art.tags : [];
+	const tags: string[] = baseTags.includes("klipse")
+		? baseTags
+		: [...baseTags, "klipse"];
 
 	// Description — AI caption + hashtags + app footer.
 	const hashtagLine = buildHashtags(tags);
