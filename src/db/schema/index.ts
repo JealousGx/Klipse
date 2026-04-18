@@ -11,3 +11,4 @@ export * from "./users";
 export * from "./users-relations";
 export * from "./verifications";
 export * from "./video-jobs";
+export * from "./site-settings";
