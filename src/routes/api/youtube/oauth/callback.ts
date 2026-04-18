@@ -16,6 +16,7 @@ import {
 	youtubeOAuthGrantsAllRequiredScopes,
 } from "@/features/youtube/youtube-oauth-tokens.server";
 import { auth } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { verifyYoutubeOAuthState } from "@/lib/youtube-oauth-state.server";
 
 function formatHandle(customUrl: string | null): string | null {
@@ -59,9 +60,7 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 					env.YOUTUBE_OAUTH_STATE_SECRET,
 				);
 				if (!payload) {
-					return redirectBack(
-						"/dashboard/publishing?oauth=error&reason=state",
-					);
+					return redirectBack("/dashboard/publishing?oauth=error&reason=state");
 				}
 
 				const session = await auth.api.getSession({ headers: request.headers });
@@ -141,10 +140,22 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 							applied.code === "free_plan_blocked"
 								? PUBLISHING_CONNECTION_DENIAL_REASONS.PAID_PLAN_REQUIRED
 								: "destination_replacements_exhausted";
+						logger.warn("youtube_oauth_connect_denied", {
+							userId: payload.u,
+							channelId: payload.c,
+							code: applied.code,
+						});
 						return redirectBack(
 							`/dashboard/publishing/${payload.c}?oauth=error&reason=${encodeURIComponent(reason)}`,
 						);
 					}
+
+					logger.info("youtube_oauth_connect_success", {
+						userId: payload.u,
+						channelId: payload.c,
+						externalChannelId: yt.id,
+						externalChannelTitle: yt.title,
+					});
 
 					return redirectBack(
 						`/dashboard/publishing/${payload.c}?oauth=connected`,
@@ -155,7 +166,11 @@ export const Route = createFileRoute("/api/youtube/oauth/callback")({
 							`/dashboard/publishing/${payload.c}?oauth=error&reason=not_found`,
 						);
 					}
-					console.error("[youtube-oauth]", e);
+					logger.error("youtube_oauth_callback_error", {
+						userId: payload.u,
+						channelId: payload.c,
+						error: e instanceof Error ? e.message : String(e),
+					});
 					return redirectBack(
 						`/dashboard/publishing/${payload.c}?oauth=error&reason=exchange`,
 					);

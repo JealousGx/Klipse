@@ -4,6 +4,7 @@ import { and, eq, isNotNull, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { providerApiKeys } from "@/db/schema/provider-api-keys";
+import { logger } from "@/lib/logger";
 
 import type { ProviderApiKeyCredential } from "./provider-api-keys.server";
 
@@ -51,6 +52,12 @@ export async function recordProviderKeyFailure(
 				: {}),
 		})
 		.where(eq(providerApiKeys.id, credential.id));
+	logger.warn("provider_key_cooldown_set", {
+		keyId: credential.id,
+		provider: credential.provider,
+		errorType: input.errorType,
+		cooldownUntil: input.cooldownUntil.toISOString(),
+	});
 }
 
 /**
@@ -79,4 +86,8 @@ export async function clearCooldownAfterSuccessfulUse(
 				),
 			),
 		);
+	logger.info("provider_key_cooldown_cleared", {
+		keyId: credential.id,
+		provider: credential.provider,
+	});
 }

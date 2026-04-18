@@ -1,6 +1,7 @@
 import type { VideoProcessorHandoffPayload } from "@klipse/video-assembly-shared";
 
 import { BoundedSet } from "../utils/bounded-set";
+import { logger } from "../utils/logger";
 import { runAssemblyJob } from "./assembly";
 
 /** Assembly-only jobs (video_assemble_v1): active/finished tracking for idempotency. */
@@ -28,14 +29,17 @@ async function pumpQueue(webhookSecret: string): Promise<void> {
 			await notifyApp(webhookSecret, payload, "completed");
 		} catch (e) {
 			const msg = e instanceof Error ? e.message.slice(0, 4000) : String(e);
-			console.warn(`[assembly-runner] job ${payload.jobId} failed`, e);
+			logger.warn("assembly_runner_job_failed", {
+				jobId: payload.jobId,
+				error: msg,
+			});
 			try {
 				await notifyApp(webhookSecret, payload, "failed", msg);
 			} catch (ne) {
-				console.error(
-					`[assembly-runner] CRITICAL: failure webhook failed for ${payload.jobId}`,
-					ne,
-				);
+				logger.error("assembly_runner_webhook_failed", {
+					jobId: payload.jobId,
+					error: ne instanceof Error ? ne.message : String(ne),
+				});
 			}
 		} finally {
 			finalizeJob(payload.jobId);

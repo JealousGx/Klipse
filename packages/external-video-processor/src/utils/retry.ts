@@ -1,3 +1,5 @@
+import { logger } from "./logger";
+
 const BASE_MS = 500;
 
 export function sleep(ms: number): Promise<void> {
@@ -20,17 +22,22 @@ export async function withRetries<T>(
 		} catch (e) {
 			last = e;
 			if (attempt === attempts) {
-				console.warn(
-					`[retry] ${label} attempt ${attempt}/${attempts} failed (final)`,
-					e,
-				);
+				logger.warn("retry_attempt_failed_final", {
+					label,
+					attempt,
+					attempts,
+					error: e instanceof Error ? e.message : String(e),
+				});
 				break;
 			}
 			const delay = BASE_MS * 2 ** (attempt - 1);
-			console.warn(
-				`[retry] ${label} attempt ${attempt}/${attempts} failed; retry in ${delay}ms`,
-				e,
-			);
+			logger.warn("retry_attempt_failed", {
+				label,
+				attempt,
+				attempts,
+				delayMs: delay,
+				error: e instanceof Error ? e.message : String(e),
+			});
 			await sleep(delay);
 		}
 	}

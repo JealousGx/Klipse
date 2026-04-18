@@ -1,6 +1,6 @@
 import type { ProcessorJobSpec } from "@klipse/video-assembly-shared";
 import { reportComplete } from "../utils/callbacks";
-import { logEvent, logTiming, withTiming } from "../utils/logger";
+import { logEvent, logger, logTiming, withTiming } from "../utils/logger";
 import { cleanupFiles, tmpPath } from "../utils/temp-file";
 import { runAssembleStage } from "./stages/assemble";
 import { runPrepareStage } from "./stages/prepare";
@@ -43,9 +43,11 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 	const jobStart = Date.now();
 
 	logEvent("executor", "job.start", ctx);
+	logger.info("job_start", { jobId, channelId });
 
 	try {
 		// Stage 1: Script generation.
+		const stageScriptStart = Date.now();
 		const { scriptMarkdown, ttsText, imagePrompts, title, description, tags } =
 			await withTiming(
 				"executor",
@@ -53,8 +55,14 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 				() => runScriptStage(spec).catch(rethrowWithStage("script")),
 				ctx,
 			);
+		logger.info("stage_complete", {
+			jobId,
+			stage: "script",
+			durationMs: Date.now() - stageScriptStart,
+		});
 
 		// Stage 2: TTS + images + sound generation.
+		const stagePrepareStart = Date.now();
 		const assets = await withTiming(
 			"executor",
 			"stage.prepare",
@@ -66,8 +74,14 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 		);
 		cleanup.push(assets.ttsAudioPath, ...assets.imagePaths);
 		if (assets.soundAudioPath) cleanup.push(assets.soundAudioPath);
+		logger.info("stage_complete", {
+			jobId,
+			stage: "prepare",
+			durationMs: Date.now() - stagePrepareStart,
+		});
 
 		// Stage 3: FFmpeg encode → watermark → R2 upload.
+		const stageAssembleStart = Date.now();
 		await withTiming(
 			"executor",
 			"stage.assemble",
@@ -77,12 +91,26 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 				),
 			ctx,
 		);
+		logger.info("stage_complete", {
+			jobId,
+			stage: "assemble",
+			durationMs: Date.now() - stageAssembleStart,
+		});
 
 		logTiming("executor", "job.done", Date.now() - jobStart, {
 			...ctx,
 			ok: true,
 		});
-		await reportComplete(spec, "completed", undefined, scriptMarkdown, title, description, tags);
+		logger.info("job_complete", { jobId, durationMs: Date.now() - jobStart });
+		await reportComplete(
+			spec,
+			"completed",
+			undefined,
+			scriptMarkdown,
+			title,
+			description,
+			tags,
+		);
 	} catch (e) {
 		const msg = formatError(e);
 		logTiming("executor", "job.failed", Date.now() - jobStart, {
@@ -90,14 +118,19 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 			ok: false,
 			error: msg.slice(0, 200),
 		});
-		console.error(`[executor] job ${jobId} failed:`, e);
+		logger.error("job_error", {
+			jobId,
+			durationMs: Date.now() - jobStart,
+			error: msg.slice(0, 200),
+		});
 		try {
 			await reportComplete(spec, "failed", msg);
 		} catch (notifyErr) {
-			console.error(
-				`[executor] CRITICAL: complete callback failed for job ${jobId}`,
-				notifyErr,
-			);
+			logger.error("job_complete_callback_failed", {
+				jobId,
+				error:
+					notifyErr instanceof Error ? notifyErr.message : String(notifyErr),
+			});
 		}
 	} finally {
 		await cleanupFiles(cleanup);

@@ -4,6 +4,7 @@ import { asc, eq, lte } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { expiringAssets } from "@/db/schema/expiring-assets";
+import { logger } from "@/lib/logger";
 import { deleteFile } from "@/lib/storage/r2.server";
 
 const BATCH = 80;
@@ -40,6 +41,8 @@ export async function purgeExpiredAssets(): Promise<{
 			errors += 1;
 		}
 	}
+
+	logger.info("purge_expired_assets_complete", { deleted, errors });
 
 	return { deleted, errors };
 }

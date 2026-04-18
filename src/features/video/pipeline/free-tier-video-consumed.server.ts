@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { users } from "@/db/schema/users";
+import { logger } from "@/lib/logger";
 
 /** After a successful assembled output, mark one-time free-plan consumption (`free_video_consumed`). */
 export async function markFreeTierVideoConsumedIfNeeded(
@@ -27,4 +28,6 @@ export async function markFreeTierVideoConsumedIfNeeded(
 			updatedAt: new Date(),
 		})
 		.where(eq(users.id, userId));
+
+	logger.info("free_tier_video_consumed", { userId });
 }

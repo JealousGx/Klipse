@@ -20,6 +20,7 @@ import {
 	PAID_TIER_RETENTION_HOURS,
 } from "@/lib/format-output-retention";
 import { expiringAssetRowId } from "@/lib/id";
+import { logger } from "@/lib/logger";
 
 /**
  * After the assembled video lands in R2: register TTL for purge (FEATURE_DOC §2.7–2.8) and
@@ -71,6 +72,8 @@ export async function runAfterVideoRenderComplete(input: {
 		kind: "output",
 		expiresAt,
 	});
+
+	logger.info("asset_registered", { jobId, userId, plan, hours });
 
 	const channel = await getChannelForUser(userId, input.channelId.trim());
 	if (!channel) {
@@ -157,6 +160,11 @@ export async function runAfterVideoRenderComplete(input: {
 				preheader: `Your latest video for ${safeName} is ready. Review by ${deadlineShort}.`,
 				content: emailContent,
 			}),
+		});
+
+		logger.info("approval_pending_email_sent", {
+			jobId,
+			channelName: safeName,
 		});
 	}
 

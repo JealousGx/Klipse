@@ -1,6 +1,7 @@
 import type { ProcessorJobSpec } from "@klipse/video-assembly-shared";
 
 import { BoundedSet } from "../utils/bounded-set";
+import { logger } from "../utils/logger";
 import { executeJob } from "./executor";
 
 /** Jobs currently being processed or queued. Cleared when pipeline finishes. */
@@ -26,10 +27,10 @@ async function pumpSpecQueue(): Promise<void> {
 		try {
 			await executeJob(spec);
 		} catch (e) {
-			console.error(
-				"[runner] unhandled job error (executor should have caught this)",
-				e,
-			);
+			logger.error("runner_unhandled_job_error", {
+				jobId: spec.jobId,
+				error: e instanceof Error ? e.message : String(e),
+			});
 		} finally {
 			finalizeSpecJob(spec.jobId);
 		}

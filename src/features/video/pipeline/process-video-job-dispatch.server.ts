@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
 
+import { logger } from "@/lib/logger";
 import { captureException } from "@/lib/sentry";
 import { PIPELINE_KIND } from "./pipeline-kind";
 import { processContentPipelineJob } from "./process-content-pipeline.server";
@@ -47,14 +48,30 @@ export async function dispatchPipelineForJob(
 	}
 
 	if (row.status === "completed" || row.status === "failed") {
+		logger.info("job_dispatch_skipped_terminal", {
+			jobId,
+			userId,
+			jobStatus: row.status,
+		});
 		return;
 	}
+
+	logger.info("job_dispatch_start", {
+		jobId,
+		userId,
+		pipelineKind: row.pipelineKind,
+	});
 
 	switch (row.pipelineKind) {
 		case PIPELINE_KIND.CONTENT_PIPELINE_V1:
 			await processContentPipelineJob(jobId);
 			return;
 		default:
+			logger.error("unsupported_pipeline_kind", {
+				jobId,
+				userId,
+				pipelineKind: row.pipelineKind,
+			});
 			captureException(
 				new Error(`unsupported_pipeline_kind:${row.pipelineKind}`),
 				{ jobId, userId, pipelineKind: row.pipelineKind },

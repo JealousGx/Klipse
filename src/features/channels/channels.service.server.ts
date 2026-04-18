@@ -11,6 +11,7 @@ import { assertChannelCapacity } from "@/features/entitlements";
 import type { MeResponse } from "@/features/user/types/me";
 
 import { channelRowId } from "@/lib/id";
+import { logger } from "@/lib/logger";
 
 import { upsertChannelSchedule } from "@/features/scheduling/scheduling.service.server";
 
@@ -227,6 +228,13 @@ export async function createChannel(input: {
 		frequency: config.posting_frequency,
 	});
 
+	logger.info("channel_created", {
+		userId: input.userId,
+		channelId: created.id,
+		platform: "unlinked",
+		plan,
+	});
+
 	return created;
 }
 
@@ -333,6 +341,13 @@ export async function updateChannel(input: {
 		});
 	}
 
+	logger.info("channel_updated", {
+		userId: input.userId,
+		channelId: input.channelId,
+		platform: next.platform,
+		oauthConnected: next.oauthConnected,
+	});
+
 	return next;
 }
 
@@ -370,6 +385,10 @@ export async function clearOAuthRefreshTokenOnly(input: {
 		.where(
 			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
 		);
+	logger.warn("channel_oauth_token_cleared", {
+		userId: input.userId,
+		channelId: input.channelId,
+	});
 }
 
 export async function setChannelOAuthConnection(input: {
@@ -431,6 +450,13 @@ export async function setChannelOAuthConnectionTx(
 		.where(
 			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
 		);
+	logger.info("channel_oauth_connected", {
+		userId: input.userId,
+		channelId: input.channelId,
+		platform: input.platform,
+		externalChannelId: trimmedId,
+		externalChannelTitle: input.externalChannelTitle ?? null,
+	});
 }
 
 export async function deleteChannel(input: {
@@ -447,4 +473,10 @@ export async function deleteChannel(input: {
 		.where(
 			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
 		);
+	logger.info("channel_deleted", {
+		userId: input.userId,
+		channelId: input.channelId,
+		platform: existing.platform,
+		oauthConnected: existing.oauthConnected,
+	});
 }

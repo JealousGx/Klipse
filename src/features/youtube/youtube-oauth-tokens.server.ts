@@ -1,6 +1,7 @@
 import "@tanstack/react-start/server-only";
 
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 
 /** Readonly to resolve channel; upload for future publish jobs. */
 export const YOUTUBE_OAUTH_REQUESTED_SCOPES = [
@@ -93,14 +94,17 @@ export async function exchangeYoutubeAuthorizationCode(input: {
 	});
 	if (!res.ok) {
 		const t = await res.text();
+		logger.error("youtube_token_exchange_failed", { status: res.status, body: t.slice(0, 200) });
 		throw new Error(`token_exchange_failed: ${res.status} ${t}`);
 	}
-	return res.json() as Promise<{
+	const tokens = await res.json() as {
 		access_token: string;
 		refresh_token?: string;
 		expires_in?: number;
 		scope?: string;
-	}>;
+	};
+	logger.info("youtube_token_exchange_ok", { hasRefreshToken: Boolean(tokens.refresh_token) });
+	return tokens;
 }
 
 /**
@@ -157,10 +161,12 @@ export async function refreshYoutubeAccessToken(refreshToken: string): Promise<{
 	};
 	if (!res.ok) {
 		if (json.error === "invalid_grant") {
+			logger.warn("youtube_refresh_token_invalid_grant", { error: json.error_description ?? json.error });
 			throw new GoogleOAuthRefreshTokenInvalidError(
 				json.error_description ?? json.error ?? "invalid_grant",
 			);
 		}
+		logger.error("youtube_refresh_token_failed", { status: res.status, error: json.error });
 		throw new Error(
 			`refresh_token_exchange_failed: ${res.status} ${JSON.stringify(json)}`,
 		);
@@ -168,6 +174,7 @@ export async function refreshYoutubeAccessToken(refreshToken: string): Promise<{
 	if (!json.access_token) {
 		throw new Error("refresh_token_exchange_missing_access_token");
 	}
+	logger.info("youtube_access_token_refreshed");
 	return {
 		access_token: json.access_token,
 		expires_in: json.expires_in,
@@ -206,6 +213,7 @@ export async function fetchYoutubeMineChannel(accessToken: string): Promise<{
 	});
 	if (!res.ok) {
 		const t = await res.text();
+		logger.error("youtube_fetch_channel_failed", { status: res.status, body: t.slice(0, 200) });
 		throw new Error(`youtube_channels_failed: ${res.status} ${t}`);
 	}
 	const data = (await res.json()) as {
@@ -227,10 +235,12 @@ export async function fetchYoutubeMineChannel(accessToken: string): Promise<{
 		throw new Error("youtube_no_channel");
 	}
 	const snippet = item.snippet;
-	return {
+	const channel = {
 		id: item.id,
 		title: snippet?.title ?? "",
 		customUrl: snippet?.customUrl ?? null,
 		thumbnailUrl: pickYoutubeThumbnailUrl(snippet),
 	};
+	logger.info("youtube_channel_fetched", { channelId: channel.id, title: channel.title });
+	return channel;
 }

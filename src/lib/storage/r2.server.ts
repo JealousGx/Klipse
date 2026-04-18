@@ -10,6 +10,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 import { getEnvironment } from "@/lib/utils";
 
 /** Shape aligned with S3 `ListObjectsV2` contents when you add listing later. */
@@ -79,7 +80,9 @@ export async function getSignedUrlForUpload(
 			key,
 		};
 	} catch (error) {
-		console.error("[r2] Error generating signed URL:", error);
+		logger.error("[r2] Error generating signed URL:", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		throw error;
 	}
 }
@@ -94,7 +97,9 @@ export async function deleteFile(logicalKey: string) {
 	try {
 		return await S3.send(command);
 	} catch (error) {
-		console.error("[r2] Error deleting file:", error);
+		logger.error("[r2] Error deleting file:", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		throw error;
 	}
 }

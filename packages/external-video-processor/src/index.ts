@@ -1,5 +1,6 @@
 import { serve } from "@hono/node-server";
 import { initSentry } from "./sentry";
+import { logger } from "./utils/logger";
 
 // Init Sentry before anything else so it catches startup errors too
 initSentry();
@@ -152,5 +153,5 @@ app.post("/v1/process-spec", async (c) => {
 
 const port = Number(process.env.PORT) || 8790;
 serve({ fetch: app.fetch, port }, (info) => {
-	console.log(`[external-video-processor] listening on port ${info.port}`);
+	logger.info("processor_listening", { port: info.port });
 });

@@ -3,7 +3,6 @@ import { desc, eq, like, or, sql } from "drizzle-orm";
 import { getDb } from "@/db";
 import { users } from "@/db/schema/users";
 import { requireAdmin } from "@/features/admin/admin.guard.server";
-
 import type {
 	AdjustUserCreditsInput,
 	AdminUserRow,
@@ -12,6 +11,7 @@ import type {
 	ListAdminUsersInput,
 	SetRoleInput,
 } from "@/features/admin/admin-user.functions";
+import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
 // Internal helper
@@ -111,9 +111,11 @@ export async function adjustUserCredits(
 		.set({ creditsRemaining: newCredits, updatedAt: new Date() })
 		.where(eq(users.id, data.userId));
 
-	console.info(
-		`[admin] credits adjusted for ${data.userId}: ${data.delta > 0 ? "+" : ""}${data.delta} — reason: ${data.reason}`,
-	);
+	logger.info("[admin] credits adjusted", {
+		userId: data.userId,
+		delta: data.delta,
+		reason: data.reason,
+	});
 
 	return { ok: true, newCredits };
 }
@@ -140,7 +142,7 @@ export async function changeUserPlan(
 
 	if (!result[0].affectedRows) return { ok: false, code: "not_found" };
 
-	console.info(`[admin] plan changed for ${data.userId} → ${data.plan}`);
+	logger.info("[admin] plan changed", { userId: data.userId, plan: data.plan });
 
 	return { ok: true };
 }
@@ -176,9 +178,11 @@ export async function setUserRole(
 
 	if (!result[0].affectedRows) return { ok: false, code: "not_found" };
 
-	console.info(
-		`[admin] role set for ${data.userId} → ${data.role} (by ${adminInfo.email})`,
-	);
+	logger.info("[admin] role set", {
+		userId: data.userId,
+		role: data.role,
+		byEmail: adminInfo.email,
+	});
 
 	return { ok: true };
 }

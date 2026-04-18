@@ -6,6 +6,7 @@ import type {
 	ProcessorProgressPayload,
 } from "@klipse/video-assembly-shared";
 
+import { logger } from "./logger";
 import { withRetries } from "./retry";
 
 const PROGRESS_ATTEMPTS = 3;
@@ -49,7 +50,11 @@ export async function reportProgress(
 		body,
 		PROGRESS_ATTEMPTS,
 	).catch((e) =>
-		console.warn("[callbacks] progress callback failed (non-fatal)", e),
+		logger.warn("callbacks_progress_failed", {
+			jobId: spec.jobId,
+			stage,
+			error: e instanceof Error ? e.message : String(e),
+		}),
 	);
 }
 
@@ -76,7 +81,11 @@ export async function reportKeyFailure(
 		body,
 		FAILURE_ATTEMPTS,
 	).catch((e) =>
-		console.warn("[callbacks] key-failure callback failed (non-fatal)", e),
+		logger.warn("callbacks_key_failure_failed", {
+			jobId: spec.jobId,
+			provider,
+			error: e instanceof Error ? e.message : String(e),
+		}),
 	);
 }
 

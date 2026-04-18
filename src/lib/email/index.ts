@@ -1,6 +1,7 @@
 import { Resend } from "resend";
 
 import { env } from "@/env";
+import { logger } from "@/lib/logger";
 
 type BaseEmail = {
 	to: string;
@@ -33,7 +34,7 @@ export function getTransactionEmailFrom(): string {
 
 export const sendEmail = async (data: SendEmailArgs) => {
 	if (!env.RESEND_API_KEY) {
-		console.warn("[email] RESEND_API_KEY not set; skipping send", {
+		logger.warn("[email] RESEND_API_KEY not set; skipping send", {
 			to: data.to,
 		});
 		return;
@@ -50,7 +51,7 @@ export const sendEmail = async (data: SendEmailArgs) => {
 	const { error } = await resend.emails.send(payload);
 
 	if (error) {
-		console.error("Failed to send email:", error);
+		logger.error("Failed to send email:", { error: error.message });
 		throw new Error(`Email delivery failed: ${error.message}`);
 	}
 };

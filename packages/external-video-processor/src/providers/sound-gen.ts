@@ -4,6 +4,7 @@ import type {
 } from "@klipse/video-assembly-shared";
 
 import { reportKeyFailure } from "../utils/callbacks";
+import { logger } from "../utils/logger";
 
 const ELEVENLABS_BASE = "https://api.elevenlabs.io/v1";
 
@@ -88,14 +89,17 @@ export async function generateSound(
 				continue;
 			}
 			// Non-HTTP error: log but don't rotate
-			console.warn("[sound-gen] ElevenLabs error (non-rotating):", e);
+			logger.warn("sound_gen_elevenlabs_error_non_rotating", {
+				jobId: spec.jobId,
+				error: e instanceof Error ? e.message : String(e),
+			});
 			break;
 		}
 	}
 
-	console.warn(
-		"[sound-gen] Sound generation failed, skipping:",
-		lastError instanceof Error ? lastError.message : lastError,
-	);
+	logger.warn("sound_gen_failed_skipping", {
+		jobId: spec.jobId,
+		error: lastError instanceof Error ? lastError.message : String(lastError),
+	});
 	return null; // non-fatal: video continues without sound
 }

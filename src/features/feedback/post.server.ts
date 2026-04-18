@@ -1,6 +1,7 @@
 import { env } from "@/env";
 import type { BugReportInput } from "@/features/feedback/post.functions";
 import { auth } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { getEnvironment } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -96,11 +97,10 @@ export async function submitBugReport(
 		});
 
 		if (!webhookRes.ok) {
-			console.error(
-				"[Discord Webhook]",
-				webhookRes.status,
-				await webhookRes.text(),
-			);
+			logger.error("[Discord Webhook] request failed", {
+				status: webhookRes.status,
+				body: await webhookRes.text(),
+			});
 			return {
 				error: "Failed to submit bug report. Please try again later.",
 			};
@@ -108,7 +108,9 @@ export async function submitBugReport(
 
 		return { success: true };
 	} catch (error) {
-		console.error("Error submitting bug report:", error);
+		logger.error("Error submitting bug report:", {
+			error: error instanceof Error ? error.message : String(error),
+		});
 		return {
 			error: "An unexpected error occurred. Please try again later.",
 		};

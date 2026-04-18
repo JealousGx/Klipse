@@ -1,6 +1,7 @@
 import "@tanstack/react-start/server-only";
 
 import { runYoutubePublishForJob } from "@/features/publishing/youtube/run-youtube-publish-for-job.server";
+import { logger } from "@/lib/logger";
 
 /**
  * Trigger platform publish inline (no queue). Called after render completes.
@@ -21,11 +22,10 @@ export async function requestPlatformPublishForJob(input: {
 		case "tiktok":
 		case "instagram":
 			// Not yet implemented — log and skip.
-			console.info(
-				"[request-platform-publish] platform not yet implemented, skipping",
-				input.platform,
-				input.jobId,
-			);
+			logger.warn("publish_platform_not_implemented", {
+				platform: input.platform,
+				jobId: input.jobId,
+			});
 			return;
 	}
 }

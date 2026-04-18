@@ -6,7 +6,7 @@ import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
 import { env } from "@/env";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
-
+import { logger } from "@/lib/logger";
 import { withPerfTiming } from "@/lib/perf-timing";
 
 import { buildProcessorJobSpec } from "./build-processor-job-spec.server";
@@ -76,7 +76,8 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 		);
 
 	if (mysqlAffectedRowsFromUpdateResult(claim) === 0) {
-		return; // already dispatched or terminal
+		logger.info("job_dispatch_cas_skip", { jobId: id, reason: "already_dispatched_or_terminal" });
+		return;
 	}
 
 	const { processorBaseUrl, clientSecret } = requireProcessorEnv();
@@ -89,7 +90,10 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 	} catch (e) {
 		const msg =
 			e instanceof Error ? e.message.slice(0, 500) : "spec_build_failed";
-		console.error("[dispatch-content-job] spec build failed", e);
+		logger.error("[dispatch-content-job] spec build failed", {
+			jobId: id,
+			error: e instanceof Error ? e.message : String(e),
+		});
 		await markVideoJobFailed({ jobId: id, message: msg });
 		return;
 	}
@@ -108,7 +112,10 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 			}),
 		);
 	} catch (e) {
-		console.error("[dispatch-content-job] processor unreachable", e);
+		logger.error("[dispatch-content-job] processor unreachable", {
+			jobId: id,
+			error: e instanceof Error ? e.message : String(e),
+		});
 		await markVideoJobFailed({
 			jobId: id,
 			message:
@@ -135,4 +142,6 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 			updatedAt: new Date(),
 		})
 		.where(and(eq(videoJobs.id, id), eq(videoJobs.status, "dispatched")));
+
+	logger.info("job_dispatched_to_processor", { jobId: id });
 }

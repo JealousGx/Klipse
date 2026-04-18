@@ -16,6 +16,7 @@ import { buildScriptPrompts } from "@/features/ai/script-generation.server";
 import { parseChannelConfig } from "@/features/channels/channel-config.schema";
 import { clampTargetDuration } from "@/features/entitlements";
 import type { MeResponse } from "@/features/user/types/me";
+import { logger } from "@/lib/logger";
 import { withPerfTiming } from "@/lib/perf-timing";
 import { generateJobPresignedUrls } from "@/lib/storage/r2-presigned.server";
 import { getAppPublicBaseUrl } from "@/lib/video-processor/app-base-url.server";
@@ -66,6 +67,8 @@ export async function buildProcessorJobSpec(
 
 	const idea = job.inputPayload?.idea?.trim();
 	if (!idea) throw new Error("video_job_missing_idea");
+
+	logger.info("spec_build_start", { jobId: id, userId: job.userId });
 
 	const config = parseChannelConfig(job.channelConfig);
 	const plan = job.userPlan as MeResponse["plan"];
@@ -118,7 +121,7 @@ export async function buildProcessorJobSpec(
 			]),
 	);
 
-	return {
+	const spec = {
 		jobId: id,
 		userId: job.userId,
 		channelId: job.channelId,
@@ -137,4 +140,16 @@ export async function buildProcessorJobSpec(
 		callbackBaseUrl: getAppPublicBaseUrl(),
 		callbackSecret: process.env.VIDEO_PROCESSOR_WEBHOOK_SECRET?.trim() ?? "",
 	};
+
+	logger.info("spec_build_complete", {
+		jobId: id,
+		userId: job.userId,
+		targetDuration,
+		plan,
+		isSoundEligible,
+		modelChain: spec.openrouterScriptModels,
+		ttsVoice: spec.ttsVoice,
+	});
+
+	return spec;
 }

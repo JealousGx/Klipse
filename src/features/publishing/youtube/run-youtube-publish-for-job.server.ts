@@ -19,6 +19,7 @@ import {
 } from "@/features/youtube/youtube-oauth-tokens.server";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
 import { sendYoutubeDisconnectEmail } from "@/lib/email/youtube-disconnect-email";
+import { logger } from "@/lib/logger";
 import { captureException } from "@/lib/sentry";
 import { buildYoutubeVideoMetadata } from "./build-youtube-video-metadata.server";
 import { uploadMp4ToYoutube } from "./youtube-upload-api.server";
@@ -149,7 +150,7 @@ export async function runYoutubePublishForJob(input: {
 				channelName,
 				publishingUrl,
 			}).catch((err) =>
-				console.error("[youtube-publish] disconnect email failed", {
+				logger.error("[youtube-publish] disconnect email failed", {
 					jobId,
 					error: err instanceof Error ? err.message : String(err),
 				}),

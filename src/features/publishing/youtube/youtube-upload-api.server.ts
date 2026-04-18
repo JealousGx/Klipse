@@ -1,5 +1,7 @@
 import "@tanstack/react-start/server-only";
 
+import { logger } from "@/lib/logger";
+
 /**
  * YouTube Data API v3 resumable upload (§2.12: upload + metadata).
  * @see https://developers.google.com/youtube/v3/guides/uploading_a_video
@@ -37,6 +39,7 @@ export async function uploadMp4ToYoutube(input: {
 	}
 
 	const contentType = input.contentType ?? "video/mp4";
+	const uploadStart = Date.now();
 
 	const body = {
 		snippet: {
@@ -64,6 +67,7 @@ export async function uploadMp4ToYoutube(input: {
 
 	if (!init.ok) {
 		const t = await init.text();
+		logger.error("youtube_upload_init_failed", { status: init.status, body: t.slice(0, 200) });
 		throw new Error(`youtube_upload_init_failed:${init.status}:${t}`);
 	}
 
@@ -71,6 +75,8 @@ export async function uploadMp4ToYoutube(input: {
 	if (!location?.trim()) {
 		throw new Error("youtube_upload_missing_location");
 	}
+
+	logger.info("youtube_upload_session_created", { sizeBytes: input.videoBytes.byteLength });
 
 	const put = await fetch(location, {
 		method: "PUT",
@@ -84,6 +90,7 @@ export async function uploadMp4ToYoutube(input: {
 
 	if (!put.ok) {
 		const t = await put.text();
+		logger.error("youtube_upload_put_failed", { status: put.status, body: t.slice(0, 200) });
 		throw new Error(`youtube_upload_put_failed:${put.status}:${t}`);
 	}
 
@@ -92,6 +99,14 @@ export async function uploadMp4ToYoutube(input: {
 	if (!videoId) {
 		throw new Error("youtube_upload_missing_video_id");
 	}
+
+	logger.info("youtube_upload_complete", {
+		videoId,
+		sizeBytes: input.videoBytes.byteLength,
+		durationMs: Date.now() - uploadStart,
+		title: input.metadata.title,
+		privacyStatus: input.metadata.privacyStatus,
+	});
 
 	return { videoId };
 }

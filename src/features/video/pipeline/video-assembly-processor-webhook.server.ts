@@ -6,6 +6,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
+import { logger } from "@/lib/logger";
 import { captureException } from "@/lib/sentry";
 import { publicUrlForR2Key } from "@/lib/storage/r2.server";
 import { markFreeTierVideoConsumedIfNeeded } from "./free-tier-video-consumed.server";
@@ -50,17 +51,34 @@ export async function applyVideoProcessorWebhook(
 		.limit(1);
 
 	if (!job) {
+		logger.warn("webhook_received_job_not_found", {
+			jobId,
+			jobStatus: input.status,
+		});
 		return { ok: false, code: "job_not_found" };
 	}
 	if (job.userId !== userId) {
+		logger.warn("webhook_received_user_mismatch", { jobId, userId });
 		return { ok: false, code: "user_mismatch" };
 	}
 
+	logger.info("webhook_received", { jobId, userId, jobStatus: input.status });
+
 	if (job.status === "completed" || job.status === "failed") {
 		if (input.status === "completed" && job.status === "completed") {
+			logger.warn("webhook_already_terminal", {
+				jobId,
+				userId,
+				jobStatus: job.status,
+			});
 			return { ok: true, replayed: true };
 		}
 		if (input.status === "failed" && job.status === "failed") {
+			logger.warn("webhook_already_terminal", {
+				jobId,
+				userId,
+				jobStatus: job.status,
+			});
 			return { ok: true, replayed: true };
 		}
 		return { ok: false, code: "invalid_state" };
@@ -121,6 +139,8 @@ export async function applyVideoProcessorWebhook(
 
 		await markFreeTierVideoConsumedIfNeeded(userId);
 
+		logger.info("video_job_complete", { jobId, userId });
+
 		await runAfterVideoRenderComplete({
 			jobId,
 			userId,
@@ -136,6 +156,7 @@ export async function applyVideoProcessorWebhook(
 	}
 
 	const message = (input.error ?? "processor_failed").trim().slice(0, 4000);
+	logger.error("video_job_failed", { jobId, userId, errorMessage: message });
 	captureException(new Error(`video_processor_job_failed: ${message}`), {
 		jobId,
 		userId,

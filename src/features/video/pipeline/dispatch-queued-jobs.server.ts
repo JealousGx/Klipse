@@ -4,6 +4,7 @@ import { and, eq, lt, or } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
+import { logger } from "@/lib/logger";
 
 import { PIPELINE_STAGE } from "./pipeline-kind";
 import { dispatchPipelineForJob } from "./process-video-job-dispatch.server";
@@ -55,6 +56,8 @@ export async function dispatchQueuedJobs(): Promise<DispatchQueuedJobsResult> {
 		)
 		.limit(MAX_DISPATCH_PER_TICK);
 
+	logger.info("dispatch_queued_jobs_picked_up", { count: jobs.length });
+
 	let dispatched = 0;
 	let errors = 0;
 
@@ -67,13 +70,15 @@ export async function dispatchQueuedJobs(): Promise<DispatchQueuedJobsResult> {
 			});
 			dispatched++;
 		} catch (err) {
-			console.error("[dispatch-queued-jobs] dispatch failed", {
+			logger.error("[dispatch-queued-jobs] dispatch failed", {
 				jobId: job.id,
 				error: err instanceof Error ? err.message : String(err),
 			});
 			errors++;
 		}
 	}
+
+	logger.info("dispatch_queued_jobs_complete", { dispatched, errors });
 
 	return { dispatched, errors };
 }

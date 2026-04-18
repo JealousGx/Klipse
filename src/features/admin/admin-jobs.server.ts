@@ -5,6 +5,7 @@ import { channels } from "@/db/schema/channels";
 import { users } from "@/db/schema/users";
 import { videoJobs } from "@/db/schema/video-jobs";
 import { requireAdmin } from "@/features/admin/admin.guard.server";
+import { logger } from "@/lib/logger";
 
 import type {
 	AdminJobRow,
@@ -128,7 +129,7 @@ export async function cancelAdminJob(
 		})
 		.where(eq(videoJobs.id, jobId));
 
-	console.info(`[admin] job ${jobId} cancelled by ${adminInfo.email}`);
+	logger.info("admin_job_cancelled", { jobId, adminEmail: adminInfo.email });
 
 	return { ok: true };
 }

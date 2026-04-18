@@ -4,6 +4,7 @@ import { eq } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
+import { logger } from "@/lib/logger";
 import {
 	dispatchContentJob,
 	isContentProcessorConfigured,
@@ -33,7 +34,10 @@ export async function processContentPipelineJob(jobId: string): Promise<void> {
 	if (row.pipelineKind !== PIPELINE_KIND.CONTENT_PIPELINE_V1) {
 		throw new Error("video_job_pipeline_mismatch");
 	}
-	if (row.status === "completed" || row.status === "failed") return;
+	if (row.status === "completed" || row.status === "failed") {
+		logger.info("content_pipeline_skip_terminal", { jobId: id, jobStatus: row.status });
+		return;
+	}
 
 	// Re-attempt dispatch if the job was claimed (status=dispatched) but the
 	// spec POST never reached the processor (crash between CAS and fetch).
@@ -41,9 +45,13 @@ export async function processContentPipelineJob(jobId: string): Promise<void> {
 		row.status === "dispatched" &&
 		row.currentStage === PIPELINE_STAGE.DISPATCH_PENDING;
 
-	if (row.status !== "queued" && !isStuckDispatch) return;
+	if (row.status !== "queued" && !isStuckDispatch) {
+		logger.info("content_pipeline_skip_non_queued", { jobId: id, jobStatus: row.status });
+		return;
+	}
 
 	if (!isContentProcessorConfigured()) {
+		logger.error("content_pipeline_processor_not_configured", { jobId: id });
 		await markVideoJobFailed({
 			jobId: id,
 			message: "video_processor_not_configured",
@@ -51,5 +59,9 @@ export async function processContentPipelineJob(jobId: string): Promise<void> {
 		return;
 	}
 
+	logger.info("content_pipeline_dispatch", {
+		jobId: id,
+		isStuckDispatch,
+	});
 	await dispatchContentJob(id);
 }

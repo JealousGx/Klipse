@@ -1,5 +1,6 @@
 import "@tanstack/react-start/server-only";
 
+import { logger } from "@/lib/logger";
 import type { PolarUsageEventName, PolarUsageMetadata } from "./meter-events";
 import { getPolarSdk } from "./polar-sdk.server";
 
@@ -32,5 +33,10 @@ export async function ingestPolarUsageEvents(input: {
 			...(e.externalId != null ? { externalId: e.externalId } : {}),
 			...(e.metadata != null ? { metadata: e.metadata } : {}),
 		})),
+	});
+	logger.info("polar_usage_ingested", {
+		userId: input.userId,
+		eventCount: input.events.length,
+		eventNames: input.events.map((e) => e.name),
 	});
 }

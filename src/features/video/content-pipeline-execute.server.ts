@@ -21,6 +21,7 @@ import {
 	selectUserEntitlementSnapshotForUpdate,
 } from "@/features/entitlements";
 import { jobRowId, usageIdempotencyRowId } from "@/lib/id";
+import { logger } from "@/lib/logger";
 import { estimateContentPipelineCredits } from "./content-pipeline-estimate";
 import { dispatchContentJob } from "./pipeline/dispatch-content-job.server";
 import { PIPELINE_KIND, PIPELINE_STAGE } from "./pipeline/pipeline-kind";
@@ -90,6 +91,12 @@ export async function executeContentPipelineWithIdempotency(input: {
 
 			const existing = rows[0];
 			if (existing?.status === "completed" && existing.result) {
+				logger.info("content_pipeline_idempotency_replay", {
+					userId: input.userId,
+					channelId,
+					idempotencyKey: clientKey,
+					ref: existing.result.ref,
+				});
 				return {
 					kind: "replay" as const,
 					payload: existing.result,
@@ -186,9 +193,23 @@ export async function executeContentPipelineWithIdempotency(input: {
 					})
 					.where(eq(usageIdempotency.id, row.id));
 
+				logger.info("content_pipeline_job_created", {
+					userId: input.userId,
+					channelId,
+					jobId: ref,
+					credits,
+					creditsRemaining,
+				});
+
 				return { kind: "fresh" as const, payload };
 			} catch (e) {
 				if (e instanceof InsufficientCreditsError) {
+					logger.warn("content_pipeline_insufficient_credits", {
+						userId: input.userId,
+						channelId,
+						credits,
+						creditsRemaining: snapshot.creditsRemaining,
+					});
 					await tx
 						.delete(usageIdempotency)
 						.where(eq(usageIdempotency.id, row.id));
@@ -197,6 +218,11 @@ export async function executeContentPipelineWithIdempotency(input: {
 			}
 		}
 
+		logger.error("content_pipeline_idempotency_claim_exhausted", {
+			userId: input.userId,
+			channelId,
+			idempotencyKey: clientKey,
+		});
 		throw new Error("usage_idempotency_claim_exhausted");
 	});
 
@@ -211,7 +237,7 @@ export async function executeContentPipelineWithIdempotency(input: {
 		if (env.ENVIRONMENT !== "production") {
 			// Local/dev: skip cron wait — dispatch immediately (fire-and-forget).
 			dispatchContentJob(outcome.payload.ref).catch((err) =>
-				console.error("[local-dispatch] immediate dispatch failed", {
+				logger.error("[local-dispatch] immediate dispatch failed", {
 					jobId: outcome.payload.ref,
 					error: err instanceof Error ? err.message : String(err),
 				}),

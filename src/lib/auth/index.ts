@@ -16,6 +16,7 @@ import { additionalUserFields } from "@/lib/auth/additional-user-fields";
 import { ac, adminRoles } from "@/lib/auth/admin-access-control";
 import { sendAuthOTPEmail } from "@/lib/email/auth-otp";
 import { accountId, sessionId, userId, verificationId } from "@/lib/id";
+import { logger } from "@/lib/logger";
 
 const OTP_LENGTH = 6;
 const OTP_EXPIRATION_SECONDS = 600;
@@ -142,7 +143,7 @@ async function sendVerificationOTP(
 	const { email, otp, type } = data;
 
 	if (env.ENVIRONMENT === "local" || env.ENVIRONMENT === "development") {
-		console.log(`[dev OTP] ${otp} for ${email} (${type})`);
+		logger.debug("dev_otp", { email, otp, type });
 		return;
 	}
 

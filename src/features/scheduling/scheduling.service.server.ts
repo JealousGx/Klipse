@@ -9,6 +9,7 @@ import { InsufficientCreditsError } from "@/features/billing/credit-usage.server
 import type { ChannelConfig } from "@/features/channels/channel-config.schema";
 import { executeContentPipelineWithIdempotency } from "@/features/video/content-pipeline-execute.server";
 import { scheduleRowId } from "@/lib/id";
+import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -193,7 +194,9 @@ export async function triggerScheduleNowForChannel(
 		})
 		.from(schedules)
 		.innerJoin(channels, eq(schedules.channelId, channels.id))
-		.where(and(eq(schedules.channelId, channelId), eq(schedules.userId, userId)))
+		.where(
+			and(eq(schedules.channelId, channelId), eq(schedules.userId, userId)),
+		)
 		.limit(1);
 
 	if (!row) {
@@ -221,7 +224,10 @@ export async function triggerScheduleNowForChannel(
 		if (e instanceof InsufficientCreditsError) {
 			return { ok: false, code: "insufficient_credits" };
 		}
-		console.error("[scheduling] triggerScheduleNow failed", channelId, e);
+		logger.error("[scheduling] triggerScheduleNow failed", {
+			channelId,
+			error: e instanceof Error ? e.message : String(e),
+		});
 		return { ok: false, code: "error" };
 	}
 }
@@ -299,17 +305,16 @@ export async function triggerDueSchedules(): Promise<TriggerSchedulesResult> {
 		} catch (e) {
 			if (e instanceof InsufficientCreditsError) {
 				// User has no credits — advance nextRunAt so we don't retry every 15 min.
-				console.warn(
-					"[scheduling] insufficient credits for schedule",
-					schedule.id,
-					schedule.userId,
-				);
+				logger.warn("[scheduling] insufficient credits for schedule", {
+					scheduleId: schedule.id,
+					userId: schedule.userId,
+				});
 			} else {
-				console.error(
-					"[scheduling] pipeline failed for schedule",
-					schedule.id,
-					e,
-				);
+				logger.error("[scheduling] pipeline failed for schedule", {
+					scheduleId: schedule.id,
+					userId: schedule.userId,
+					error: e instanceof Error ? e.message : String(e),
+				});
 			}
 			// Always advance nextRunAt to avoid accumulation of past-due slots.
 			await db

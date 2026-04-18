@@ -1,5 +1,6 @@
 import "@tanstack/react-start/server-only";
 
+import { logger } from "@/lib/logger";
 import {
 	clearOAuthRefreshTokenOnly,
 	getOAuthRefreshTokenForChannel,
@@ -24,13 +25,25 @@ export async function getYoutubeAccessTokenForChannelOrClear(input: {
 		input.channelId,
 	);
 	if (!token) {
+		logger.info("youtube_access_token_skipped_no_token", {
+			userId: input.userId,
+			channelId: input.channelId,
+		});
 		return { cleared: true };
 	}
 	try {
 		const { access_token } = await refreshYoutubeAccessToken(token);
+		logger.info("youtube_access_token_resolved", {
+			userId: input.userId,
+			channelId: input.channelId,
+		});
 		return { accessToken: access_token };
 	} catch (e) {
 		if (e instanceof GoogleOAuthRefreshTokenInvalidError) {
+			logger.warn("youtube_oauth_token_revoked_clearing", {
+				userId: input.userId,
+				channelId: input.channelId,
+			});
 			await clearOAuthRefreshTokenOnly({
 				userId: input.userId,
 				channelId: input.channelId,
@@ -54,9 +67,17 @@ export async function reconcileYoutubeOAuthForUserChannel(input: {
 	}
 	try {
 		await refreshYoutubeAccessToken(token);
+		logger.info("youtube_oauth_reconcile_ok", {
+			userId: input.userId,
+			channelId: input.channelId,
+		});
 		return "ok";
 	} catch (e) {
 		if (e instanceof GoogleOAuthRefreshTokenInvalidError) {
+			logger.warn("youtube_oauth_reconcile_revoked", {
+				userId: input.userId,
+				channelId: input.channelId,
+			});
 			await clearOAuthRefreshTokenOnly({
 				userId: input.userId,
 				channelId: input.channelId,
@@ -72,10 +93,13 @@ export async function reconcileAllYoutubeOAuthForUser(
 ): Promise<{ revokedChannelIds: string[] }> {
 	const list = await listChannelsForUser(userId);
 	const revokedChannelIds: string[] = [];
-	for (const ch of list) {
-		if (!ch.oauthConnected) {
-			continue;
-		}
+	const connected = list.filter((ch) => ch.oauthConnected);
+	logger.info("youtube_oauth_reconcile_start", {
+		userId,
+		totalChannels: list.length,
+		connectedChannels: connected.length,
+	});
+	for (const ch of connected) {
 		const r = await reconcileYoutubeOAuthForUserChannel({
 			userId,
 			channelId: ch.id,
@@ -84,5 +108,10 @@ export async function reconcileAllYoutubeOAuthForUser(
 			revokedChannelIds.push(ch.id);
 		}
 	}
+	logger.info("youtube_oauth_reconcile_complete", {
+		userId,
+		checked: connected.length,
+		revoked: revokedChannelIds.length,
+	});
 	return { revokedChannelIds };
 }

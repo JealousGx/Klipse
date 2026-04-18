@@ -4,6 +4,7 @@ import { getDb } from "@/db";
 import { accounts } from "@/db/schema/accounts";
 import { users } from "@/db/schema/users";
 import { auth } from "@/lib/auth";
+import { logger } from "@/lib/logger";
 import { deleteUserR2Data } from "@/lib/storage/r2.server";
 
 // ---------------------------------------------------------------------------
@@ -55,13 +56,17 @@ export async function deleteUserAccount(
 	// Step 1 — purge R2 (best-effort; don't fail account deletion if R2 is down)
 	try {
 		const { deleted } = await deleteUserR2Data(userId);
-		console.info(
-			`[account-deletion] R2 purged ${deleted} object(s) for user ${userId}`,
-		);
+		logger.info("[account-deletion] R2 purged objects for user", {
+			userId,
+			deleted,
+		});
 	} catch (e) {
-		console.error(
-			`[account-deletion] R2 purge failed for user ${userId} — proceeding with DB deletion`,
-			e,
+		logger.error(
+			"[account-deletion] R2 purge failed — proceeding with DB deletion",
+			{
+				userId,
+				error: e instanceof Error ? e.message : String(e),
+			},
 		);
 	}
 
@@ -70,10 +75,10 @@ export async function deleteUserAccount(
 		const db = getDb();
 		await db.delete(users).where(eq(users.id, userId));
 	} catch (e) {
-		console.error(
-			`[account-deletion] DB deletion failed for user ${userId}`,
-			e,
-		);
+		logger.error("[account-deletion] DB deletion failed for user", {
+			userId,
+			error: e instanceof Error ? e.message : String(e),
+		});
 		return {
 			ok: false,
 			code: "error",

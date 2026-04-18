@@ -7,6 +7,7 @@ import { videoJobs } from "@/db/schema/video-jobs";
 import { env } from "@/env";
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
 
+import { logger } from "@/lib/logger";
 import { dispatchContentJob } from "./pipeline/dispatch-content-job.server";
 import { PIPELINE_STAGE } from "./pipeline/pipeline-kind";
 import { MAX_MANUAL_RETRIES } from "./video-job-constants";
@@ -84,7 +85,7 @@ export async function retryFailedJobForUser(input: {
 	if (env.ENVIRONMENT !== "production") {
 		// Local/dev: dispatch immediately instead of waiting for cron.
 		dispatchContentJob(jobId).catch((err) =>
-			console.error("[local-dispatch] retry dispatch failed", {
+			logger.error("[local-dispatch] retry dispatch failed", {
 				jobId,
 				error: err instanceof Error ? err.message : String(err),
 			}),

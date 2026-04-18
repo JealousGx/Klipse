@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/db";
 import { creditTransactions, users } from "@/db/schema";
 import { creditTransactionId } from "@/lib/id";
+import { logger } from "@/lib/logger";
 
 import type { PolarUsageMetadata } from "./meter-events";
 import { POLAR_USAGE_EVENT_NAME } from "./meter-events";
@@ -132,7 +133,9 @@ export function firePolarUsageIngestAfterDeduction(input: {
 			},
 		],
 	}).catch((err) => {
-		console.error("[polar_usage_ingest]", err);
+		logger.error("[polar_usage_ingest]", {
+			error: err instanceof Error ? err.message : String(err),
+		});
 	});
 }
 

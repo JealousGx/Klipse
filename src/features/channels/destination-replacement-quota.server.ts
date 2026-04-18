@@ -14,6 +14,7 @@ import type { MeResponse } from "@/features/user/types/me";
 
 import { ChannelNotFoundError } from "./channel-errors";
 import { setChannelOAuthConnectionTx } from "./channels.service.server";
+import { logger } from "@/lib/logger";
 import {
 	consumesDestinationReplacementQuota,
 	priorExternalChannelIdFromDestinationRow,
@@ -72,6 +73,11 @@ export async function runDestinationReplacementQuotaTransaction(input: {
 
 		const plan = u.plan as MeResponse["plan"];
 		if (!planAllowsPaidPublishingConnections(plan)) {
+			logger.warn("oauth_connect_blocked_free_plan", {
+				userId: input.userId,
+				channelId: input.channelId,
+				plan,
+			});
 			return { ok: false, code: "free_plan_blocked" };
 		}
 
@@ -102,6 +108,13 @@ export async function runDestinationReplacementQuotaTransaction(input: {
 			const max = maxDestinationReplacementsPerCycle(plan);
 			const used = Number(u.destinationReplacementsUsed ?? 0);
 			if (used >= max) {
+				logger.warn("oauth_connect_replacements_exhausted", {
+					userId: input.userId,
+					channelId: input.channelId,
+					plan,
+					used,
+					max,
+				});
 				return { ok: false, code: "destination_replacements_exhausted" };
 			}
 			await tx
@@ -111,9 +124,23 @@ export async function runDestinationReplacementQuotaTransaction(input: {
 					updatedAt: new Date(),
 				})
 				.where(eq(users.id, input.userId));
+			logger.info("oauth_connect_replacement_quota_consumed", {
+				userId: input.userId,
+				channelId: input.channelId,
+				plan,
+				usedAfter: used + 1,
+				max,
+			});
 		}
 
 		await input.persistAfterQuotaCheck(tx);
+
+		logger.info("oauth_connect_applied", {
+			userId: input.userId,
+			channelId: input.channelId,
+			newExternalChannelId: trimmedNew,
+			consumedQuota: consumes,
+		});
 
 		return { ok: true };
 	});
@@ -161,4 +188,5 @@ export async function resetDestinationReplacementsUsedForUser(
 			updatedAt: new Date(),
 		})
 		.where(eq(users.id, userId));
+	logger.info("destination_replacements_reset", { userId });
 }

@@ -153,7 +153,6 @@ export function usePublishingDestinationPage(
 				void queryClient.invalidateQueries({ queryKey: ["channels"] });
 				return;
 			}
-			console.log("r in onSuccess in updateProfileMutation", r);
 			toast.error(r.message ?? "Could not save");
 		},
 		onError: (err) => {

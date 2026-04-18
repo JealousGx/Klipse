@@ -4,6 +4,7 @@ import { and, eq, notInArray } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { videoJobs } from "@/db/schema/video-jobs";
+import { logger } from "@/lib/logger";
 
 /**
  * If post-commit processing fails, surface a failed job instead of leaving it queued forever.
@@ -14,6 +15,8 @@ export async function markVideoJobFailed(input: {
 }): Promise<void> {
 	const db = getDb();
 	const msg = input.message.trim().slice(0, 4000);
+	logger.warn("job_marked_failed", { jobId: input.jobId.trim(), message: msg });
+
 	await db
 		.update(videoJobs)
 		.set({

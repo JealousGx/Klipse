@@ -24,6 +24,8 @@ export type AiProviderKind =
 export type ProviderApiKeyCredential = {
 	id: string;
 	secret: string;
+	/** Provider name for logging/observability. */
+	provider: string;
 	/** Next known quota reset (UTC), from DB — used when the error has no reset time. */
 	quotaResetAt: Date | null;
 	/**
@@ -113,6 +115,7 @@ async function ensureEnvProviderKeysMaterialized(
 const KEY_SELECT = {
 	id: providerApiKeys.id,
 	secret: providerApiKeys.secret,
+	provider: providerApiKeys.provider,
 	quotaResetAt: providerApiKeys.quotaResetAt,
 	modelId: providerApiKeys.modelId,
 } as const;
@@ -125,12 +128,14 @@ const KEY_ORDER = [
 function toCredential(r: {
 	id: string;
 	secret: string;
+	provider: string;
 	quotaResetAt: Date | null;
 	modelId: string | null;
 }): ProviderApiKeyCredential {
 	return {
 		id: r.id,
 		secret: r.secret.trim(),
+		provider: r.provider,
 		quotaResetAt: r.quotaResetAt ?? null,
 		modelId: r.modelId ?? null,
 	};

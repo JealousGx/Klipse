@@ -82,6 +82,7 @@ export const Route = createFileRoute("/api/internal/processor/key-failure")({
 						{
 							id: key.id,
 							secret: "",
+							provider: key.provider,
 							quotaResetAt: key.quotaResetAt,
 							modelId: null,
 						},

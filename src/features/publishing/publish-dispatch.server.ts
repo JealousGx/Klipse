@@ -3,6 +3,7 @@ import "@tanstack/react-start/server-only";
 import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config";
 import type { ChannelRow } from "@/features/channels/channels.service.server";
 import type { MeResponse } from "@/features/user/types/me";
+import { logger } from "@/lib/logger";
 
 import { requestPlatformPublishForJob } from "./request-platform-publish.server";
 
@@ -31,12 +32,11 @@ export async function dispatchPlatformPublishAfterRender(input: {
 			return;
 		case "tiktok":
 		case "instagram":
-			// OAuth + upload not yet implemented — log so it's visible in observability.
-			console.info(
-				"[publish-dispatch] platform publishing not yet implemented",
-				input.channel.platform,
-				input.jobId,
-			);
+			// OAuth + upload not yet implemented.
+			logger.warn("publish_platform_not_implemented", {
+				platform: input.channel.platform,
+				jobId: input.jobId,
+			});
 			return;
 		case "unlinked":
 			return;

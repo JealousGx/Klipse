@@ -2,6 +2,7 @@ import type { ProcessorJobSpec } from "@klipse/video-assembly-shared";
 
 import { generateScript } from "../../providers/script-gen";
 import { reportProgress } from "../../utils/callbacks";
+import { logger } from "../../utils/logger";
 
 const IMAGE_COUNT = 3;
 
@@ -197,9 +198,21 @@ export type ScriptResult = {
 export async function runScriptStage(
 	spec: ProcessorJobSpec,
 ): Promise<ScriptResult> {
+	const stageStart = Date.now();
+	logger.info("script_stage_start", { jobId: spec.jobId });
 	await reportProgress(spec, "script", 10);
 
-	const raw = await generateScript(spec);
+	let raw: string;
+	try {
+		raw = await generateScript(spec);
+	} catch (e) {
+		logger.error("script_stage_error", {
+			jobId: spec.jobId,
+			durationMs: Date.now() - stageStart,
+			error: e instanceof Error ? e.message : String(e),
+		});
+		throw e;
+	}
 	await reportProgress(spec, "script", 90);
 
 	// ~140 words/min, conservative estimate.
@@ -250,5 +263,16 @@ export async function runScriptStage(
 	}
 
 	await reportProgress(spec, "script", 100);
-	return { scriptMarkdown: raw, ttsText, imagePrompts, title, description, tags };
+	logger.info("script_stage_complete", {
+		jobId: spec.jobId,
+		durationMs: Date.now() - stageStart,
+	});
+	return {
+		scriptMarkdown: raw,
+		ttsText,
+		imagePrompts,
+		title,
+		description,
+		tags,
+	};
 }
