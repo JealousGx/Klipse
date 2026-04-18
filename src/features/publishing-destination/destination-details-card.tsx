@@ -66,6 +66,7 @@ export function DestinationDetailsFields({
 					<textarea
 						id="dest-niche"
 						rows={3}
+						maxLength={500} // Arbitrary limit to prevent excessively long text, can be adjusted later if needed
 						value={niche}
 						onChange={(e) => onNicheChange(e.target.value)}
 						className={cn(
