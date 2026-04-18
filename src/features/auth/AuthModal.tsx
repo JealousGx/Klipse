@@ -1,3 +1,4 @@
+import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, KeyRound, Loader2, Lock, Mail } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -6,6 +7,8 @@ import { GoogleIcon } from "@/components/icons/google";
 
 import { siteConfig } from "@/config/site";
 
+import { env } from "@/env";
+import { getRegistrationStatusFn } from "@/features/admin/admin-settings.functions";
 import { authClient, signIn, signUp } from "@/lib/auth/client";
 import { readBetterAuthActionError } from "@/lib/client-errors";
 import { cn } from "@/lib/utils";
@@ -34,6 +37,18 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 	const { data: session, isPending } = authClient.useSession();
 
 	const defaultView = mode === "signUp" ? "signup" : "login";
+
+	// Env var acts as deploy-time kill-switch (false = always closed).
+	// DB query reflects admin dashboard toggle in real-time (60s cache).
+	const { data: regStatus } = useQuery({
+		queryKey: ["registration-status"],
+		queryFn: () => getRegistrationStatusFn(),
+		staleTime: 60_000,
+		// Default to env var value while loading — avoids flicker on re-opens
+		placeholderData: { registrationEnabled: env.VITE_REGISTRATION_ENABLED },
+	});
+	const registrationEnabled =
+		regStatus?.registrationEnabled ?? env.VITE_REGISTRATION_ENABLED;
 
 	const [method, setMethod] = useState<AuthMethod>("select");
 	const [error, setError] = useState<string | null>(null);
@@ -392,10 +407,12 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 				</div>
 
 				<div className="mb-6 text-center">
-					<div className="mx-auto mb-3 flex size-11 items-center justify-center rounded-2xl bg-linear-to-br from-primary to-primary/70">
-						<span className="text-base font-bold text-primary-foreground">
-							K
-						</span>
+					<div className="mx-auto mb-3 flex size-12 items-center justify-center">
+						<img
+							src="/logo.png"
+							alt={siteConfig.name}
+							className="size-12 object-contain"
+						/>
 					</div>
 					<h2 className="font-heading text-lg font-semibold tracking-tight">
 						{title[method]}
@@ -413,86 +430,105 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 					) : null}
 
 					{method === "select" ? (
-						<div className="space-y-3">
-							<button
-								type="button"
-								className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted/30 disabled:opacity-60"
-								onClick={handleGoogle}
-								disabled={isLoading || !termsAccepted}
-							>
-								{isLoading ? (
-									<Loader2 className="size-5 animate-spin" />
-								) : (
-									<GoogleIcon className="size-5" />
-								)}
-								Continue with Google
-							</button>
-
-							<div className="flex items-center gap-3 py-1">
-								<div className="h-px flex-1 bg-border/60" />
-								<span className="text-xs text-muted-foreground">or</span>
-								<div className="h-px flex-1 bg-border/60" />
-							</div>
-
-							<button
-								type="button"
-								className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted/30 disabled:opacity-60"
-								onClick={() => navigateTo("otp-send")}
-								disabled={!termsAccepted}
-							>
-								<Mail size={16} strokeWidth={1.5} />
-								Continue with email code
-							</button>
-
-							<button
-								type="button"
-								className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted/30 disabled:opacity-60"
-								onClick={() =>
-									navigateTo(
-										defaultView === "signup"
-											? "password-signup"
-											: "password-login",
-									)
-								}
-								disabled={!termsAccepted}
-							>
-								<Lock size={16} strokeWidth={1.5} />
-								Continue with password
-							</button>
-
-							<div className="flex items-start gap-2 pt-1">
-								<input
-									id="terms-accept"
-									type="checkbox"
-									checked={termsAccepted}
-									onChange={(e) => setTermsAccepted(e.target.checked)}
-									className="mt-1 size-4 rounded border-border"
-								/>
-								<label
-									htmlFor="terms-accept"
-									className="text-xs leading-relaxed text-muted-foreground"
+						defaultView === "signup" && !registrationEnabled ? (
+							<div className="rounded-xl border border-border bg-muted/30 px-5 py-6 text-center">
+								<p className="text-sm font-semibold text-foreground">
+									Registrations are currently closed
+								</p>
+								<p className="mt-1.5 text-sm text-muted-foreground">
+									New account creation is temporarily disabled. Please check
+									back soon.
+								</p>
+								<button
+									type="button"
+									className="mt-4 text-sm font-medium text-primary hover:underline"
+									onClick={onClose}
 								>
-									I agree to the{" "}
-									<a
-										href="/terms"
-										target="_blank"
-										rel="noopener noreferrer"
-										className="font-medium text-primary hover:underline"
-									>
-										Terms of Service
-									</a>{" "}
-									and{" "}
-									<a
-										href="/privacy"
-										target="_blank"
-										rel="noopener noreferrer"
-										className="font-medium text-primary hover:underline"
-									>
-										Privacy Policy
-									</a>
-								</label>
+									Close
+								</button>
 							</div>
-						</div>
+						) : (
+							<div className="space-y-3">
+								<button
+									type="button"
+									className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted/30 disabled:opacity-60"
+									onClick={handleGoogle}
+									disabled={isLoading || !termsAccepted}
+								>
+									{isLoading ? (
+										<Loader2 className="size-5 animate-spin" />
+									) : (
+										<GoogleIcon className="size-5" />
+									)}
+									Continue with Google
+								</button>
+
+								<div className="flex items-center gap-3 py-1">
+									<div className="h-px flex-1 bg-border/60" />
+									<span className="text-xs text-muted-foreground">or</span>
+									<div className="h-px flex-1 bg-border/60" />
+								</div>
+
+								<button
+									type="button"
+									className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted/30 disabled:opacity-60"
+									onClick={() => navigateTo("otp-send")}
+									disabled={!termsAccepted}
+								>
+									<Mail size={16} strokeWidth={1.5} />
+									Continue with email code
+								</button>
+
+								<button
+									type="button"
+									className="inline-flex w-full items-center justify-center gap-3 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground transition hover:bg-muted/30 disabled:opacity-60"
+									onClick={() =>
+										navigateTo(
+											defaultView === "signup"
+												? "password-signup"
+												: "password-login",
+										)
+									}
+									disabled={!termsAccepted}
+								>
+									<Lock size={16} strokeWidth={1.5} />
+									Continue with password
+								</button>
+
+								<div className="flex items-start gap-2 pt-1">
+									<input
+										id="terms-accept"
+										type="checkbox"
+										checked={termsAccepted}
+										onChange={(e) => setTermsAccepted(e.target.checked)}
+										className="mt-1 size-4 rounded border-border"
+									/>
+									<label
+										htmlFor="terms-accept"
+										className="text-xs leading-relaxed text-muted-foreground"
+									>
+										I agree to the{" "}
+										<a
+											href="/terms"
+											target="_blank"
+											rel="noopener noreferrer"
+											className="font-medium text-primary hover:underline"
+										>
+											Terms of Service
+										</a>{" "}
+										and{" "}
+										<a
+											href="/privacy"
+											target="_blank"
+											rel="noopener noreferrer"
+											className="font-medium text-primary hover:underline"
+										>
+											Privacy Policy
+										</a>
+									</label>
+								</div>
+							</div>
+						)
 					) : null}
 
 					{method === "otp-send" ? (
@@ -662,19 +698,21 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 									"Sign in"
 								)}
 							</button>
-							<p className="text-center text-sm text-muted-foreground">
-								Don&apos;t have an account?{" "}
-								<button
-									type="button"
-									onClick={() => {
-										resetForm();
-										navigateTo("password-signup");
-									}}
-									className="font-medium text-primary hover:underline"
-								>
-									Sign up
-								</button>
-							</p>
+							{registrationEnabled ? (
+								<p className="text-center text-sm text-muted-foreground">
+									Don&apos;t have an account?{" "}
+									<button
+										type="button"
+										onClick={() => {
+											resetForm();
+											navigateTo("password-signup");
+										}}
+										className="font-medium text-primary hover:underline"
+									>
+										Sign up
+									</button>
+								</p>
+							) : null}
 						</form>
 					) : null}
 
