@@ -30,6 +30,43 @@ export interface LogContext {
 	[key: string]: unknown;
 }
 
+// ─── Axiom log drain ────────────────────────────────────────────────────────
+
+interface AxiomConfig {
+	token: string;
+	dataset: string;
+}
+
+function getAxiomConfig(): AxiomConfig | null {
+	const token = process.env.AXIOM_API_TOKEN;
+	if (!token) return null;
+	return { token, dataset: process.env.AXIOM_DATASET || "klipse" };
+}
+
+const _axiomQueue: object[] = [];
+let _axiomFlushPending = false;
+
+function enqueueAxiom(event: object, config: AxiomConfig): void {
+	_axiomQueue.push(event);
+	if (_axiomFlushPending) return;
+	_axiomFlushPending = true;
+	Promise.resolve().then(() => {
+		const batch = _axiomQueue.splice(0);
+		_axiomFlushPending = false;
+		if (!batch.length) return;
+		fetch(`https://api.axiom.co/v1/datasets/${config.dataset}/ingest`, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${config.token}`,
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(batch),
+		}).catch(() => {});
+	});
+}
+
+// ─── Level-based logger ─────────────────────────────────────────────────────
+
 function shouldLog(level: LogLevel): boolean {
 	if (level === "error" || level === "warn") return true;
 	const perfLog = process.env.KLIPSE_PERF_LOG === "1";
@@ -41,14 +78,17 @@ function shouldLog(level: LogLevel): boolean {
 function emitLevel(level: LogLevel, message: string, ctx?: LogContext): void {
 	if (!shouldLog(level)) return;
 	try {
-		const line = JSON.stringify({
+		const now = Date.now();
+		const fields = {
 			level,
 			message,
 			service: "klipse-processor",
 			env: process.env.NODE_ENV ?? "unknown",
-			t: Date.now(),
+			t: now,
+			_time: new Date(now).toISOString(),
 			...ctx,
-		});
+		};
+		const line = JSON.stringify(fields);
 		if (level === "error") {
 			console.error(line);
 		} else if (level === "warn") {
@@ -56,6 +96,8 @@ function emitLevel(level: LogLevel, message: string, ctx?: LogContext): void {
 		} else {
 			console.log(line);
 		}
+		const axiom = getAxiomConfig();
+		if (axiom) enqueueAxiom(fields, axiom);
 	} catch {
 		// Never throw from logger
 	}
