@@ -12,6 +12,7 @@ import { siteSettings } from "@/db/schema/site-settings";
 
 import { env } from "@/env";
 import { createPolarBillingPlugin } from "@/features/billing/polar-plugin.server";
+import { getPolarSdk } from "@/features/billing/polar-sdk.server";
 import { additionalUserFields } from "@/lib/auth/additional-user-fields";
 import { ac, adminRoles } from "@/lib/auth/admin-access-control";
 import { sendAuthOTPEmail } from "@/lib/email/auth-otp";
@@ -61,6 +62,38 @@ export const auth = betterAuth({
 						throw new APIError("FORBIDDEN", {
 							message:
 								"Registration is currently disabled. Please try again later.",
+						});
+					}
+				},
+				after: async (user) => {
+					// Polar's createCustomerOnSignUp=false — we create customer here
+					// (after hook) so the Polar API is never called when registration is
+					// blocked by the before hook above.
+					if (user.isAnonymous) return;
+					try {
+						const polarSdk = getPolarSdk();
+						const { result: existing } = await polarSdk.customers.list({
+							email: user.email,
+						});
+						const existingCustomer = existing.items[0];
+						if (existingCustomer) {
+							if (existingCustomer.externalId !== user.id) {
+								await polarSdk.customers.update({
+									id: existingCustomer.id,
+									customerUpdate: { externalId: user.id },
+								});
+							}
+						} else {
+							await polarSdk.customers.create({
+								email: user.email,
+								name: user.name,
+								externalId: user.id,
+							});
+						}
+					} catch (e) {
+						logger.error("polar_customer_create_failed", {
+							userId: user.id,
+							error: String(e),
 						});
 					}
 				},

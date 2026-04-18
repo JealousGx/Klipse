@@ -50,7 +50,7 @@ export function createPolarBillingPlugin() {
 
 	return polar({
 		client: polarSdk,
-		createCustomerOnSignUp: true,
+		createCustomerOnSignUp: false,
 		use: [
 			checkout({
 				products,
