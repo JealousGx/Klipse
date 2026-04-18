@@ -164,6 +164,16 @@ export const env = createEnv({
 		// Comma-separated list of emails that should be auto-promoted to admin on login. Only used if the `admin` plugin is enabled.
 		ADMIN_EMAILS: z.string().optional(),
 
+		/**
+		 * Set to "false" to block all new user registrations (email OTP, password, social).
+		 * Existing users can still sign in. Toggle via env var — no redeploy needed on Cloud Run.
+		 * @default "true"
+		 */
+		REGISTRATION_ENABLED: z
+			.enum(["true", "false"])
+			.default("true")
+			.transform((v) => v === "true"),
+
 		DISCORD_BUG_REPORT_WEBHOOK_URL: z.url(),
 
 		// -------------------------------------------------------------------------
@@ -195,6 +205,11 @@ export const env = createEnv({
 		VITE_APP_FEATURE_BASE_URL: z.url().optional(),
 		/** Client-side Sentry DSN (safe to expose — public key only). */
 		VITE_APP_SENTRY_DSN: z.url().optional(),
+		/** Mirrors server REGISTRATION_ENABLED for UI gating. Default true (open). */
+		VITE_REGISTRATION_ENABLED: z
+			.enum(["true", "false"])
+			.default("true")
+			.transform((v) => v === "true"),
 	},
 
 	/**
