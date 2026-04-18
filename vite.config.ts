@@ -13,6 +13,8 @@ const root = process.cwd();
 loadDotenv({ path: resolve(root, ".env"), override: true });
 loadDotenv({ path: resolve(root, ".env.local"), override: true });
 
+const isLocal = process.env.ENVIRONMENT === "local";
+
 const config = defineConfig({
 	resolve: {
 		alias: {
@@ -33,7 +35,7 @@ const config = defineConfig({
 	},
 	plugins: [
 		devtools(),
-		cloudflare({ viteEnvironment: { name: "ssr" } }),
+		...(isLocal ? [] : [cloudflare({ viteEnvironment: { name: "ssr" } })]),
 		tsconfigPaths({ projects: ["./tsconfig.json"] }),
 		tailwindcss(),
 		tanstackStart(),
