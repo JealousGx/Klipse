@@ -2,11 +2,13 @@ import "@tanstack/react-start/server-only";
 
 import { betterAuth, type GenericEndpointContext } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
+import { APIError } from "better-auth/api";
 import { admin, emailOTP } from "better-auth/plugins";
 import { tanstackStartCookies } from "better-auth/tanstack-start";
 
 import { getDb } from "@/db";
 import * as schema from "@/db/schema";
+import { siteSettings } from "@/db/schema/site-settings";
 
 import { env } from "@/env";
 import { createPolarBillingPlugin } from "@/features/billing/polar-plugin.server";
@@ -36,6 +38,33 @@ export const auth = betterAuth({
 
 	user: {
 		additionalFields: additionalUserFields,
+	},
+
+	databaseHooks: {
+		user: {
+			create: {
+				before: async (_user) => {
+					// Env var override — emergency kill switch, wins over DB
+					if (!env.REGISTRATION_ENABLED) {
+						throw new APIError("FORBIDDEN", {
+							message:
+								"Registration is currently disabled. Please try again later.",
+						});
+					}
+					// DB flag — admin dashboard toggle
+					const [row] = await getDb()
+						.select({ registrationEnabled: siteSettings.registrationEnabled })
+						.from(siteSettings)
+						.limit(1);
+					if (row?.registrationEnabled === false) {
+						throw new APIError("FORBIDDEN", {
+							message:
+								"Registration is currently disabled. Please try again later.",
+						});
+					}
+				},
+			},
+		},
 	},
 
 	emailAndPassword: {
