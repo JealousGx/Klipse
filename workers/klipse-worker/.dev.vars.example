@@ -1,6 +1,0 @@
-# Copy to `.dev.vars` for `wrangler dev`. Must match the main app `WORKER_SECRET`.
-WORKER_SECRET=
-MAIN_APP_URL=http://localhost:3000
-ENVIRONMENT=local
-# Optional — leave blank to disable Sentry locally
-SENTRY_DSN=ttps://abc123@o123.ingest.sentry.io/456

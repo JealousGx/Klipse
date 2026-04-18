@@ -17,9 +17,6 @@ importers:
       '@klipse/video-assembly-shared':
         specifier: workspace:*
         version: link:packages/video-assembly-shared
-      '@klipse/worker-contracts':
-        specifier: workspace:*
-        version: link:packages/worker-contracts
       '@polar-sh/better-auth':
         specifier: ^1.8.3
         version: 1.8.3(@polar-sh/sdk@0.47.0)(@stripe/react-stripe-js@4.0.2(@stripe/stripe-js@7.9.0)(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(@stripe/stripe-js@7.9.0)(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(better-auth@1.5.6(@opentelemetry/api@1.9.1)(@tanstack/react-start@1.167.16(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vite@7.3.1(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)))(drizzle-kit@0.31.10)(drizzle-orm@0.45.2(@opentelemetry/api@1.9.1)(@tidbcloud/serverless@0.3.0)(@types/pg@8.15.6)(kysely@0.28.15)(mysql2@3.20.0(@types/node@22.19.17)))(mysql2@3.20.0(@types/node@22.19.17))(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(solid-js@1.9.12)(vitest@3.2.4(@types/node@22.19.17)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@2.0.1))(lightningcss@1.32.0)(tsx@4.21.0)))(react-dom@19.2.4(react@19.2.4))(react-is@17.0.2)(react@19.2.4)(redux@5.0.1)(zod@4.3.6)
@@ -182,7 +179,7 @@ importers:
         version: 3.2.4(@types/node@22.19.17)(jiti@2.6.1)(jsdom@28.1.0(@noble/hashes@2.0.1))(lightningcss@1.32.0)(tsx@4.21.0)
       wrangler:
         specifier: ^4.83.0
-        version: 4.83.0(@cloudflare/workers-types@4.20260404.1)
+        version: 4.83.0
 
   packages/external-video-processor:
     dependencies:
@@ -207,27 +204,6 @@ importers:
         version: 5.9.3
 
   packages/video-assembly-shared: {}
-
-  packages/worker-contracts: {}
-
-  workers/klipse-worker:
-    dependencies:
-      '@klipse/worker-contracts':
-        specifier: workspace:*
-        version: link:../../packages/worker-contracts
-      '@sentry/cloudflare':
-        specifier: ^10.48.0
-        version: 10.48.0(@cloudflare/workers-types@4.20260404.1)
-    devDependencies:
-      '@cloudflare/workers-types':
-        specifier: ^4.20250525.0
-        version: 4.20260404.1
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
-      wrangler:
-        specifier: ^4.83.0
-        version: 4.83.0(@cloudflare/workers-types@4.20260404.1)
 
 packages:
 
@@ -698,9 +674,6 @@ packages:
     engines: {node: '>=16'}
     cpu: [x64]
     os: [win32]
-
-  '@cloudflare/workers-types@4.20260404.1':
-    resolution: {integrity: sha512-jfZfktdn3D0ceA59i4lkMgPUR9p5Wd6trtNLQR1RTgF59iVt9/yegkiEZv0TQvJPXlmQOU1D0pAYz7cMztqErg==}
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -2801,15 +2774,6 @@ packages:
     resolution: {integrity: sha512-tavJ7yGUZV+z3Ct2/ZB6mg339i08sAk6HDkgqmSRuQEu2iLS5sl9HIvuXfM6xjv8fwlgFOSy++WNABNAcGHUbg==}
     engines: {node: '>= 10'}
     hasBin: true
-
-  '@sentry/cloudflare@10.48.0':
-    resolution: {integrity: sha512-i02Ps4/cJjFpbcHLMhNEFXTeVqLB9XpB3+/OFQ9aMFV3yDcxlvHwe0oo7WZf41iroArvpysotLG8Y8NBOU9omA==}
-    engines: {node: '>=18'}
-    peerDependencies:
-      '@cloudflare/workers-types': ^4.x
-    peerDependenciesMeta:
-      '@cloudflare/workers-types':
-        optional: true
 
   '@sentry/core@10.48.0':
     resolution: {integrity: sha512-h8F+fXVwYC9ro5ZaO8V+v3vqc0awlXHGblEAuVxSGgh4IV/oFX+QVzXeDTTrFOFS6v/Vn5vAyu240eJrJAS6/g==}
@@ -6018,7 +5982,7 @@ snapshots:
       miniflare: 4.20260415.0
       unenv: 2.0.0-rc.24
       vite: 7.3.1(@types/node@22.19.17)(jiti@2.6.1)(lightningcss@1.32.0)(tsx@4.21.0)
-      wrangler: 4.83.0(@cloudflare/workers-types@4.20260404.1)
+      wrangler: 4.83.0
       ws: 8.18.0
     transitivePeerDependencies:
       - bufferutil
@@ -6039,8 +6003,6 @@ snapshots:
 
   '@cloudflare/workerd-windows-64@1.20260415.1':
     optional: true
-
-  '@cloudflare/workers-types@4.20260404.1': {}
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:
@@ -7878,13 +7840,6 @@ snapshots:
     transitivePeerDependencies:
       - encoding
       - supports-color
-
-  '@sentry/cloudflare@10.48.0(@cloudflare/workers-types@4.20260404.1)':
-    dependencies:
-      '@opentelemetry/api': 1.9.1
-      '@sentry/core': 10.48.0
-    optionalDependencies:
-      '@cloudflare/workers-types': 4.20260404.1
 
   '@sentry/core@10.48.0': {}
 
@@ -10482,7 +10437,7 @@ snapshots:
       '@cloudflare/workerd-linux-arm64': 1.20260415.1
       '@cloudflare/workerd-windows-64': 1.20260415.1
 
-  wrangler@4.83.0(@cloudflare/workers-types@4.20260404.1):
+  wrangler@4.83.0:
     dependencies:
       '@cloudflare/kv-asset-handler': 0.4.2
       '@cloudflare/unenv-preset': 2.16.0(unenv@2.0.0-rc.24)(workerd@1.20260415.1)
@@ -10493,7 +10448,6 @@ snapshots:
       unenv: 2.0.0-rc.24
       workerd: 1.20260415.1
     optionalDependencies:
-      '@cloudflare/workers-types': 4.20260404.1
       fsevents: 2.3.3
     transitivePeerDependencies:
       - bufferutil
