@@ -8,9 +8,13 @@ import type {
 	AdminUserRow,
 	BanUserInput,
 	ChangePlanInput,
+	CreateUserInput,
 	ListAdminUsersInput,
 	SetRoleInput,
 } from "@/features/admin/admin-user.functions";
+import { auth } from "@/lib/auth";
+import { runAsAdminCreate } from "@/lib/auth/admin-create-context";
+import { sendAdminInviteEmail } from "@/lib/email/admin-invite";
 import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
@@ -29,6 +33,89 @@ function toAdminUserRow(r: typeof users.$inferSelect): AdminUserRow {
 		banReason: r.banReason ?? null,
 		createdAt: r.createdAt,
 	};
+}
+
+// ---------------------------------------------------------------------------
+// createUserAsAdmin
+// ---------------------------------------------------------------------------
+
+/**
+ * Creates a new user account on behalf of an admin, bypassing the public
+ * registration kill switch, then sends an invite email to the new user.
+ *
+ * User creation flows through Better Auth (auth.api.createUser) so all
+ * databaseHooks fire normally — the admin plugin sets the role, and the
+ * after hook creates the Polar customer. The only hook skipped is the
+ * registration kill switch, which is bypassed via AsyncLocalStorage.
+ *
+ * The invite email is awaited but its failure is non-fatal — the account
+ * is already live and the error is logged.
+ */
+export async function createUserAsAdmin(
+	request: Request,
+	data: CreateUserInput,
+): Promise<
+	| { ok: true; userId: string }
+	| { ok: false; code: "unauthorized" | "email_taken" | "failed" }
+> {
+	let adminInfo: { userId: string; email: string; name: string };
+	try {
+		adminInfo = await requireAdmin(request);
+	} catch {
+		return { ok: false, code: "unauthorized" };
+	}
+
+	let userId: string;
+
+	try {
+		const result = await runAsAdminCreate(() =>
+			// password is optional in the admin plugin — omitted intentionally.
+			// Users authenticate via email OTP only; no password is ever set or needed.
+			auth.api.createUser({
+				body: {
+					email: data.email,
+					name: data.name,
+					role: "user",
+				},
+				headers: request.headers,
+			}),
+		);
+		userId = result.user.id;
+	} catch (e) {
+		const msg = String(e);
+		// Drizzle/MySQL duplicate key (ER_DUP_ENTRY = 1062) or Better Auth error
+		if (
+			msg.includes("already exists") ||
+			msg.includes("1062") ||
+			msg.includes("Duplicate entry")
+		) {
+			return { ok: false, code: "email_taken" };
+		}
+		logger.error("admin_create_user_failed", {
+			email: data.email,
+			error: msg.slice(0, 500),
+		});
+		return { ok: false, code: "failed" };
+	}
+
+	// Invite email — awaited so it completes before response (CF Workers safe).
+	// Failure is logged but non-fatal: account is live, user can sign in regardless.
+	try {
+		await sendAdminInviteEmail({
+			email: data.email,
+			name: data.name,
+			invitedBy: adminInfo.name?.trim() || adminInfo.email,
+		});
+	} catch (e) {
+		logger.error("admin_invite_email_failed", {
+			userId,
+			email: data.email,
+			error: String(e),
+		});
+	}
+
+	logger.info("admin_user_created", { userId, email: data.email });
+	return { ok: true, userId };
 }
 
 // ---------------------------------------------------------------------------

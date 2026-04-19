@@ -6,6 +6,7 @@ import {
 	adjustUserCredits,
 	banUser,
 	changeUserPlan,
+	createUserAsAdmin,
 	listAdminUsers,
 	setUserRole,
 	unbanUser,
@@ -142,4 +143,25 @@ export const unbanUserFn = createServerFn({ method: "POST" })
 	.inputValidator((raw: unknown) => z.object({ userId: z.string() }).parse(raw))
 	.handler(async ({ data }): Promise<UnbanUserResult> => {
 		return unbanUser(getRequest(), data.userId);
+	});
+
+// ---------------------------------------------------------------------------
+// createUserFn
+// ---------------------------------------------------------------------------
+
+const createUserInput = z.object({
+	email: z.string().trim().email().max(255),
+	name: z.string().trim().min(1).max(255),
+});
+
+export type CreateUserInput = z.infer<typeof createUserInput>;
+
+export type CreateUserResult =
+	| { ok: true; userId: string }
+	| { ok: false; code: "unauthorized" | "email_taken" | "failed" };
+
+export const createUserFn = createServerFn({ method: "POST" })
+	.inputValidator((raw: unknown) => createUserInput.parse(raw))
+	.handler(async ({ data }): Promise<CreateUserResult> => {
+		return createUserAsAdmin(getRequest(), data);
 	});

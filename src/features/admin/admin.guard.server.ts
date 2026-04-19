@@ -32,7 +32,7 @@ export class AdminAuthError extends Error {
  */
 export async function requireAdmin(
 	request: Request,
-): Promise<{ userId: string; email: string }> {
+): Promise<{ userId: string; email: string; name: string }> {
 	const session = await auth.api.getSession({ headers: request.headers });
 	if (!session?.user) throw new AdminAuthError();
 
@@ -45,7 +45,11 @@ export async function requireAdmin(
 
 	if (!row || row.role !== "admin") throw new AdminAuthError();
 
-	return { userId: session.user.id, email: session.user.email };
+	return {
+		userId: session.user.id,
+		email: session.user.email,
+		name: session.user.name,
+	};
 }
 
 // ---------------------------------------------------------------------------
