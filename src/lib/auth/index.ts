@@ -15,6 +15,7 @@ import { createPolarBillingPlugin } from "@/features/billing/polar-plugin.server
 import { getPolarSdk } from "@/features/billing/polar-sdk.server";
 import { additionalUserFields } from "@/lib/auth/additional-user-fields";
 import { ac, adminRoles } from "@/lib/auth/admin-access-control";
+import { isAdminCreate } from "@/lib/auth/admin-create-context";
 import { sendAuthOTPEmail } from "@/lib/email/auth-otp";
 import { accountId, sessionId, userId, verificationId } from "@/lib/id";
 import { logger } from "@/lib/logger";
@@ -46,6 +47,9 @@ export const auth = betterAuth({
 		user: {
 			create: {
 				before: async (_user) => {
+					// Admin-initiated creation bypasses the registration kill switch.
+					// The async context is set by runAsAdminCreate() in admin-user.server.ts.
+					if (isAdminCreate()) return;
 					// Env var override — emergency kill switch, wins over DB
 					if (!env.REGISTRATION_ENABLED) {
 						throw new APIError("FORBIDDEN", {
