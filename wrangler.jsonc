@@ -6,6 +6,7 @@
   "main": "@tanstack/react-start/server-entry",
   "vars": {
     "ENVIRONMENT": "production",
+    "KLIPSE_PERF_LOG": "1",
   },
   "routes": [
     {
