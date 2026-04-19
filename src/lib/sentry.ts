@@ -21,6 +21,8 @@ export function initSentryClient(
 	const dsn = env.VITE_APP_SENTRY_DSN;
 	if (!dsn) return;
 
+	const integrations = [Sentry.replayIntegration()];
+
 	clientInitialised = true;
 	Sentry.init({
 		dsn,
@@ -28,12 +30,15 @@ export function initSentryClient(
 			? "development"
 			: "production",
 		integrations: router
-			? [Sentry.tanstackRouterBrowserTracingIntegration(router)]
-			: [],
+			? [
+					Sentry.tanstackRouterBrowserTracingIntegration(router),
+					...integrations,
+				]
+			: integrations,
 		tracesSampleRate: 0.05,
-		replaysSessionSampleRate: 0,
-		replaysOnErrorSampleRate: 0,
-		sendDefaultPii: false,
+		replaysSessionSampleRate: 0.4, // Record 40% of sessions for replay in production (higher than normal to get more data on user interactions leading to errors)
+		replaysOnErrorSampleRate: 1,
+		sendDefaultPii: true,
 		enableLogs: true,
 	});
 }
