@@ -5,24 +5,24 @@
  * No `node:` imports — uses only global APIs.
  *
  * Log levels and when they emit:
- *   error / warn  → ALWAYS (never filtered — always ship to log drain)
+ *   error / warn  → ALWAYS (never filtered)
  *   info          → when KLIPSE_PERF_LOG=1 OR non-production environment
  *   debug         → development only
  *
  * Output: one JSON line per call — easy to grep locally and parse in Axiom.
  *
  * Fields in every log line:
- *   level, message, service, env, t (unix ms), + any context fields passed
+ *   level, message, service, env, t (unix ms), _time (ISO), + any context fields passed
  *
- * Axiom shipping:
- *   Set AXIOM_API_TOKEN + AXIOM_DATASET env vars.
- *   error + warn always shipped. info/debug only when shouldLog passes.
- *   Fire-and-forget via fetch — never blocks the response.
+ * Production delivery:
+ *   Logs flow via CF Observability Logs → Axiom OTLP destination (main-app-logs).
+ *   No direct Axiom fetch — CF kills pending fetches post-response without waitUntil.
+ *   Configure in wrangler.jsonc observability.logs.destinations + CF dashboard destination.
  *
  * Usage:
  *   import { logger } from "@/lib/logger";
- *   logger.info("Video job queued", { jobId, userId });
- *   logger.error("Webhook failed", { jobId, status, body });
+ *   logger.info("job_created", { jobId, userId });
+ *   logger.error("webhook_failed", { jobId, status: 500 });
  */
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
@@ -42,11 +42,6 @@ export interface LogContext {
 	[key: string]: unknown;
 }
 
-interface AxiomConfig {
-	token: string;
-	dataset: string;
-}
-
 function getEnv(): string {
 	try {
 		return (
@@ -57,46 +52,6 @@ function getEnv(): string {
 	} catch {
 		return "unknown";
 	}
-}
-
-function getAxiomConfig(): AxiomConfig | null {
-	try {
-		const token =
-			typeof process !== "undefined" ? process.env?.AXIOM_API_TOKEN : undefined;
-		if (!token) return null;
-		const dataset =
-			(typeof process !== "undefined" && process.env?.AXIOM_DATASET) ||
-			"klipse";
-		return { token, dataset };
-	} catch {
-		return null;
-	}
-}
-
-// Module-level Axiom send queue — batches events flushed via microtask.
-const _axiomQueue: object[] = [];
-let _axiomFlushPending = false;
-
-function enqueueAxiom(event: object, config: AxiomConfig): void {
-	_axiomQueue.push(event);
-	if (_axiomFlushPending) return;
-	_axiomFlushPending = true;
-	// Flush after current synchronous block — batches rapid log calls.
-	Promise.resolve().then(() => {
-		const batch = _axiomQueue.splice(0);
-		_axiomFlushPending = false;
-		if (!batch.length) return;
-		fetch(`https://api.axiom.co/v1/datasets/${config.dataset}/ingest`, {
-			method: "POST",
-			headers: {
-				Authorization: `Bearer ${config.token}`,
-				"Content-Type": "application/json",
-			},
-			body: JSON.stringify(batch),
-		}).catch(() => {
-			// Never throw from log drain
-		});
-	});
 }
 
 function shouldLog(level: LogLevel): boolean {
@@ -135,11 +90,6 @@ function emit(level: LogLevel, message: string, ctx?: LogContext): void {
 			console.warn(line);
 		} else {
 			console.log(line);
-		}
-		// Ship to Axiom if configured
-		const axiom = getAxiomConfig();
-		if (axiom) {
-			enqueueAxiom(fields, axiom);
 		}
 	} catch {
 		// Never throw from logger
