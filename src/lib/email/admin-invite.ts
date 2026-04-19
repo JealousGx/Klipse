@@ -13,7 +13,7 @@ export async function sendAdminInviteEmail(data: {
 	invitedBy: string;
 }): Promise<void> {
 	const appName = siteConfig.name || "Klipse";
-	const signInUrl = `${siteConfig.origin}?auth=login`;
+	const signInUrl = `${siteConfig.origin}?auth=signup`;
 
 	const content = `
 <h2 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#111827;text-align:center;line-height:1.3;">
