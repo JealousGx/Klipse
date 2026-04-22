@@ -27,9 +27,17 @@ export async function runAssembleStage(
 	try {
 		await reportProgress(spec, "assemble", 5);
 
+		if (assets.imagePaths.length === 0) {
+			throw new Error("no_images_generated");
+		}
+
 		const audioDuration = await withRetries("ffprobe", 3, () =>
 			ffprobeDuration(assets.ttsAudioPath),
 		);
+		if (audioDuration <= 0) {
+			throw new Error(`tts_audio_invalid_duration:${audioDuration}`);
+		}
+
 		const segmentDur = audioDuration / assets.imagePaths.length;
 
 		// Encode each image as a video segment.
