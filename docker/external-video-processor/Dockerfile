@@ -29,8 +29,8 @@ RUN pnpm --filter @klipse/external-video-processor run build
 
 FROM node:23-alpine AS runner
 
-# FFmpeg for encode. BusyBox `wget` is used for HEALTHCHECK (no extra packages).
-RUN apk add --no-cache ffmpeg \
+# FFmpeg for encode + DejaVu font for drawtext watermark. BusyBox `wget` is used for HEALTHCHECK (no extra packages).
+RUN apk add --no-cache ffmpeg ttf-dejavu \
 	&& addgroup -g 65532 -S app \
 	&& adduser -S -D -H -u 65532 -G app app
 
