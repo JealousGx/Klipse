@@ -7,6 +7,7 @@ import { generateSound } from "../../providers/sound-gen";
 import { synthesizeSpeech } from "../../providers/tts-gen";
 import { reportProgress } from "../../utils/callbacks";
 import { logger } from "../../utils/logger";
+import { cleanupFiles } from "../../utils/temp-file";
 
 export type PreparedAssets = {
 	ttsAudioPath: string;
@@ -29,6 +30,9 @@ export async function runPrepareStage(
 	const stageStart = Date.now();
 	logger.info("prepare_stage_start", { jobId: spec.jobId });
 
+	// Track every file written so we can clean up on partial failure.
+	const localCleanup: string[] = [];
+
 	try {
 		await reportProgress(spec, "prepare", 5);
 
@@ -41,6 +45,7 @@ export async function runPrepareStage(
 			const buf = await generateImage(spec, imagePrompts[i] ?? "");
 			const p = tmpDir.path(`img-${i}.webp`);
 			await writeFile(p, Buffer.from(buf));
+			localCleanup.push(p); // track immediately — before next await that could throw
 			imagePaths.push(p);
 			await reportProgress(spec, "prepare", 20 + i * 20);
 		}
@@ -48,6 +53,7 @@ export async function runPrepareStage(
 		const ttsBuf = await ttsPromise;
 		const ttsAudioPath = tmpDir.path("tts.mp3");
 		await writeFile(ttsAudioPath, Buffer.from(ttsBuf));
+		localCleanup.push(ttsAudioPath);
 		await reportProgress(spec, "prepare", 85);
 
 		let soundAudioPath: string | null = null;
@@ -55,6 +61,7 @@ export async function runPrepareStage(
 		if (soundBuf) {
 			soundAudioPath = tmpDir.path("sound.mp3");
 			await writeFile(soundAudioPath, Buffer.from(soundBuf));
+			localCleanup.push(soundAudioPath);
 		}
 
 		await reportProgress(spec, "prepare", 100);
@@ -64,6 +71,8 @@ export async function runPrepareStage(
 		});
 		return { ttsAudioPath, imagePaths, soundAudioPath };
 	} catch (e) {
+		// Clean up any files written before the failure — caller won't see them.
+		await cleanupFiles(localCleanup);
 		logger.error("prepare_stage_error", {
 			jobId: spec.jobId,
 			durationMs: Date.now() - stageStart,
