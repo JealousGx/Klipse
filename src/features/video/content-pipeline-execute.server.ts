@@ -75,6 +75,10 @@ export async function executeContentPipelineWithIdempotency(input: {
 		}
 		assertFreeTierAssemblyQuotaAllowed(snapshot);
 
+		// Free plan: first video is complimentary — bypass credit deduction entirely.
+		const isFreeTrialVideo =
+			snapshot.plan === "free" && !snapshot.freeVideoConsumed;
+
 		const maxIterations = 12;
 		for (let i = 0; i < maxIterations; i++) {
 			const rows = await tx
@@ -149,16 +153,24 @@ export async function executeContentPipelineWithIdempotency(input: {
 			}
 
 			try {
-				const { creditsRemaining } = await applyUsageDeduction(tx, {
-					userId: input.userId,
-					credits,
-					stage: POLAR_USAGE_STAGES.contentPipeline,
-					ref,
-					prelockedBalance: {
-						creditsRemaining: snapshot.creditsRemaining,
-						creditsUsed: snapshot.creditsUsed,
-					},
-				});
+				const creditsCharged = isFreeTrialVideo ? 0 : credits;
+				let creditsRemaining: number;
+
+				if (isFreeTrialVideo) {
+					creditsRemaining = snapshot.creditsRemaining;
+				} else {
+					const result = await applyUsageDeduction(tx, {
+						userId: input.userId,
+						credits,
+						stage: POLAR_USAGE_STAGES.contentPipeline,
+						ref,
+						prelockedBalance: {
+							creditsRemaining: snapshot.creditsRemaining,
+							creditsUsed: snapshot.creditsUsed,
+						},
+					});
+					creditsRemaining = result.creditsRemaining;
+				}
 
 				const now = new Date();
 				await tx.insert(videoJobs).values({
@@ -171,7 +183,7 @@ export async function executeContentPipelineWithIdempotency(input: {
 					status: "queued",
 					progress: 0,
 					currentStage: PIPELINE_STAGE.SCRIPT,
-					costCredits: credits,
+					costCredits: creditsCharged,
 					outputUrl: null,
 					errorMessage: null,
 					createdAt: now,
@@ -181,7 +193,7 @@ export async function executeContentPipelineWithIdempotency(input: {
 				const payload: StubGenerateIdempotencyResult = {
 					creditsRemaining,
 					ref,
-					creditsCharged: credits,
+					creditsCharged,
 				};
 
 				await tx
@@ -197,8 +209,9 @@ export async function executeContentPipelineWithIdempotency(input: {
 					userId: input.userId,
 					channelId,
 					jobId: ref,
-					credits,
+					credits: creditsCharged,
 					creditsRemaining,
+					isFreeTrialVideo,
 				});
 
 				return { kind: "fresh" as const, payload };
@@ -227,12 +240,15 @@ export async function executeContentPipelineWithIdempotency(input: {
 	});
 
 	if (outcome.kind === "fresh") {
-		firePolarUsageIngestAfterDeduction({
-			userId: input.userId,
-			credits,
-			stage: POLAR_USAGE_STAGES.contentPipeline,
-			ref: outcome.payload.ref,
-		});
+		// Skip Polar metering for free trial (0 credits charged).
+		if (outcome.payload.creditsCharged > 0) {
+			firePolarUsageIngestAfterDeduction({
+				userId: input.userId,
+				credits: outcome.payload.creditsCharged,
+				stage: POLAR_USAGE_STAGES.contentPipeline,
+				ref: outcome.payload.ref,
+			});
+		}
 
 		if (env.ENVIRONMENT !== "production") {
 			// Local/dev: skip cron wait — dispatch immediately (fire-and-forget).

@@ -269,6 +269,10 @@ function JobDetailPane({
 	});
 
 	const pendingApproval = job.publishApprovalStatus === "pending";
+	const isFreeTrial =
+		job.costCredits === 0 &&
+		job.status === "completed" &&
+		Boolean(job.outputStorageExpiresAt);
 	const retentionNote = job.outputStorageExpiresAt
 		? `This video is scheduled for removal after ${formatOutputRetentionDeadlineUtc(job.outputStorageExpiresAt)}. Approve or reject before then so you don’t lose access.`
 		: `Videos are kept for ${humanizeRetentionHours(PAID_TIER_RETENTION_HOURS)} on paid plans (then purged). Approve or reject before your window ends.`;
@@ -425,6 +429,27 @@ function JobDetailPane({
 								Reject
 							</Button>
 						</div>
+					</div>
+				) : null}
+				{isFreeTrial && job.outputStorageExpiresAt ? (
+					<div className="rounded-lg border border-amber-500/35 bg-amber-500/8 px-3 py-2.5">
+						<p className="text-sm font-medium text-foreground">
+							Free trial video
+						</p>
+						<p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+							This video will be permanently deleted on{" "}
+							<span className="font-medium text-foreground">
+								{formatOutputRetentionDeadlineUtc(job.outputStorageExpiresAt)}
+							</span>
+							. Download it now or{" "}
+							<Link
+								to="/dashboard/billing"
+								className="font-semibold text-primary hover:underline"
+							>
+								upgrade your plan
+							</Link>{" "}
+							to keep generating.
+						</p>
 					</div>
 				) : null}
 				<div className="flex flex-wrap items-start justify-between gap-3 border-t border-border pt-3">
