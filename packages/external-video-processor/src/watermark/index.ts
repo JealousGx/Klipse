@@ -7,8 +7,10 @@ import { ffmpegBin } from "../ffmpeg/probe";
 const execFileAsync = promisify(execFile);
 const FFMPEG_OPTS = { timeout: 600_000, maxBuffer: 80 * 1024 * 1024 };
 
-const WATERMARK_STYLE =
-	"fontcolor=white@0.78:fontsize=36:box=1:boxcolor=black@0.38:boxborderw=8:x=(w-text_w)/2:y=(h-text_h)/2";
+// Explicit font path — avoids fontconfig family lookup ("Cannot find a valid font for the family Sans")
+// in Alpine-based Docker images where only ttf-dejavu is installed.
+const FONT_FILE = "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf";
+const WATERMARK_STYLE = `fontfile=${FONT_FILE}:fontcolor=white@0.78:fontsize=36:box=1:boxcolor=black@0.38:boxborderw=8:x=(w-text_w)/2:y=(h-text_h)/2`;
 
 function drawtext(textFilePath: string): string {
 	const safe = textFilePath.replace(/\\/g, "/").replace(/:/g, "\\:");
