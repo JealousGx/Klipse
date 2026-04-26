@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
+import { requestPlatformPublishForJob } from "@/features/publishing/request-platform-publish.server";
 import { auth } from "@/lib/auth";
 
 import { retryFailedJobForUser } from "./retry-failed-job.server";
@@ -81,6 +82,39 @@ export const retryVideoJobFn = createServerFn({ method: "POST" })
 			return { ok: false, code: result.code };
 		}
 		return { ok: true };
+	});
+
+// ---------------------------------------------------------------------------
+// retryPublishFn — re-trigger platform publish after token reconnect
+// ---------------------------------------------------------------------------
+
+const retryPublishSchema = z.object({
+	jobId: z.string().trim().min(1).max(64),
+	platform: z.enum(["youtube", "tiktok", "instagram"]),
+});
+
+export type RetryPublishResult =
+	| { ok: true }
+	| { ok: false; code: "unauthorized" | "failed" };
+
+export const retryPublishFn = createServerFn({ method: "POST" })
+	.inputValidator((raw: unknown) => retryPublishSchema.parse(raw))
+	.handler(async ({ data }): Promise<RetryPublishResult> => {
+		const request = getRequest();
+		const session = await auth.api.getSession({ headers: request.headers });
+		if (!session?.user) {
+			return { ok: false, code: "unauthorized" };
+		}
+		try {
+			await requestPlatformPublishForJob({
+				jobId: data.jobId,
+				userId: session.user.id,
+				platform: data.platform,
+			});
+			return { ok: true };
+		} catch {
+			return { ok: false, code: "failed" };
+		}
 	});
 
 export { MAX_MANUAL_RETRIES };
