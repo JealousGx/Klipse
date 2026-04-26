@@ -12,7 +12,12 @@ export type AnalyticsSummary = {
 	totalJobs: number;
 	creditsUsedThisMonth: number;
 	successRate: number;
-	byChannel: { channelId: string; channelName: string; completed: number; failed: number }[];
+	byChannel: {
+		channelId: string;
+		channelName: string;
+		completed: number;
+		failed: number;
+	}[];
 	last30Days: { date: string; count: number }[];
 };
 
@@ -52,10 +57,13 @@ export async function getAnalyticsSummaryForUser(
 			),
 		);
 
-	// Last 30 days — completed jobs per day
+	// Last 30 days — completed jobs per day.
+	// Use DATE() (returns YYYY-MM-DD) rather than DATE_FORMAT so SELECT / GROUP BY /
+	// ORDER BY all expand identically — TiDB strict mode rejects mismatched qualifiers.
+	const jobDate = sql<string>`DATE(${videoJobs.createdAt})`;
 	const dailyRows = await db
 		.select({
-			date: sql<string>`DATE_FORMAT(${videoJobs.createdAt}, '%Y-%m-%d')`,
+			date: jobDate,
 			count: count(),
 		})
 		.from(videoJobs)
@@ -66,8 +74,8 @@ export async function getAnalyticsSummaryForUser(
 				gte(videoJobs.createdAt, thirtyDaysAgo),
 			),
 		)
-		.groupBy(sql`DATE_FORMAT(${videoJobs.createdAt}, '%Y-%m-%d')`)
-		.orderBy(sql`DATE_FORMAT(${videoJobs.createdAt}, '%Y-%m-%d')`);
+		.groupBy(jobDate)
+		.orderBy(jobDate);
 
 	// Aggregate totals
 	let totalCompleted = 0;
