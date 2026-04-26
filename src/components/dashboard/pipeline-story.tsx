@@ -15,6 +15,7 @@ import type { VideoJobListRow } from "@/features/video/video-job-list.types";
 import {
 	MAX_MANUAL_RETRIES,
 	publishVideoJobApprovalFn,
+	retryPublishFn,
 	retryVideoJobFn,
 } from "@/features/video/video-jobs.functions";
 
@@ -268,6 +269,33 @@ function JobDetailPane({
 		},
 	});
 
+	const retryPublishMutation = useMutation({
+		mutationFn: async () => {
+			const r = await retryPublishFn({
+				data: {
+					jobId: job.id,
+					platform: job.channelPlatform as "youtube" | "tiktok" | "instagram",
+				},
+			});
+			return r;
+		},
+		onSuccess: (r) => {
+			if (r.ok) {
+				toast.success("Publish queued — check back in a moment.");
+				onRefetch();
+				return;
+			}
+			if (r.code === "unauthorized") {
+				toast.error("Sign in required.");
+			} else {
+				toast.error("Retry failed. Try again.");
+			}
+		},
+		onError: () => {
+			toast.error("Something went wrong.");
+		},
+	});
+
 	const pendingApproval = job.publishApprovalStatus === "pending";
 	const isFreeTrial =
 		job.costCredits === 0 &&
@@ -350,15 +378,29 @@ function JobDetailPane({
 								</p>
 							</div>
 							<p className="mt-1 text-xs text-muted-foreground">
-								Google revoked Klipse's access. Reconnect to resume publishing.
+								Google revoked Klipse's access. Reconnect then retry publishing.
 							</p>
-							<Link
-								to="/dashboard/publishing/$destinationId"
-								params={{ destinationId: job.channelId }}
-								className="mt-2 inline-block text-xs font-semibold text-primary hover:underline"
-							>
-								Reconnect YouTube →
-							</Link>
+							<div className="mt-2 flex flex-wrap items-center gap-3">
+								<Link
+									to="/dashboard/publishing/$destinationId"
+									params={{ destinationId: job.channelId }}
+									className="text-xs font-semibold text-primary hover:underline"
+								>
+									Reconnect YouTube →
+								</Link>
+								<Button
+									type="button"
+									size="sm"
+									variant="outline"
+									className="h-7 text-xs"
+									disabled={retryPublishMutation.isPending}
+									onClick={() => retryPublishMutation.mutate()}
+								>
+									{retryPublishMutation.isPending
+										? "Retrying…"
+										: "Retry publish"}
+								</Button>
+							</div>
 						</div>
 					) : (
 						<p className="text-xs text-destructive">
