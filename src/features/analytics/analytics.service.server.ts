@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 
-import { and, count, eq, gte, sql, sum } from "drizzle-orm";
+import { and, count, eq, gte, sum } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { channels } from "@/db/schema/channels";
@@ -58,14 +58,11 @@ export async function getAnalyticsSummaryForUser(
 		);
 
 	// Last 30 days — completed jobs per day.
-	// Use DATE() (returns YYYY-MM-DD) rather than DATE_FORMAT so SELECT / GROUP BY /
-	// ORDER BY all expand identically — TiDB strict mode rejects mismatched qualifiers.
-	const jobDate = sql<string>`DATE(${videoJobs.createdAt})`;
-	const dailyRows = await db
-		.select({
-			date: jobDate,
-			count: count(),
-		})
+	// Fetch raw timestamps and aggregate in JS to avoid TiDB ONLY_FULL_GROUP_BY
+	// rejecting Drizzle's mismatched column qualifiers in DATE() expressions.
+	// Max ~500–750 rows in 30 days even for Empire tier users — safe for in-memory grouping.
+	const rawDailyRows = await db
+		.select({ createdAt: videoJobs.createdAt })
 		.from(videoJobs)
 		.where(
 			and(
@@ -73,9 +70,16 @@ export async function getAnalyticsSummaryForUser(
 				eq(videoJobs.status, "completed"),
 				gte(videoJobs.createdAt, thirtyDaysAgo),
 			),
-		)
-		.groupBy(jobDate)
-		.orderBy(jobDate);
+		);
+
+	const countByDate = new Map<string, number>();
+	for (const r of rawDailyRows) {
+		const d = r.createdAt.toISOString().slice(0, 10);
+		countByDate.set(d, (countByDate.get(d) ?? 0) + 1);
+	}
+	const dailyRows = [...countByDate.entries()]
+		.map(([date, count]) => ({ date, count }))
+		.sort((a, b) => a.date.localeCompare(b.date));
 
 	// Aggregate totals
 	let totalCompleted = 0;
@@ -128,7 +132,7 @@ export async function getAnalyticsSummaryForUser(
 		byChannel,
 		last30Days: dailyRows.map((r) => ({
 			date: r.date,
-			count: Number(r.count),
+			count: r.count,
 		})),
 	};
 }
