@@ -166,10 +166,20 @@ export async function runYoutubePublishForJob(input: {
 		accessToken = tok.access_token;
 	} catch (e) {
 		if (e instanceof GoogleOAuthRefreshTokenInvalidError) {
-			await clearOAuthRefreshTokenOnly({
-				userId,
-				channelId: job.channelId,
-			});
+			await clearOAuthRefreshTokenOnly({ userId, channelId: job.channelId });
+			// Token is now gone — notify user to reconnect (same email as missing-token path).
+			if (userEmail) {
+				sendYoutubeDisconnectEmail({
+					to: userEmail,
+					channelName,
+					publishingUrl,
+				}).catch((err) =>
+					logger.error("[youtube-publish] disconnect email failed", {
+						jobId,
+						error: err instanceof Error ? err.message : String(err),
+					}),
+				);
+			}
 		}
 		const msg = e instanceof Error ? e.message : "youtube_token_refresh_failed";
 		captureException(e, { jobId, userId, stage: "youtube_token_refresh" });
