@@ -11,145 +11,78 @@ import {
 	SelectValue,
 } from "../ui/select";
 
-interface PaginationProps {
+interface CursorPaginationProps {
+	hasPrev: boolean;
+	hasNext: boolean;
+	onPrev: () => void;
+	onNext: () => void;
 	currentPage: number;
-	totalPages: number;
-	onPageChange: (page: number) => void;
+	pageSize: number;
+	onPageSizeChange: (size: number) => void;
+	pageSizeOptions?: number[];
 	className?: string;
-	maxPageButtons?: number;
 }
 
-export const PaginationWithPageSize = ({
+export function CursorPagination({
+	hasPrev,
+	hasNext,
+	onPrev,
+	onNext,
 	currentPage,
-	totalPages,
-	itemsPerPage,
-	handlePageChange,
-	handlePageSizeChange,
+	pageSize,
+	onPageSizeChange,
 	pageSizeOptions = [5, 10, 20, 50],
-}: {
-	currentPage: number;
-	totalPages: number;
-	itemsPerPage: number;
-	handlePageChange: (page: number) => void;
-	handlePageSizeChange: (pageSize: string) => void;
-	className?: string;
-	pageSizeOptions?: number[];
-}) => {
+	className,
+}: CursorPaginationProps) {
 	return (
-		<div className="flex w-full flex-col-reverse items-center justify-between gap-4 sm:flex-row mt-6">
+		<div
+			className={cn(
+				"flex w-full flex-col-reverse items-center justify-between gap-4 sm:flex-row mt-6",
+				className,
+			)}
+		>
 			<div className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-				<span className="text-sm">Page size:</span>
+				<span className="text-sm text-muted-foreground">Page size:</span>
 				<Select
-					value={itemsPerPage.toString()}
-					onValueChange={handlePageSizeChange}
+					value={pageSize.toString()}
+					onValueChange={(v) => onPageSizeChange(Number(v))}
 				>
 					<SelectTrigger className="w-20">
-						<SelectValue placeholder={itemsPerPage} />
+						<SelectValue placeholder={pageSize} />
 					</SelectTrigger>
-					<SelectContent className="bg-white border-gray-200">
-						{pageSizeOptions?.map((option) => (
-							<SelectItem key={option} value={option.toString()}>
-								{option}
+					<SelectContent>
+						{pageSizeOptions.map((opt) => (
+							<SelectItem key={opt} value={opt.toString()}>
+								{opt}
 							</SelectItem>
 						))}
 					</SelectContent>
 				</Select>
 			</div>
 
-			<Pagination
-				currentPage={currentPage}
-				totalPages={totalPages}
-				onPageChange={handlePageChange}
-			/>
-		</div>
-	);
-};
-
-export function Pagination({
-	currentPage,
-	totalPages,
-	onPageChange,
-	className = "",
-	maxPageButtons = 5,
-}: PaginationProps) {
-	if (totalPages <= 1) {
-		return null;
-	}
-	const getPageNumbers = () => {
-		const pageNumbers = [];
-
-		pageNumbers.push(1);
-
-		const startPage = Math.max(2, currentPage - Math.floor(maxPageButtons / 2));
-		const endPage = Math.min(totalPages - 1, startPage + maxPageButtons - 3);
-
-		if (startPage > 2) {
-			pageNumbers.push("...");
-		}
-
-		for (let i = startPage; i <= endPage; i++) {
-			pageNumbers.push(i);
-		}
-
-		if (endPage < totalPages - 1) {
-			pageNumbers.push("...");
-		}
-
-		if (totalPages > 1) {
-			pageNumbers.push(totalPages);
-		}
-
-		return pageNumbers;
-	};
-
-	const pageNumbers = getPageNumbers();
-
-	return (
-		<div className={cn("flex flex-wrap items-center gap-2", className)}>
-			<Button
-				variant="outline"
-				size="sm"
-				onClick={() => onPageChange(Math.max(currentPage - 1, 1))}
-				disabled={currentPage === 1}
-				aria-label="Previous page"
-			>
-				<ChevronLeft className="h-4 w-4" />
-				<span className="sr-only">Previous Page</span>
-			</Button>
-
-			{pageNumbers.map((page) => {
-				if (page === "...") {
-					return (
-						<span key={`ellipsis-${page}`} className="px-2">
-							...
-						</span>
-					);
-				}
-
-				return (
-					<Button
-						key={`page-${page}`}
-						variant={currentPage === page ? "default" : "outline"}
-						size="sm"
-						onClick={() => onPageChange(page as number)}
-						aria-current={currentPage === page ? "page" : undefined}
-						aria-label={`Page ${page}`}
-					>
-						{page}
-					</Button>
-				);
-			})}
-
-			<Button
-				variant="outline"
-				size="sm"
-				onClick={() => onPageChange(Math.min(currentPage + 1, totalPages))}
-				disabled={currentPage === totalPages}
-				aria-label="Next page"
-			>
-				<ChevronRight className="h-4 w-4" />
-				<span className="sr-only">Next Page</span>
-			</Button>
+			<div className="flex items-center gap-2">
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={onPrev}
+					disabled={!hasPrev}
+					aria-label="Previous page"
+				>
+					<ChevronLeft className="h-4 w-4" />
+				</Button>
+				<span className="min-w-16 text-center text-sm text-muted-foreground">
+					Page {currentPage}
+				</span>
+				<Button
+					variant="outline"
+					size="sm"
+					onClick={onNext}
+					disabled={!hasNext}
+					aria-label="Next page"
+				>
+					<ChevronRight className="h-4 w-4" />
+				</Button>
+			</div>
 		</div>
 	);
 }

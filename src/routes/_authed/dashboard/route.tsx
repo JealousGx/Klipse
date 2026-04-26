@@ -15,12 +15,12 @@ export const Route = createFileRoute("/_authed/dashboard")({
 			throw redirect({
 				to: "/",
 				search: { auth: "login" },
-			})
+			});
 		}
 
 		/** Await so SSR output matches client hydration (same query state as `useQuery`). */
 		await context.queryClient.ensureQueryData(channelsQueryOptions);
-		await context.queryClient.ensureQueryData(videoJobsQueryOptions);
+		await context.queryClient.ensureQueryData(videoJobsQueryOptions());
 
 		return { session };
 	},
@@ -33,5 +33,5 @@ function DashboardLayout() {
 			<PolarCheckoutIntent />
 			<DashboardShell />
 		</React.Fragment>
-	)
+	);
 }

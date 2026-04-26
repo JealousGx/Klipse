@@ -33,7 +33,9 @@ export const Route = createFileRoute("/_authed/admin/jobs")({
 // Constants
 // ---------------------------------------------------------------------------
 
-const PAGE_SIZE = 50;
+const PAGE_SIZE = 50; // page size constant for cursor fetch
+
+type AdminJobCursor = { createdAt: string; id: string };
 
 type StatusFilter =
 	| "all"
@@ -64,14 +66,14 @@ function StatusBadge({ status }: { status: string }) {
 			<span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/15 px-2.5 py-0.5 text-xs font-medium text-blue-400">
 				Queued
 			</span>
-		)
+		);
 	}
 	if (status === "dispatched") {
 		return (
 			<span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/15 px-2.5 py-0.5 text-xs font-medium text-sky-400">
 				Dispatched
 			</span>
-		)
+		);
 	}
 	if (status === "processing") {
 		return (
@@ -79,14 +81,14 @@ function StatusBadge({ status }: { status: string }) {
 				<span className="size-1.5 animate-pulse rounded-full bg-amber-400" />
 				Processing
 			</span>
-		)
+		);
 	}
 	if (status === "completed") {
 		return (
 			<span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
 				Completed
 			</span>
-		)
+		);
 	}
 	if (status === "failed") {
 		return (
@@ -94,13 +96,13 @@ function StatusBadge({ status }: { status: string }) {
 				<AlertCircle className="size-3" />
 				Failed
 			</span>
-		)
+		);
 	}
 	return (
 		<span className="inline-flex items-center rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-400">
 			{status}
 		</span>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +127,7 @@ function StatCard({
 					? "text-red-400"
 					: accent === "blue"
 						? "text-blue-400"
-						: "text-zinc-100"
+						: "text-zinc-100";
 
 	return (
 		<div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
@@ -134,7 +136,7 @@ function StatCard({
 			</p>
 			<p className={`mt-1 text-3xl font-bold ${valueClass}`}>{value}</p>
 		</div>
-	)
+	);
 }
 
 // ---------------------------------------------------------------------------
@@ -160,7 +162,10 @@ function JobRow({
 					<p className="text-xs font-medium text-zinc-300">{job.userEmail}</p>
 				</td>
 				<td className="max-w-30 px-4 py-3.5">
-					<p className="truncate text-sm text-zinc-400" title={job.channelName ?? ""}>
+					<p
+						className="truncate text-sm text-zinc-400"
+						title={job.channelName ?? ""}
+					>
 						{job.channelName}
 					</p>
 				</td>
@@ -187,7 +192,9 @@ function JobRow({
 							className="flex w-full items-start gap-1.5 text-left text-xs text-red-400 hover:text-red-300"
 						>
 							<AlertCircle className="mt-0.5 size-3 shrink-0" />
-							<span className="line-clamp-2 flex-1 break-all">{job.errorMessage}</span>
+							<span className="line-clamp-2 flex-1 break-all">
+								{job.errorMessage}
+							</span>
 							{expanded ? (
 								<ChevronUp className="mt-0.5 size-3 shrink-0" />
 							) : (
@@ -257,17 +264,21 @@ function JobRow({
 function AdminJobsPage() {
 	const queryClient = useQueryClient();
 	const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-	const [page, setPage] = useState(0);
+	const [cursorStack, setCursorStack] = useState<AdminJobCursor[]>([]);
 	const [cancellingId, setCancellingId] = useState<string | null>(null);
 
+	const currentCursor =
+		cursorStack.length > 0 ? cursorStack[cursorStack.length - 1] : undefined;
+	const currentPage = cursorStack.length + 1;
+
 	const { data, isLoading, isError, isFetching, refetch } = useQuery({
-		queryKey: ["admin-jobs", statusFilter, page],
+		queryKey: ["admin-jobs", statusFilter, currentCursor ?? null],
 		queryFn: () =>
 			listAdminJobsFn({
 				data: {
 					status: statusFilter,
 					limit: PAGE_SIZE,
-					offset: page * PAGE_SIZE,
+					cursor: currentCursor,
 				},
 			}),
 		staleTime: 5_000,
@@ -279,7 +290,9 @@ function AdminJobsPage() {
 	});
 
 	const jobs: AdminJobRow[] = data?.ok ? data.jobs : [];
-	const total = data?.ok ? data.total : 0;
+	const nextCursor = data?.ok ? data.nextCursor : null;
+	const hasPrev = cursorStack.length > 0;
+	const hasNext = !!nextCursor;
 
 	// Derived counts from current page
 	const queuedCount = jobs.filter((j) => j.status === "queued").length;
@@ -304,17 +317,12 @@ function AdminJobsPage() {
 			setCancellingId(null);
 			toast.error("Failed to cancel job.");
 		},
-	})
+	});
 
 	function handleCancel(jobId: string) {
 		setCancellingId(jobId);
 		cancelMutation.mutate(jobId);
 	}
-
-	const start = page * PAGE_SIZE + 1;
-	const end = Math.min(start + jobs.length - 1, total);
-	const hasPrev = page > 0;
-	const hasNext = end < total;
 
 	return (
 		<div className="space-y-8">
@@ -348,7 +356,7 @@ function AdminJobsPage() {
 						key={tab.value}
 						onClick={() => {
 							setStatusFilter(tab.value);
-							setPage(0)
+							setCursorStack([]);
 						}}
 						className={[
 							"shrink-0 rounded-lg px-3.5 py-2 text-sm font-medium transition-all",
@@ -441,17 +449,15 @@ function AdminJobsPage() {
 					</div>
 
 					{/* Pagination */}
-					{total > PAGE_SIZE && (
+					{(hasPrev || hasNext) && (
 						<div className="flex items-center justify-between text-sm text-zinc-400">
-							<span>
-								Showing {start}–{end} of {total}
-							</span>
+							<span>Page {currentPage}</span>
 							<div className="flex gap-2">
 								<Button
 									variant="outline"
 									size="sm"
 									disabled={!hasPrev}
-									onClick={() => setPage((p) => p - 1)}
+									onClick={() => setCursorStack((s) => s.slice(0, -1))}
 								>
 									Previous
 								</Button>
@@ -459,7 +465,9 @@ function AdminJobsPage() {
 									variant="outline"
 									size="sm"
 									disabled={!hasNext}
-									onClick={() => setPage((p) => p + 1)}
+									onClick={() =>
+										nextCursor && setCursorStack((s) => [...s, nextCursor])
+									}
 								>
 									Next
 								</Button>
@@ -469,5 +477,5 @@ function AdminJobsPage() {
 				</>
 			)}
 		</div>
-	)
+	);
 }

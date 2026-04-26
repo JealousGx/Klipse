@@ -1,17 +1,16 @@
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { channels } from "@/db/schema/channels";
 import { users } from "@/db/schema/users";
 import { videoJobs } from "@/db/schema/video-jobs";
 import { requireAdmin } from "@/features/admin/admin.guard.server";
-import { logger } from "@/lib/logger";
-
 import type {
 	AdminJobRow,
 	JobStatusCounts,
 	ListAdminJobsInput,
 } from "@/features/admin/admin-jobs.functions";
+import { logger } from "@/lib/logger";
 
 // ---------------------------------------------------------------------------
 // Internal constants
@@ -27,7 +26,11 @@ export async function listAdminJobs(
 	request: Request,
 	data: ListAdminJobsInput,
 ): Promise<
-	| { ok: true; jobs: AdminJobRow[]; total: number }
+	| {
+			ok: true;
+			jobs: AdminJobRow[];
+			nextCursor: { createdAt: string; id: string } | null;
+	  }
 	| { ok: false; code: "unauthorized" }
 > {
 	try {
@@ -37,15 +40,30 @@ export async function listAdminJobs(
 	}
 
 	const db = getDb();
-	const whereClause =
+
+	const statusFilter =
 		data.status === "all"
 			? undefined
 			: eq(videoJobs.status, data.status as (typeof ACTIVE_STATUSES)[number]);
 
-	const [countRow] = await db
-		.select({ count: sql<number>`COUNT(*)` })
-		.from(videoJobs)
-		.where(whereClause);
+	const cursor = data.cursor
+		? { createdAt: new Date(data.cursor.createdAt), id: data.cursor.id }
+		: undefined;
+
+	const cursorFilter = cursor
+		? or(
+				lt(videoJobs.createdAt, cursor.createdAt),
+				and(
+					eq(videoJobs.createdAt, cursor.createdAt),
+					lt(videoJobs.id, cursor.id),
+				),
+			)
+		: undefined;
+
+	const whereClause =
+		statusFilter && cursorFilter
+			? and(statusFilter, cursorFilter)
+			: (statusFilter ?? cursorFilter);
 
 	const rows = await db
 		.select({
@@ -67,11 +85,18 @@ export async function listAdminJobs(
 		.leftJoin(users, eq(videoJobs.userId, users.id))
 		.leftJoin(channels, eq(videoJobs.channelId, channels.id))
 		.where(whereClause)
-		.orderBy(desc(videoJobs.createdAt))
-		.limit(data.limit)
-		.offset(data.offset);
+		.orderBy(desc(videoJobs.createdAt), desc(videoJobs.id))
+		.limit(data.limit + 1);
 
-	const jobs: AdminJobRow[] = rows.map((r) => ({
+	const hasNextPage = rows.length > data.limit;
+	const sliced = hasNextPage ? rows.slice(0, data.limit) : rows;
+	const last = sliced[sliced.length - 1];
+	const nextCursor =
+		hasNextPage && last
+			? { createdAt: last.createdAt.toISOString(), id: last.id }
+			: null;
+
+	const jobs: AdminJobRow[] = sliced.map((r) => ({
 		id: r.id,
 		userId: r.userId,
 		userEmail: r.userEmail ?? "(deleted)",
@@ -87,7 +112,7 @@ export async function listAdminJobs(
 		updatedAt: r.updatedAt,
 	}));
 
-	return { ok: true, jobs, total: Number(countRow?.count ?? 0) };
+	return { ok: true, jobs, nextCursor };
 }
 
 // ---------------------------------------------------------------------------

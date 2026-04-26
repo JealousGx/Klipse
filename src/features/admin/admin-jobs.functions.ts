@@ -32,18 +32,29 @@ export type AdminJobRow = {
 // listAdminJobsFn
 // ---------------------------------------------------------------------------
 
+const adminCursorSchema = z
+	.object({
+		createdAt: z.string().datetime(),
+		id: z.string().trim().min(1),
+	})
+	.optional();
+
 const listJobsInput = z.object({
 	status: z
 		.enum(["all", "queued", "dispatched", "processing", "completed", "failed"])
 		.default("all"),
 	limit: z.number().int().min(1).max(200).default(50),
-	offset: z.number().int().min(0).default(0),
+	cursor: adminCursorSchema,
 });
 
 export type ListAdminJobsInput = z.infer<typeof listJobsInput>;
 
 export type ListAdminJobsResult =
-	| { ok: true; jobs: AdminJobRow[]; total: number }
+	| {
+			ok: true;
+			jobs: AdminJobRow[];
+			nextCursor: { createdAt: string; id: string } | null;
+	  }
 	| { ok: false; code: "unauthorized" };
 
 export const listAdminJobsFn = createServerFn({ method: "POST" })

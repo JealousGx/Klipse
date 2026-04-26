@@ -32,16 +32,28 @@ export type AdminUserRow = {
 // listAdminUsersFn
 // ---------------------------------------------------------------------------
 
+const adminUserCursorSchema = z
+	.object({
+		createdAt: z.string().datetime(),
+		id: z.string().trim().min(1),
+	})
+	.optional();
+
 const listUsersInput = z.object({
 	search: z.string().optional(),
-	limit: z.number().int().min(1).max(200).default(100),
-	offset: z.number().int().min(0).default(0),
+	limit: z.number().int().min(1).max(200).default(20),
+	cursor: adminUserCursorSchema,
 });
 
 export type ListAdminUsersInput = z.infer<typeof listUsersInput>;
 
 export type ListAdminUsersResult =
-	| { ok: true; users: AdminUserRow[]; total: number }
+	| {
+			ok: true;
+			users: AdminUserRow[];
+			total: number;
+			nextCursor: { createdAt: string; id: string } | null;
+	  }
 	| { ok: false; code: "unauthorized" };
 
 export const listAdminUsersFn = createServerFn({ method: "POST" })

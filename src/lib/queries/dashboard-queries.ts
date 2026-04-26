@@ -1,8 +1,12 @@
 import { queryOptions } from "@tanstack/react-query";
 
 import { getAnalyticsSummaryFn } from "@/features/analytics/analytics.functions";
-import { getChannelFn, listChannelsFn } from "@/features/channels/channels.functions";
+import {
+	getChannelFn,
+	listChannelsFn,
+} from "@/features/channels/channels.functions";
 import { getChannelScheduleFn } from "@/features/scheduling/scheduling.functions";
+import { LIST_JOBS_DEFAULT_PAGE_SIZE } from "@/features/video/video-job-constants";
 import type { VideoJobListRow } from "@/features/video/video-job-list.types";
 import { listVideoJobsFn } from "@/features/video/video-jobs.functions";
 
@@ -72,19 +76,26 @@ export function channelQueryOptions(destinationId: string) {
 	});
 }
 
-export const videoJobsQueryOptions = queryOptions({
-	queryKey: ["video-jobs"] as const,
-	queryFn: async () => {
-		const r = await listVideoJobsFn();
-		if (!r.ok) throw new Error("Unauthorized");
-		return r.jobs;
-	},
-	staleTime: STALE_JOBS_MS,
-	refetchInterval: (query) => {
-		const jobs = query.state.data;
-		return jobs && hasActiveJobs(jobs) ? POLL_INTERVAL_MS : false;
-	},
-});
+export type VideoJobsPageCursor = { createdAt: string; id: string };
+
+export function videoJobsQueryOptions(
+	cursor?: VideoJobsPageCursor,
+	pageSize = LIST_JOBS_DEFAULT_PAGE_SIZE,
+) {
+	return queryOptions({
+		queryKey: ["video-jobs", cursor ?? null, pageSize] as const,
+		queryFn: async () => {
+			const r = await listVideoJobsFn({ data: { cursor, pageSize } });
+			if (!r.ok) throw new Error("Unauthorized");
+			return r;
+		},
+		staleTime: STALE_JOBS_MS,
+		refetchInterval: (query) => {
+			const jobs = query.state.data?.jobs;
+			return jobs && hasActiveJobs(jobs) ? POLL_INTERVAL_MS : false;
+		},
+	});
+}
 
 /**
  * Analytics summary — shared between the Analytics page and Billing page hero metric.

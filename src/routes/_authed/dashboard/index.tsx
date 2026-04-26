@@ -38,9 +38,9 @@ function DashboardPage() {
 	const user = session.user;
 
 	const channelsQuery = useQuery(channelsQueryOptions);
-	const jobsQuery = useQuery(videoJobsQueryOptions);
+	const jobsQuery = useQuery(videoJobsQueryOptions());
 
-	const latestJob = jobsQuery.data?.[0] ?? null;
+	const latestJob = jobsQuery.data?.jobs?.[0] ?? null;
 
 	const activeChannel = useMemo((): ChannelSnapshot | null => {
 		const c = channelsQuery.data?.[0];
@@ -52,7 +52,7 @@ function DashboardPage() {
 			platform: c.platform,
 			externalChannelId: c.externalChannelId,
 			oauthConnected: c.oauthConnected,
-		}
+		};
 	}, [channelsQuery.data]);
 
 	const channelValue = channelsQuery.isPending
@@ -115,7 +115,7 @@ function DashboardPage() {
 				a video right now.
 			</p>
 		</div>
-	)
+	);
 }
 
 function Metric({
@@ -152,5 +152,5 @@ function Metric({
 				) : null}
 			</div>
 		</div>
-	)
+	);
 }

@@ -50,7 +50,9 @@ export const Route = createFileRoute("/_authed/admin/users")({
 // Constants
 // ---------------------------------------------------------------------------
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 20; // page size constant for cursor fetch
+
+type AdminUserCursor = { createdAt: string; id: string };
 
 const PLANS = ["free", "starter", "creator", "empire"] as const;
 type Plan = (typeof PLANS)[number];
@@ -658,26 +660,30 @@ function RowActions({
 function AdminUsersPage() {
 	const [search, setSearch] = useState("");
 	const [debouncedSearch, setDebouncedSearch] = useState("");
-	const [page, setPage] = useState(0);
+	const [cursorStack, setCursorStack] = useState<AdminUserCursor[]>([]);
 	const [activeModal, setActiveModal] = useState<ActiveModal>(null);
 
-	// Debounce search
+	const currentCursor =
+		cursorStack.length > 0 ? cursorStack[cursorStack.length - 1] : undefined;
+	const currentPage = cursorStack.length + 1;
+
+	// Debounce search — reset cursor stack on new search term.
 	useEffect(() => {
 		const t = setTimeout(() => {
 			setDebouncedSearch(search);
-			setPage(0);
+			setCursorStack([]);
 		}, 300);
 		return () => clearTimeout(t);
 	}, [search]);
 
 	const { data, isLoading, isError, refetch, isFetching } = useQuery({
-		queryKey: ["admin-users", debouncedSearch, page],
+		queryKey: ["admin-users", debouncedSearch, currentCursor ?? null],
 		queryFn: () =>
 			listAdminUsersFn({
 				data: {
 					search: debouncedSearch || undefined,
 					limit: PAGE_SIZE,
-					offset: page * PAGE_SIZE,
+					cursor: currentCursor,
 				},
 			}),
 		staleTime: 30_000,
@@ -685,14 +691,12 @@ function AdminUsersPage() {
 
 	const users: AdminUserRow[] = data?.ok ? data.users : [];
 	const total = data?.ok ? data.total : 0;
+	const nextCursor = data?.ok ? data.nextCursor : null;
+	const hasPrev = cursorStack.length > 0;
+	const hasNext = !!nextCursor;
 
 	const adminCount = users.filter((u) => u.role === "admin").length;
 	const bannedCount = users.filter((u) => u.banned).length;
-
-	const start = page * PAGE_SIZE + 1;
-	const end = Math.min(start + users.length - 1, total);
-	const hasPrev = page > 0;
-	const hasNext = end < total;
 
 	return (
 		<div className="space-y-8">
@@ -838,17 +842,15 @@ function AdminUsersPage() {
 					</div>
 
 					{/* Pagination */}
-					{total > PAGE_SIZE && (
+					{(hasPrev || hasNext) && (
 						<div className="flex items-center justify-between text-sm text-zinc-400">
-							<span>
-								Showing {start}–{end} of {total}
-							</span>
+							<span>Page {currentPage}</span>
 							<div className="flex gap-2">
 								<Button
 									variant="outline"
 									size="sm"
 									disabled={!hasPrev}
-									onClick={() => setPage((p) => p - 1)}
+									onClick={() => setCursorStack((s) => s.slice(0, -1))}
 								>
 									Previous
 								</Button>
@@ -856,7 +858,9 @@ function AdminUsersPage() {
 									variant="outline"
 									size="sm"
 									disabled={!hasNext}
-									onClick={() => setPage((p) => p + 1)}
+									onClick={() =>
+										nextCursor && setCursorStack((s) => [...s, nextCursor])
+									}
 								>
 									Next
 								</Button>

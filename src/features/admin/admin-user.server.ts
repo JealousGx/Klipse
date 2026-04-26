@@ -1,4 +1,4 @@
-import { desc, eq, like, or, sql } from "drizzle-orm";
+import { and, desc, eq, like, lt, or, sql } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { users } from "@/db/schema/users";
@@ -126,7 +126,12 @@ export async function listAdminUsers(
 	request: Request,
 	data: ListAdminUsersInput,
 ): Promise<
-	| { ok: true; users: AdminUserRow[]; total: number }
+	| {
+			ok: true;
+			users: AdminUserRow[];
+			total: number;
+			nextCursor: { createdAt: string; id: string } | null;
+	  }
 	| { ok: false; code: "unauthorized" }
 > {
 	try {
@@ -137,30 +142,55 @@ export async function listAdminUsers(
 
 	const db = getDb();
 
-	const whereClause = data.search
+	const searchFilter = data.search
 		? or(
 				like(users.email, `%${data.search}%`),
 				like(users.name, `%${data.search}%`),
 			)
 		: undefined;
 
+	const cursor = data.cursor
+		? { createdAt: new Date(data.cursor.createdAt), id: data.cursor.id }
+		: undefined;
+
+	const cursorFilter = cursor
+		? or(
+				lt(users.createdAt, cursor.createdAt),
+				and(eq(users.createdAt, cursor.createdAt), lt(users.id, cursor.id)),
+			)
+		: undefined;
+
+	const whereClause =
+		searchFilter && cursorFilter
+			? and(searchFilter, cursorFilter)
+			: (searchFilter ?? cursorFilter);
+
+	// COUNT uses only the search filter (not cursor) so total reflects full result set.
 	const [countRow] = await db
 		.select({ count: sql<number>`COUNT(*)` })
 		.from(users)
-		.where(whereClause);
+		.where(searchFilter);
 
 	const rows = await db
 		.select()
 		.from(users)
 		.where(whereClause)
-		.orderBy(desc(users.createdAt))
-		.limit(data.limit)
-		.offset(data.offset);
+		.orderBy(desc(users.createdAt), desc(users.id))
+		.limit(data.limit + 1);
+
+	const hasNextPage = rows.length > data.limit;
+	const sliced = hasNextPage ? rows.slice(0, data.limit) : rows;
+	const last = sliced[sliced.length - 1];
+	const nextCursor =
+		hasNextPage && last
+			? { createdAt: last.createdAt.toISOString(), id: last.id }
+			: null;
 
 	return {
 		ok: true,
-		users: rows.map(toAdminUserRow),
+		users: sliced.map(toAdminUserRow),
 		total: Number(countRow?.count ?? 0),
+		nextCursor,
 	};
 }
 

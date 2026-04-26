@@ -1,6 +1,6 @@
 import "@tanstack/react-start/server-only";
 
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, lt, or } from "drizzle-orm";
 
 import { getDb } from "@/db";
 import { channels } from "@/db/schema/channels";
@@ -10,15 +10,38 @@ import { videoJobs } from "@/db/schema/video-jobs";
 
 import { requestPlatformPublishForJob } from "@/features/publishing/request-platform-publish.server";
 
+import { LIST_JOBS_DEFAULT_PAGE_SIZE } from "./video-job-constants";
 import type { VideoJobListRow } from "./video-job-list.types";
 
 export type { VideoJobListRow } from "./video-job-list.types";
 
+export type VideoJobCursor = { createdAt: Date; id: string };
+
+export type ListVideoJobsResult = {
+	jobs: VideoJobListRow[];
+	nextCursor: VideoJobCursor | null;
+};
+
 export async function listVideoJobsForUser(
 	userId: string,
-	limit = 100,
-): Promise<VideoJobListRow[]> {
+	cursor?: VideoJobCursor,
+	pageSize = LIST_JOBS_DEFAULT_PAGE_SIZE,
+): Promise<ListVideoJobsResult> {
 	const db = getDb();
+
+	const whereCondition = cursor
+		? and(
+				eq(videoJobs.userId, userId),
+				or(
+					lt(videoJobs.createdAt, cursor.createdAt),
+					and(
+						eq(videoJobs.createdAt, cursor.createdAt),
+						lt(videoJobs.id, cursor.id),
+					),
+				),
+			)
+		: eq(videoJobs.userId, userId);
+
 	const rows = await db
 		.select({
 			id: videoJobs.id,
@@ -50,11 +73,19 @@ export async function listVideoJobsForUser(
 				eq(expiringAssets.kind, "output"),
 			),
 		)
-		.where(eq(videoJobs.userId, userId))
-		.orderBy(desc(videoJobs.createdAt))
-		.limit(limit);
+		.where(whereCondition)
+		.orderBy(desc(videoJobs.createdAt), desc(videoJobs.id))
+		.limit(pageSize + 1);
 
-	return rows;
+	const hasNextPage = rows.length > pageSize;
+	const jobs = hasNextPage ? rows.slice(0, pageSize) : rows;
+	const lastJob = jobs[jobs.length - 1];
+	const nextCursor =
+		hasNextPage && lastJob
+			? { createdAt: lastJob.createdAt, id: lastJob.id }
+			: null;
+
+	return { jobs, nextCursor };
 }
 
 export async function setPublishApprovalForUser(input: {

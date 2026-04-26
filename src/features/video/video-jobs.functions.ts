@@ -6,27 +6,67 @@ import { requestPlatformPublishForJob } from "@/features/publishing/request-plat
 import { auth } from "@/lib/auth";
 
 import { retryFailedJobForUser } from "./retry-failed-job.server";
-import { MAX_MANUAL_RETRIES } from "./video-job-constants";
+import {
+	LIST_JOBS_DEFAULT_PAGE_SIZE,
+	MAX_MANUAL_RETRIES,
+} from "./video-job-constants";
+import type { VideoJobListRow } from "./video-job-list.types";
 import {
 	listVideoJobsForUser,
 	setPublishApprovalForUser,
 } from "./video-jobs.service.server";
 
+// Serialized cursor — ISO string for createdAt so it survives JSON round-trip.
+const listJobsCursorSchema = z.object({
+	createdAt: z.string().datetime(),
+	id: z.string().trim().min(1),
+});
+
+const listJobsSchema = z.object({
+	cursor: listJobsCursorSchema.optional(),
+	pageSize: z
+		.number()
+		.int()
+		.min(1)
+		.max(50)
+		.default(LIST_JOBS_DEFAULT_PAGE_SIZE),
+});
+
 export type ListJobsResult =
-	| { ok: true; jobs: Awaited<ReturnType<typeof listVideoJobsForUser>> }
+	| {
+			ok: true;
+			jobs: VideoJobListRow[];
+			nextCursor: { createdAt: string; id: string } | null;
+	  }
 	| { ok: false; code: "unauthorized" };
 
-export const listVideoJobsFn = createServerFn({ method: "GET" }).handler(
-	async (): Promise<ListJobsResult> => {
+export const listVideoJobsFn = createServerFn({ method: "GET" })
+	.inputValidator((raw: unknown) => listJobsSchema.parse(raw))
+	.handler(async ({ data }): Promise<ListJobsResult> => {
 		const request = getRequest();
 		const session = await auth.api.getSession({ headers: request.headers });
 		if (!session?.user) {
 			return { ok: false, code: "unauthorized" };
 		}
-		const jobs = await listVideoJobsForUser(session.user.id);
-		return { ok: true, jobs };
-	},
-);
+		const cursor = data.cursor
+			? { createdAt: new Date(data.cursor.createdAt), id: data.cursor.id }
+			: undefined;
+		const result = await listVideoJobsForUser(
+			session.user.id,
+			cursor,
+			data.pageSize,
+		);
+		return {
+			ok: true,
+			jobs: result.jobs,
+			nextCursor: result.nextCursor
+				? {
+						createdAt: result.nextCursor.createdAt.toISOString(),
+						id: result.nextCursor.id,
+					}
+				: null,
+		};
+	});
 
 const publishApprovalSchema = z.object({
 	jobId: z.string().trim().min(1).max(64),
