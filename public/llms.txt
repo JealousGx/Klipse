@@ -1,0 +1,206 @@
+# Klipse
+
+> Klipse (klipse.app) is an AI-powered short-form video creation and auto-publishing SaaS. Users describe a content idea; Klipse generates a complete vertical video — AI script, AI images, AI voiceover, optional AI background sound, FFmpeg-encoded — then publishes it automatically to YouTube (and future platforms) on a configurable schedule. No editing, no rendering, no manual uploading required.
+
+## What Klipse Does
+
+Klipse is a queue-driven AI content pipeline for creators and operators who want to run automated content channels without manual video production. The user provides a channel niche and topic ideas; Klipse handles every production step end-to-end:
+
+1. AI generates a spoken-word script (voiceover text + image prompts + title + description + tags)
+2. AI generates matching images (one per script segment)
+3. AI generates text-to-speech narration audio
+4. Optionally: AI generates ambient background sound/music
+5. FFmpeg encodes images + audio into a video (slideshow style)
+6. Video is published to the user's connected YouTube channel automatically, or held for manual approval
+
+## Website & App URLs
+
+- Homepage: https://klipse.app
+- Dashboard: https://klipse.app/dashboard
+- Generate video: https://klipse.app/dashboard/generate
+- Job history: https://klipse.app/dashboard/jobs
+- Publishing destinations: https://klipse.app/dashboard/publishing
+- Analytics: https://klipse.app/dashboard/analytics
+- Billing & plans: https://klipse.app/dashboard/billing
+- Account settings: https://klipse.app/dashboard/settings
+
+## Legal
+
+- Terms of Service: https://klipse.app/terms
+- Privacy Policy: https://klipse.app/privacy
+- Refund Policy: https://klipse.app/refund
+
+## Pricing Plans
+
+All paid plans billed monthly via Polar. Credits are consumed at job creation time (not completion). Unused monthly credits do not roll over.
+
+### Free Plan
+- Price: $0/month
+- Monthly credits: 0 (one free trial video only, no recurring credits)
+- Channels: 1 (for onboarding/preview only)
+- Video duration cap: 30 seconds
+- Publishing: Not available (free tier is generate-and-view only)
+- Background sound: Not available
+- Schedule fast-forward: Not available
+- Watermark: Yes (Klipse watermark overlaid on video)
+- One-time trial video with no credit cost; video is temporarily stored and then purged
+
+### Starter Plan
+- Price: Paid monthly (see klipse.app/dashboard/billing for current pricing)
+- Monthly credits: 1,500
+- Channels: 1
+- Video duration cap: 30 seconds
+- Publishing: Yes (YouTube auto-publish)
+- Background sound: Not available
+- Schedule fast-forward: Not available (must wait for next scheduled run)
+- Destination replacements per billing cycle: 1
+- Watermark: No
+
+### Creator Plan
+- Price: Paid monthly
+- Monthly credits: 5,000
+- Channels: 3
+- Video duration cap: 60 seconds
+- Publishing: Yes (YouTube auto-publish)
+- Background sound: Yes (AI-generated via ElevenLabs)
+- Schedule fast-forward: Yes (trigger schedule immediately)
+- Destination replacements per billing cycle: 5
+- Watermark: No
+
+### Empire Plan
+- Price: Paid monthly
+- Monthly credits: 15,000
+- Channels: 20
+- Video duration cap: Up to 600 seconds (10 minutes), limited by channel config
+- Publishing: Yes (YouTube auto-publish)
+- Background sound: Yes (AI-generated via ElevenLabs)
+- Schedule fast-forward: Yes
+- Destination replacements per billing cycle: 30
+- Watermark: No
+
+### Credit Add-ons (One-Time Purchases)
+- Small pack: 750 credits
+- Large pack: 2,000 credits
+
+## Credit Costs Per Operation
+
+Credits are deducted atomically at job creation. The total cost depends on script length, image count, and TTS character count.
+
+- Script generation: 5 credits (flat)
+- Image generation: 2 credits per image
+- TTS (text-to-speech): 4 credits per 1,000 characters of voiceover text
+- Video assembly (FFmpeg encode): 3 credits (flat)
+- AI video (future/alternate pipeline): 3 credits per second of video
+
+A typical 30-second video with 3 images and ~500 TTS characters costs approximately: 5 + 6 + 2 + 3 = 16 credits.
+
+## Video Specifications
+
+- Format: MP4 (H.264 video + AAC audio)
+- Aspect ratios supported: 9:16 (portrait, default — YouTube Shorts), 16:9 (landscape), 1:1 (square)
+- Duration: Configurable per channel; capped by plan (Free/Starter: 30s, Creator: 60s, Empire: up to 600s)
+- Style: Slideshow (AI-generated images + voiceover narration)
+- AI disclosure: Added automatically to video metadata (description) per platform guidelines
+- Free tier: Watermark ("Klipse") overlaid in center of video
+
+## Channel Configuration
+
+A "channel" in Klipse is a publishing destination with its own identity, niche, and settings. Each channel is independent and produces videos autonomously.
+
+- **Platform**: YouTube (connected via OAuth). TikTok and Instagram are planned.
+- **Niche**: A text description of the channel's topic/genre (e.g. "5-minute history facts", "daily finance tips"). Used as context for AI script generation.
+- **Name**: Display name of the channel. Used in video metadata and AI prompts.
+- **Aspect ratio**: 9:16 (default), 16:9, or 1:1
+- **Target duration**: Desired video length in seconds (clamped by plan limit)
+- **Sound enabled**: Whether to generate AI background sound (Creator+ only)
+- **Sound prompt hint**: Optional text hint to guide background sound generation
+- **Publish approval**: Videos can be set to require manual approval before publishing, or auto-publish immediately on completion
+
+## Scheduling
+
+Each channel can have one active schedule. The cron system polls for due schedules approximately every minute.
+
+- **Frequencies**: daily, every 2 days, every 3 days, every 4 days, every 5 days, every 6 days, weekly, every 2 weeks, every 3 weeks, monthly
+- **Jitter**: Random offset up to 360 minutes added to each scheduled run time to prevent all channels from firing simultaneously
+- **Fast-forward**: Creator+ plans can trigger a schedule to run immediately without waiting for the next scheduled time
+- **One-off generation**: Any plan can trigger a manual video generation from the Generate page at any time (consumes credits)
+
+## Publishing Workflow
+
+1. Video job completes encoding
+2. If publish approval is set to "pending": job waits for user to approve/reject in dashboard
+3. If approved (or auto-approve): Klipse fetches the output MP4 and uploads to YouTube via YouTube Data API v3
+4. YouTube returns a video ID; job is marked published
+5. If YouTube token is revoked/expired: user receives an email notification to reconnect their channel
+
+**Manual retry**: If publishing fails (e.g. token expired, user has reconnected), there is a "Retry publish" button in the job history.
+
+**Publishing platforms**: Currently YouTube only. TikTok and Instagram are in the schema/roadmap but not yet live.
+
+## Authentication
+
+- **Email OTP**: Enter email → receive 6-digit code → sign in (no password required)
+- **Google OAuth**: Sign in with Google account
+- Sessions are managed server-side
+- Admin accounts can be designated via environment config; admins have access to an admin panel
+
+## Job Lifecycle
+
+Each video generation is tracked as a "job" with the following statuses:
+
+- `queued`: Job created, waiting for cron to pick it up
+- `dispatched`: Cron has sent the job to the video processor
+- `processing`: Processor is actively running pipeline stages
+- `completed`: Video encoded and stored; ready to publish or already published
+- `failed`: An error occurred during processing
+
+Pipeline stages (in order):
+1. `dispatch_pending` → `script` (LLM script generation)
+2. `prepare` (image generation + TTS + optional sound)
+3. `assemble` (FFmpeg encode + watermark + R2 upload)
+4. `done` (complete)
+
+**Manual retry**: Failed jobs can be manually retried up to 3 times from the job history page.
+
+## AI Technology Stack
+
+- **Script generation**: Google Gemini 2.5 Flash (primary) → OpenRouter fallback
+- **Image generation**: Replicate SDXL
+- **Text-to-speech**: Google Cloud TTS (primary) → Unreal Speech → ElevenLabs (fallback chain)
+- **Background sound**: ElevenLabs (Creator+ only)
+- **Video encoding**: FFmpeg (runs in external Node.js service on Google Cloud Run)
+
+## Storage & Data
+
+- Final videos stored in Cloudflare R2 (object storage)
+- Free tier videos are stored temporarily and purged after a set retention window
+- Paid tier videos remain available as long as the job record exists
+- Job artifacts include: AI-generated title, description, tags, and script text
+
+## Analytics
+
+Users can view:
+- Total completed/failed jobs
+- Success rate
+- Credits used this month
+- Per-channel job counts (completed/failed)
+- Daily job completion chart (last 30 days)
+
+## Support & Contact
+
+- Support email: Available in dashboard settings (see VITE_APP_SUPPORT_EMAIL)
+- Discord community: Available via dashboard links (see VITE_APP_DISCORD_URL)
+- Bug reports: Available via in-app bug report link
+
+## Key Concepts Glossary
+
+- **Credit**: Internal currency consumed per video operation. Resets monthly for paid plans.
+- **Channel**: A named publishing destination with its own niche, platform connection, and schedule.
+- **Niche**: The topic/genre description that guides AI content generation for a channel.
+- **Job**: A single video generation request, tracked from creation through publishing.
+- **Pipeline**: The sequence of AI and encoding stages that transform a topic idea into a published video.
+- **Publish approval**: A gate where the user manually reviews a completed video before it goes live.
+- **Schedule fast-forward**: Triggering a scheduled generation immediately rather than waiting for the next scheduled time (Creator+ feature).
+- **Destination replacement**: Switching a channel's connected platform account (e.g. linking to a different YouTube channel). Limited per billing cycle by plan.
+- **Watermark**: "Klipse" text overlay on free-tier videos.
+- **AI disclosure**: Text added to video descriptions noting AI-generated content.
