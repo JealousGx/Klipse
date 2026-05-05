@@ -166,6 +166,8 @@ function parseScriptJson(raw: string): ScriptJson | null {
 			Array.isArray((parsed as Record<string, unknown>).imagePrompts)
 		) {
 			return parsed as ScriptJson;
+		} else if (Array.isArray(parsed)) {
+			return parsed[0] as ScriptJson;
 		}
 	} catch {
 		// fall through to tag/regex path
