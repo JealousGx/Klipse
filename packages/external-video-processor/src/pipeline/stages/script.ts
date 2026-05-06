@@ -156,17 +156,25 @@ type ScriptJson = {
 	tags?: string[];
 };
 
+function isScriptJson(obj: unknown): obj is ScriptJson {
+	return (
+		typeof obj === "object" &&
+		obj !== null &&
+		typeof (obj as Record<string, unknown>).voiceover === "string" &&
+		Array.isArray((obj as Record<string, unknown>).imagePrompts)
+	);
+}
+
 function parseScriptJson(raw: string): ScriptJson | null {
 	try {
 		const parsed = JSON.parse(raw) as unknown;
-		if (
-			typeof parsed === "object" &&
-			parsed !== null &&
-			typeof (parsed as Record<string, unknown>).voiceover === "string" &&
-			Array.isArray((parsed as Record<string, unknown>).imagePrompts)
-		) {
+		if (isScriptJson(parsed)) {
 			return parsed as ScriptJson;
-		} else if (Array.isArray(parsed)) {
+		} else if (
+			Array.isArray(parsed) &&
+			parsed.length > 0 &&
+			isScriptJson(parsed[0])
+		) {
 			return parsed[0] as ScriptJson;
 		}
 	} catch {
