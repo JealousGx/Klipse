@@ -264,7 +264,6 @@ export async function runScriptStage(
 			? (parsed.tags as unknown[])
 					.map((t) => String(t).toLowerCase().trim())
 					.filter((t) => t.length > 0)
-					.slice(0, 10)
 			: undefined;
 	} else {
 		// Fallback: tag/regex sanitization — title/description/tags unavailable.
