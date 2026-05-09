@@ -7,7 +7,7 @@ import type {
 } from "@klipse/video-assembly-shared";
 
 import { logger } from "./logger";
-import { withRetries } from "./retry";
+import { NonRetriableError, withRetries } from "./retry";
 
 const PROGRESS_ATTEMPTS = 3;
 const FAILURE_ATTEMPTS = 5;
@@ -32,7 +32,12 @@ async function postCallback(
 		});
 		if (!res.ok) {
 			const t = await res.text().catch(() => "");
-			throw new Error(`callback_${res.status}:${t.slice(0, 300)}`);
+			const msg = `callback_${res.status}:${t.slice(0, 300)}`;
+			// 4xx = deterministic app-level rejection — retrying won't change outcome.
+			if (res.status >= 400 && res.status < 500) {
+				throw new NonRetriableError(msg);
+			}
+			throw new Error(msg);
 		}
 	});
 }

@@ -110,7 +110,20 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 			title,
 			description,
 			tags,
-		);
+		).catch((e) => {
+			const msg = e instanceof Error ? e.message : String(e);
+			// 409 invalid_state = job already in a terminal state (e.g. re-dispatched while
+			// this processor was running). Video encoded successfully — don't escalate to a
+			// failure callback, which would incorrectly mark the job failed.
+			if (msg.includes("callback_409")) {
+				logger.warn("complete_callback_invalid_state", {
+					jobId,
+					error: msg,
+				});
+				return;
+			}
+			throw e;
+		});
 	} catch (e) {
 		const msg = formatError(e);
 		logTiming("executor", "job.failed", Date.now() - jobStart, {

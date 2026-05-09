@@ -7,7 +7,19 @@ export function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * Tag an error as non-retriable (e.g. deterministic 4xx HTTP responses).
+ * `withRetries` stops immediately on the first attempt that throws this.
+ */
+export class NonRetriableError extends Error {
+	constructor(message: string) {
+		super(message);
+		this.name = "NonRetriableError";
+	}
+}
+
+/**
  * Retries `fn` up to `attempts` times with exponential backoff.
+ * Stops immediately if `fn` throws a `NonRetriableError`.
  * Logs warnings on each failure; re-throws on final attempt.
  */
 export async function withRetries<T>(
@@ -21,6 +33,14 @@ export async function withRetries<T>(
 			return await fn(attempt);
 		} catch (e) {
 			last = e;
+			// Non-retriable: stop immediately regardless of remaining attempts.
+			if (e instanceof NonRetriableError) {
+				logger.warn("retry_non_retriable", {
+					label,
+					error: e.message,
+				});
+				break;
+			}
 			if (attempt === attempts) {
 				logger.warn("retry_attempt_failed_final", {
 					label,
