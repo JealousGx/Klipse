@@ -12,7 +12,7 @@ const bodySchema = z.object({
 	scriptText: z.string().max(50000).optional(),
 	title: z.string().max(100).optional(),
 	description: z.string().max(2000).optional(),
-	tags: z.array(z.string().max(50)).max(10).optional(),
+	tags: z.array(z.string().max(50)).max(100).optional(),
 });
 
 /**
