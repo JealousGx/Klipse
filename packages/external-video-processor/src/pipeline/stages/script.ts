@@ -165,20 +165,100 @@ function isScriptJson(obj: unknown): obj is ScriptJson {
 	);
 }
 
-function parseScriptJson(raw: string): ScriptJson | null {
-	try {
-		const parsed = JSON.parse(raw) as unknown;
-		if (isScriptJson(parsed)) {
-			return parsed as ScriptJson;
-		} else if (
-			Array.isArray(parsed) &&
-			parsed.length > 0 &&
-			isScriptJson(parsed[0])
-		) {
-			return parsed[0] as ScriptJson;
+/**
+ * Best-effort repair of a truncated JSON string.
+ * Closes any open string, then appends missing `]` and `}` to balance brackets.
+ * Only used as a last-resort fallback — the result may be semantically incomplete
+ * (e.g. a tags array cut short) but structurally valid for JSON.parse.
+ */
+function repairTruncatedJson(s: string): string {
+	let out = s.trimEnd();
+
+	// If the last character is inside an open string, close it.
+	// Simple heuristic: count unescaped quotes; odd count = open string.
+	let inString = false;
+	let escaped = false;
+	for (const ch of out) {
+		if (escaped) {
+			escaped = false;
+			continue;
 		}
-	} catch {
-		// fall through to tag/regex path
+		if (ch === "\\") {
+			escaped = true;
+			continue;
+		}
+		if (ch === '"') inString = !inString;
+	}
+	if (inString) out += '"';
+
+	// Remove trailing comma before closing (invalid JSON)
+	out = out.replace(/,\s*$/, "");
+
+	// Balance brackets/braces
+	const stack: string[] = [];
+	inString = false;
+	escaped = false;
+	for (const ch of out) {
+		if (escaped) {
+			escaped = false;
+			continue;
+		}
+		if (ch === "\\") {
+			escaped = true;
+			continue;
+		}
+		if (ch === '"') {
+			inString = !inString;
+			continue;
+		}
+		if (inString) continue;
+		if (ch === "{") stack.push("}");
+		else if (ch === "[") stack.push("]");
+		else if (ch === "}" || ch === "]") stack.pop();
+	}
+	while (stack.length) out += stack.pop();
+
+	return out;
+}
+
+/**
+ * Attempts to extract and parse a ScriptJson object from the raw LLM response.
+ *
+ * Handles four common model output patterns:
+ *  1. Bare JSON object   — `{ "voiceover": "..." }`
+ *  2. JSON array         — `[{ "voiceover": "..." }]`
+ *  3. Markdown fenced    — ```json\n{ ... }\n``` (some models ignore response_format)
+ *  4. JSON embedded in prose — model adds preamble/postamble around the object
+ *  5. Truncated JSON     — response cut at max_tokens; repaired before parsing
+ */
+function parseScriptJson(raw: string): ScriptJson | null {
+	const candidates: string[] = [raw];
+
+	// Strip markdown code fences: ```json ... ``` or ``` ... ```
+	const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
+	if (fenced?.[1]) candidates.push(fenced[1].trim());
+
+	// Extract outermost JSON object from anywhere in the text
+	const firstBrace = raw.indexOf("{");
+	const lastBrace = raw.lastIndexOf("}");
+	if (firstBrace !== -1 && lastBrace > firstBrace) {
+		candidates.push(raw.slice(firstBrace, lastBrace + 1));
+	}
+
+	// Truncation recovery: slice from first `{` to end and repair unclosed structure
+	if (firstBrace !== -1) {
+		candidates.push(repairTruncatedJson(raw.slice(firstBrace)));
+	}
+
+	for (const candidate of candidates) {
+		try {
+			const parsed = JSON.parse(candidate) as unknown;
+			if (isScriptJson(parsed)) return parsed as ScriptJson;
+			if (Array.isArray(parsed) && parsed.length > 0 && isScriptJson(parsed[0]))
+				return parsed[0] as ScriptJson;
+		} catch {
+			// try next candidate
+		}
 	}
 	return null;
 }
@@ -264,6 +344,7 @@ export async function runScriptStage(
 			? (parsed.tags as unknown[])
 					.map((t) => String(t).toLowerCase().trim())
 					.filter((t) => t.length > 0)
+					.slice(0, 100)
 			: undefined;
 	} else {
 		// Fallback: tag/regex sanitization — title/description/tags unavailable.
@@ -277,7 +358,7 @@ export async function runScriptStage(
 		durationMs: Date.now() - stageStart,
 	});
 	return {
-		scriptMarkdown: raw,
+		scriptMarkdown: ttsText,
 		ttsText,
 		imagePrompts,
 		title,
