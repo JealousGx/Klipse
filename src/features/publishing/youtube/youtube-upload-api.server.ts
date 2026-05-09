@@ -45,7 +45,7 @@ export async function uploadMp4ToYoutube(input: {
 		snippet: {
 			title: input.metadata.title.slice(0, 100),
 			description: input.metadata.description.slice(0, 5000),
-			tags: input.metadata.tags.slice(0, 30).map((t) => t.slice(0, 30)),
+			tags: fitTagsToYoutubeBudget(input.metadata.tags),
 			categoryId: "22",
 		},
 		status: {
@@ -67,7 +67,10 @@ export async function uploadMp4ToYoutube(input: {
 
 	if (!init.ok) {
 		const t = await init.text();
-		logger.error("youtube_upload_init_failed", { status: init.status, body: t.slice(0, 200) });
+		logger.error("youtube_upload_init_failed", {
+			status: init.status,
+			body: t.slice(0, 200),
+		});
 		throw new Error(`youtube_upload_init_failed:${init.status}:${t}`);
 	}
 
@@ -76,7 +79,9 @@ export async function uploadMp4ToYoutube(input: {
 		throw new Error("youtube_upload_missing_location");
 	}
 
-	logger.info("youtube_upload_session_created", { sizeBytes: input.videoBytes.byteLength });
+	logger.info("youtube_upload_session_created", {
+		sizeBytes: input.videoBytes.byteLength,
+	});
 
 	const put = await fetch(location, {
 		method: "PUT",
@@ -90,7 +95,10 @@ export async function uploadMp4ToYoutube(input: {
 
 	if (!put.ok) {
 		const t = await put.text();
-		logger.error("youtube_upload_put_failed", { status: put.status, body: t.slice(0, 200) });
+		logger.error("youtube_upload_put_failed", {
+			status: put.status,
+			body: t.slice(0, 200),
+		});
 		throw new Error(`youtube_upload_put_failed:${put.status}:${t}`);
 	}
 
@@ -109,4 +117,25 @@ export async function uploadMp4ToYoutube(input: {
 	});
 
 	return { videoId };
+}
+
+// YouTube allows max 500 chars for the entire comma-separated tag list, and max 30 tags. This helper tries to fit as many tags as possible within those limits.
+function fitTagsToYoutubeBudget(tags: string[], budget = 500): string[] {
+	const result: string[] = [];
+
+	let used = 0;
+
+	for (const tag of tags) {
+		const t = tag.slice(0, 30); // per-tag max still 30
+
+		const cost = result.length === 0 ? t.length : t.length + 1; // +1 for comma
+
+		if (used + cost > budget) break;
+
+		result.push(t);
+
+		used += cost;
+	}
+
+	return result;
 }
