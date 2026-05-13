@@ -121,19 +121,26 @@ export async function uploadMp4ToYoutube(input: {
 
 // YouTube allows max 500 chars for the entire comma-separated tag list, and max 30 tags. This helper tries to fit as many tags as possible within those limits.
 function fitTagsToYoutubeBudget(tags: string[], budget = 500): string[] {
-	const result: string[] = [];
+	// Pre-process: split on commas (LLMs often emit "foo, bar" as one tag), trim, deduplicate.
+	const seen = new Set<string>();
+	const flat: string[] = [];
+	for (const raw of tags) {
+		for (const piece of raw.split(",")) {
+			const t = piece.trim().slice(0, 30);
+			if (t.length >= 2 && !seen.has(t)) {
+				seen.add(t);
+				flat.push(t);
+			}
+		}
+	}
 
+	const result: string[] = [];
 	let used = 0;
 
-	for (const tag of tags) {
-		const t = tag.slice(0, 30); // per-tag max still 30
-
+	for (const t of flat) {
 		const cost = result.length === 0 ? t.length : t.length + 1; // +1 for comma
-
 		if (used + cost > budget) break;
-
 		result.push(t);
-
 		used += cost;
 	}
 
