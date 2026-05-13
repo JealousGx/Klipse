@@ -44,9 +44,9 @@ export async function uploadMp4ToYoutube(input: {
 	const body = {
 		snippet: {
 			title: input.metadata.title.slice(0, 100),
-			description: `${input.metadata.description.slice(0, 4997)}...`,
-			// tags: fitTagsToYoutubeBudget(input.metadata.tags),
-			tags: input.metadata.tags.slice(0, 10), // fitTagsToYoutubeBudget is not working. So, slicing to just 10 tags for now.
+			description: `${input.metadata.description.slice(0, 4200)}...`,
+			tags: fitTagsToYoutubeBudget(input.metadata.tags),
+			// tags: input.metadata.tags.slice(0, 10), // fitTagsToYoutubeBudget is not working. So, slicing to just 10 tags for now.
 			categoryId: "22",
 		},
 		status: {
