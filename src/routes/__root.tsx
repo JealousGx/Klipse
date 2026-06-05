@@ -1,54 +1,56 @@
-import { TanStackDevtools } from "@tanstack/react-devtools";
-import type { QueryClient } from "@tanstack/react-query";
+import { TanStackDevtools } from "@tanstack/react-devtools"
+import type { QueryClient } from "@tanstack/react-query"
 import {
 	createRootRouteWithContext,
 	HeadContent,
 	Scripts,
-} from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+} from "@tanstack/react-router"
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 
-import { isAllowedToIndex, siteConfig } from "@/config/site";
+import { isAllowedToIndex, siteConfig } from "@/config/site"
 
-import { AuthModalBridge } from "@/features/auth/AuthModalBridge";
-import { AuthModalProvider } from "@/features/auth/AuthModalContext";
-import { getRootSession } from "@/features/auth/get-root-session";
+import { AuthModalBridge } from "@/features/auth/AuthModalBridge"
+import { AuthModalProvider } from "@/features/auth/AuthModalContext"
+import { getRootSession } from "@/features/auth/get-root-session"
 
-import { rootSearchSchema } from "@/lib/routes/root-search";
-import { captureException } from "@/lib/sentry";
+import { rootSearchSchema } from "@/lib/routes/root-search"
+import { captureException } from "@/lib/sentry"
 
-import { ErrorPage } from "../components/error-page";
-import { NotFoundPage } from "../components/not-found-page";
-import { RootChrome } from "../components/root-chrome";
-import { Toaster } from "../components/ui/sonner";
-import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import { ErrorPage } from "../components/error-page"
+import { NotFoundPage } from "../components/not-found-page"
+import { RootChrome } from "../components/root-chrome"
+import { Toaster } from "../components/ui/sonner"
+import { TooltipProvider } from "../components/ui/tooltip"
 
-import appCss from "../styles.css?url";
+import TanStackQueryDevtools from "../integrations/tanstack-query/devtools"
+
+import appCss from "../styles.css?url"
 
 interface MyRouterContext {
-	queryClient: QueryClient;
+	queryClient: QueryClient
 	/** Set in root `beforeLoad` (`getRootSession`); omitted in initial `getContext()` until navigation runs. */
-	session?: Awaited<ReturnType<typeof getRootSession>> | null;
+	session?: Awaited<ReturnType<typeof getRootSession>> | null
 }
 
-const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`;
+const THEME_INIT_SCRIPT = `(function(){try{var stored=window.localStorage.getItem('theme');var mode=(stored==='light'||stored==='dark'||stored==='auto')?stored:'auto';var prefersDark=window.matchMedia('(prefers-color-scheme: dark)').matches;var resolved=mode==='auto'?(prefersDark?'dark':'light'):mode;var root=document.documentElement;root.classList.remove('light','dark');root.classList.add(resolved);if(mode==='auto'){root.removeAttribute('data-theme')}else{root.setAttribute('data-theme',mode)}root.style.colorScheme=resolved;}catch(e){}})();`
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
 	validateSearch: (raw: Record<string, unknown>) => {
-		const parsed = rootSearchSchema.safeParse(raw);
-		return parsed.success ? parsed.data : {};
+		const parsed = rootSearchSchema.safeParse(raw)
+		return parsed.success ? parsed.data : {}
 	},
 	beforeLoad: async () => {
-		const session = await getRootSession();
-		return { session };
+		const session = await getRootSession()
+		return { session }
 	},
 	notFoundComponent: () => <NotFoundPage />,
 	errorComponent: ({ error, reset }) => {
-		void captureException(error, { location: "root-error-boundary" });
-		return <ErrorPage error={error} reset={reset} />;
+		void captureException(error, { location: "root-error-boundary" })
+		return <ErrorPage error={error} reset={reset} />
 	},
 	head: () => {
-		const shouldIndex = isAllowedToIndex(new URL(siteConfig.origin).hostname);
-		const ogImage = `${siteConfig.origin}${siteConfig.og.image}`;
+		const shouldIndex = isAllowedToIndex(new URL(siteConfig.origin).hostname)
+		const ogImage = `${siteConfig.origin}${siteConfig.og.image}`
 		return {
 			meta: [
 				{ charSet: "utf-8" },
@@ -78,10 +80,10 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				{ rel: "stylesheet", href: appCss },
 				{ rel: "manifest", href: "/manifest.json" },
 			],
-		};
+		}
 	},
 	shellComponent: RootDocument,
-});
+})
 
 function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
@@ -93,11 +95,13 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body className="font-sans antialiased wrap-anywhere selection:bg-[rgba(79,184,178,0.24)]">
-				<AuthModalProvider>
-					<RootChrome>{children}</RootChrome>
-					<AuthModalBridge />
-					<Toaster />
-				</AuthModalProvider>
+				<TooltipProvider>
+					<AuthModalProvider>
+						<RootChrome>{children}</RootChrome>
+						<AuthModalBridge />
+						<Toaster />
+					</AuthModalProvider>
+				</TooltipProvider>
 				<TanStackDevtools
 					config={{
 						position: "bottom-right",
@@ -113,5 +117,5 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<Scripts />
 			</body>
 		</html>
-	);
+	)
 }
