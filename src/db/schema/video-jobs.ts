@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm"
 import {
 	index,
 	int,
@@ -8,26 +8,45 @@ import {
 	text,
 	timestamp,
 	varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/mysql-core"
 
-import { channels } from "./channels";
-import { users } from "./users";
+import { channels } from "./channels"
+import { users } from "./users"
 
 /** Immutable request payload for pipelines that need user input (e.g. content pipeline). */
 export type VideoJobInputPayload = {
-	idea: string;
-};
+	idea: string
+}
+
+/**
+ * User-selected publish settings captured during the pre-publish review step.
+ * Stored as JSON — extend with new platform-specific keys as needed.
+ */
+export type VideoJobPublishSettings = {
+	/** User-selected privacy level (e.g. TikTok `PUBLIC_TO_EVERYONE`). Falls back to auto-pick if absent. */
+	privacyLevel?: string
+	/** TikTok commercial content disclosure selections. Only populated for TikTok jobs. */
+	tiktokDisclosure?: {
+		enabled: boolean
+		/** "Your brand" — brand_organic_toggle in TikTok API. */
+		brandOrganic: boolean
+		/** "Branded content" — brand_content_toggle in TikTok API. */
+		brandedContent: boolean
+	}
+}
 
 /** Intermediate outputs produced by multi-stage pipelines (script text, AI metadata, etc.). */
 export type VideoJobArtifacts = {
-	scriptText?: string;
+	scriptText?: string
 	/** AI-generated video title. */
-	title?: string;
+	title?: string
 	/** AI-generated short caption — usable as YouTube description, TikTok/Instagram caption. */
-	description?: string;
+	description?: string
 	/** AI-generated tags (lowercase, no # prefix). */
-	tags?: string[];
-};
+	tags?: string[]
+	/** Actual encoded video duration in whole seconds — probed from the final output by the processor. */
+	durationSec?: number
+}
 
 export const videoJobs = mysqlTable(
 	"video_jobs",
@@ -86,10 +105,31 @@ export const videoJobs = mysqlTable(
 		/** Last publish error message (user-visible; cleared on success). */
 		publishLastError: text("publish_last_error"),
 		/**
+		 * User-selected publish settings captured during the pre-publish review step.
+		 * Includes privacy level selection and TikTok commercial content disclosure choices.
+		 * Falls back to platform defaults if absent (e.g. older jobs, non-TikTok platforms).
+		 */
+		publishSettings: json(
+			"publish_settings",
+		).$type<VideoJobPublishSettings | null>(),
+		/**
+		 * User-edited caption/description set during the pre-publish review step.
+		 * When set, platform publish functions use this instead of auto-generating.
+		 * Platform-agnostic — used for TikTok caption and YouTube description override.
+		 */
+		publishCaptionOverride: varchar("publish_caption_override", {
+			length: 5000,
+		}),
+		/**
 		 * Number of times this job has been manually retried from the dashboard after
 		 * reaching `failed`. Capped at 3 (FEATURE_DOC §DLQ).
 		 */
 		retryCount: int("retry_count").notNull().default(0),
+		/**
+		 * Number of manual publish retries triggered from the dashboard.
+		 * Platform-agnostic — counts across YouTube, TikTok, etc. Capped at 3.
+		 */
+		publishRetryCount: int("publish_retry_count").notNull().default(0),
 		createdAt: timestamp("created_at", { fsp: 3 })
 			.default(sql`CURRENT_TIMESTAMP(3)`)
 			.notNull(),
@@ -102,7 +142,7 @@ export const videoJobs = mysqlTable(
 		index("video_jobs_channelId_idx").on(table.channelId),
 		index("video_jobs_createdAt_idx").on(table.createdAt),
 	],
-);
+)
 
 export const videoJobsRelations = relations(videoJobs, ({ one }) => ({
 	user: one(users, {
@@ -113,4 +153,4 @@ export const videoJobsRelations = relations(videoJobs, ({ one }) => ({
 		fields: [videoJobs.channelId],
 		references: [channels.id],
 	}),
-}));
+}))
