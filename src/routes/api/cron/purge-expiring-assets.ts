@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router"
 
-import { purgeExpiredAssets } from "@/features/video/pipeline/purge-expiring-assets-process.server";
-import { cronAuthMiddleware } from "@/lib/server-route-auth.server";
+import { purgeExpiredAssets } from "@/features/video/pipeline/purge-expiring-assets-process.server"
+import { cronAuthMiddleware } from "@/middleware/server-route-auth"
 
 /**
  * Deletes R2 objects past TTL and removes `expiring_assets` rows.
@@ -12,9 +12,9 @@ export const Route = createFileRoute("/api/cron/purge-expiring-assets")({
 		middleware: [cronAuthMiddleware],
 		handlers: {
 			POST: async () => {
-				const result = await purgeExpiredAssets();
-				return Response.json({ ok: true as const, ...result });
+				const result = await purgeExpiredAssets()
+				return Response.json({ ok: true as const, ...result })
 			},
 		},
 	},
-});
+})

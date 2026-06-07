@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router"
 
-import { dispatchQueuedJobs } from "@/features/video/pipeline/dispatch-queued-jobs.server";
-import { cronAuthMiddleware } from "@/lib/server-route-auth.server";
+import { dispatchQueuedJobs } from "@/features/video/pipeline/dispatch-queued-jobs.server"
+import { cronAuthMiddleware } from "@/middleware/server-route-auth"
 
 /**
  * Picks up all `queued` video jobs and dispatches them to the external processor.
@@ -16,9 +16,9 @@ export const Route = createFileRoute("/api/cron/dispatch-queued-jobs")({
 		middleware: [cronAuthMiddleware],
 		handlers: {
 			POST: async () => {
-				const result = await dispatchQueuedJobs();
-				return Response.json({ ok: true as const, ...result });
+				const result = await dispatchQueuedJobs()
+				return Response.json({ ok: true as const, ...result })
 			},
 		},
 	},
-});
+})
