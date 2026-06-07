@@ -32,6 +32,7 @@ export type PublishingListChannel = {
 	niche: string
 	platform: "unlinked" | "youtube" | "tiktok" | "instagram"
 	externalChannelId: string | null
+	externalChannelHandle: string | null
 	externalChannelTitle: string | null
 	externalChannelThumbnailUrl: string | null
 	/** True when an active OAuth refresh token is stored. Drives the Linked badge. */
@@ -149,12 +150,13 @@ export function DestinationCard({
 								<Copy className="size-3" aria-hidden />
 								Copy
 							</Button>
-							{platformChannelUrl(ch.platform, ch.externalChannelId) ? (
+							{platformChannelUrl(ch.platform, ch.externalChannelId, ch.externalChannelHandle) ? (
 								<a
 									href={
 										platformChannelUrl(
 											ch.platform,
 											ch.externalChannelId,
+											ch.externalChannelHandle,
 										) as string
 									}
 									target="_blank"

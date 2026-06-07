@@ -143,12 +143,13 @@ export function ActiveDestinationSnapshotCard({
 							{channel.externalChannelId}
 						</p>
 						{channel.externalChannelId &&
-						platformChannelUrl(channel.platform, channel.externalChannelId) ? (
+						platformChannelUrl(channel.platform, channel.externalChannelId, channel.externalChannelHandle) ? (
 							<a
 								href={
 									platformChannelUrl(
 										channel.platform,
 										channel.externalChannelId,
+										channel.externalChannelHandle,
 									) as string
 								}
 								target="_blank"

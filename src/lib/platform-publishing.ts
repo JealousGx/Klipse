@@ -65,14 +65,16 @@ export function platformOAuthStartUrl(
 export function platformChannelUrl(
 	platform: PublishingPlatform,
 	externalChannelId: string,
+	externalChannelHandle?: string | null,
 ): string | null {
 	switch (platform) {
 		case "youtube":
 			return `https://www.youtube.com/channel/${encodeURIComponent(externalChannelId)}`
 		case "tiktok":
-			// externalChannelId is open_id; use externalChannelHandle for the URL.
-			// Callers should pass the handle (creator_username) when available.
-			return `https://www.tiktok.com/@${encodeURIComponent(externalChannelId)}`
+			// TikTok profile URLs use the creator_username (handle), not the open_id.
+			// Return null when handle is absent — the open_id produces a 404 on TikTok.
+			if (!externalChannelHandle) return null
+			return `https://www.tiktok.com/@${encodeURIComponent(externalChannelHandle)}`
 		case "instagram":
 			return `https://www.instagram.com/${encodeURIComponent(externalChannelId)}`
 		default:

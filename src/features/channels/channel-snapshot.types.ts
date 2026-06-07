@@ -5,6 +5,7 @@ export type ChannelSnapshot = {
 	niche: string
 	platform: "unlinked" | "youtube" | "tiktok" | "instagram"
 	externalChannelId: string | null
+	externalChannelHandle: string | null
 	/** True when a platform OAuth refresh token is stored (any platform). */
 	oauthConnected: boolean
 }

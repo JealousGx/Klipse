@@ -32,7 +32,7 @@ export function DestinationExternalChannelFields({
 		: `${platformName} channel`
 
 	const channelUrl = ch.externalChannelId
-		? platformChannelUrl(ch.platform, ch.externalChannelId)
+		? platformChannelUrl(ch.platform, ch.externalChannelId, ch.externalChannelHandle)
 		: null
 
 	return (

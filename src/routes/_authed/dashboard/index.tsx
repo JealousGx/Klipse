@@ -51,6 +51,7 @@ function DashboardPage() {
 			niche: c.niche,
 			platform: c.platform,
 			externalChannelId: c.externalChannelId,
+			externalChannelHandle: c.externalChannelHandle,
 			oauthConnected: c.oauthConnected,
 		}
 	}, [channelsQuery.data])
