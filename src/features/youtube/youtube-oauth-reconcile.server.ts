@@ -1,6 +1,5 @@
 import "@tanstack/react-start/server-only";
 
-import { logger } from "@/lib/logger";
 import {
 	clearOAuthRefreshTokenOnly,
 	getOAuthRefreshTokenForChannel,
@@ -10,6 +9,7 @@ import {
 	GoogleOAuthRefreshTokenInvalidError,
 	refreshYoutubeAccessToken,
 } from "@/features/youtube/youtube-oauth-tokens.server";
+import { logger } from "@/lib/logger";
 
 /**
  * Use when a server job needs a YouTube access token. If Google rejected the
@@ -58,6 +58,12 @@ export async function reconcileYoutubeOAuthForUserChannel(input: {
 	userId: string;
 	channelId: string;
 }): Promise<"ok" | "revoked" | "skipped"> {
+	// Only probe YouTube channels — other platforms store non-Google tokens.
+	const channels = await listChannelsForUser(input.userId);
+	const ch = channels.find((c) => c.id === input.channelId);
+	if (!ch || ch.platform !== "youtube") {
+		return "skipped";
+	}
 	const token = await getOAuthRefreshTokenForChannel(
 		input.userId,
 		input.channelId,
@@ -93,7 +99,9 @@ export async function reconcileAllYoutubeOAuthForUser(
 ): Promise<{ revokedChannelIds: string[] }> {
 	const list = await listChannelsForUser(userId);
 	const revokedChannelIds: string[] = [];
-	const connected = list.filter((ch) => ch.oauthConnected);
+	const connected = list.filter(
+		(ch) => ch.oauthConnected && ch.platform === "youtube",
+	);
 	logger.info("youtube_oauth_reconcile_start", {
 		userId,
 		totalChannels: list.length,
