@@ -8,15 +8,9 @@ import { users } from "@/db/schema/users"
 import { videoJobs } from "@/db/schema/video-jobs"
 import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config"
 import { parseChannelConfig } from "@/features/channels/channel-config.schema"
-import {
-	clearOAuthRefreshTokenOnly,
-	getOAuthRefreshTokenForChannel,
-	updateChannelOAuthRefreshToken,
-} from "@/features/channels/channels.service.server"
+import { getOAuthRefreshTokenForChannel } from "@/features/channels/channels.service.server"
 import {
 	fetchTiktokCreatorInfo,
-	refreshTiktokAccessToken,
-	TiktokOAuthRefreshTokenInvalidError,
 	TiktokPostCapReachedError,
 } from "@/features/tiktok/tiktok-oauth-tokens.server"
 import type { MeResponse } from "@/features/user/types/me"
@@ -25,6 +19,10 @@ import { sendTiktokDisconnectEmail } from "@/lib/email/tiktok-disconnect-email"
 import { logger } from "@/lib/logger"
 import { captureException } from "@/lib/sentry"
 import { buildTiktokVideoCaption } from "./build-tiktok-video-caption.server"
+import {
+	clearPublishAttempt,
+	refreshTiktokToken,
+} from "./tiktok-publish-helpers.server"
 import {
 	initTiktokVideoUpload,
 	pickBestPrivacyLevel,
@@ -66,21 +64,15 @@ export async function runTiktokPublishForJob(input: {
 			.for("update")
 			.limit(1)
 
-		if (!job) {
-			return { kind: "skip" as const, reason: "job_not_found" }
-		}
-		if (job.publishedVideoId?.trim()) {
+		if (!job) return { kind: "skip" as const, reason: "job_not_found" }
+		if (job.publishedVideoId?.trim())
 			return { kind: "skip" as const, reason: "already_published" }
-		}
-		if (job.status !== "completed" || !job.outputUrl?.trim()) {
+		if (job.status !== "completed" || !job.outputUrl?.trim())
 			return { kind: "skip" as const, reason: "job_not_ready" }
-		}
-		if (job.publishApprovalStatus === "pending") {
+		if (job.publishApprovalStatus === "pending")
 			return { kind: "skip" as const, reason: "awaiting_manual_approval" }
-		}
-		if (job.publishApprovalStatus === "rejected") {
+		if (job.publishApprovalStatus === "rejected")
 			return { kind: "skip" as const, reason: "publish_rejected" }
-		}
 
 		const [u] = await tx
 			.select({ plan: users.plan, email: users.email })
@@ -88,9 +80,8 @@ export async function runTiktokPublishForJob(input: {
 			.where(eq(users.id, userId))
 			.limit(1)
 		const plan = (u?.plan ?? "free") as MeResponse["plan"]
-		if (!planAllowsPaidPublishingConnections(plan)) {
+		if (!planAllowsPaidPublishingConnections(plan))
 			return { kind: "skip" as const, reason: "plan_blocked" }
-		}
 
 		const [ch] = await tx
 			.select({
@@ -105,9 +96,8 @@ export async function runTiktokPublishForJob(input: {
 			.for("update")
 			.limit(1)
 
-		if (!ch || ch.platform !== "tiktok") {
+		if (!ch || ch.platform !== "tiktok")
 			return { kind: "skip" as const, reason: "channel_not_tiktok" }
-		}
 
 		const upd = await tx
 			.update(videoJobs)
@@ -125,9 +115,8 @@ export async function runTiktokPublishForJob(input: {
 				),
 			)
 
-		if (mysqlAffectedRowsFromUpdateResult(upd) === 0) {
+		if (mysqlAffectedRowsFromUpdateResult(upd) === 0)
 			return { kind: "skip" as const, reason: "claim_lost_or_in_progress" }
-		}
 
 		return {
 			kind: "claimed" as const,
@@ -179,39 +168,22 @@ export async function runTiktokPublishForJob(input: {
 		return { ok: false, error: "missing_oauth_refresh_token" }
 	}
 
-	let accessToken: string
-	try {
-		const refreshed = await refreshTiktokAccessToken(refreshToken)
-		accessToken = refreshed.access_token
+	const tokenResult = await refreshTiktokToken({
+		refreshToken,
+		userId,
+		channelId,
+		channelName,
+		jobId,
+		userEmail,
+		publishingUrl,
+	})
 
-		// TikTok rotates refresh tokens — persist new one immediately before consuming.
-		await updateChannelOAuthRefreshToken({
-			userId,
-			channelId,
-			refreshToken: refreshed.new_refresh_token,
-		})
-	} catch (e) {
-		if (e instanceof TiktokOAuthRefreshTokenInvalidError) {
-			await clearOAuthRefreshTokenOnly({ userId, channelId })
-			if (userEmail) {
-				sendTiktokDisconnectEmail({
-					to: userEmail,
-					channelName,
-					publishingUrl,
-				}).catch((err) =>
-					logger.error("tiktok_disconnect_email_failed", {
-						jobId,
-						error: err instanceof Error ? err.message : String(err),
-					}),
-				)
-			}
-		}
-		const msg = e instanceof Error ? e.message : "tiktok_token_refresh_failed"
-		logger.error("tiktok_token_refresh_error", { jobId, error: msg })
-		captureException(e, { jobId, userId, stage: "tiktok_token_refresh" })
-		await clearPublishAttempt(jobId, userId, msg)
-		return { ok: false, error: msg }
+	if (!tokenResult.ok) {
+		await clearPublishAttempt(jobId, userId, tokenResult.error)
+		return { ok: false, error: tokenResult.error }
 	}
+
+	const accessToken = tokenResult.accessToken
 
 	// --- Creator info + privacy level -------------------------------------------
 
@@ -223,7 +195,6 @@ export async function runTiktokPublishForJob(input: {
 
 	try {
 		const creator = await fetchTiktokCreatorInfo(accessToken)
-		// Priority: per-job override (re-enabled per-video controls) → channel default → auto-pick.
 		const jobPrivacy = job.publishSettings?.privacyLevel?.trim()
 		const channelDefaultPrivacy =
 			channelConfig.tiktok_default_privacy_level?.trim()
@@ -267,7 +238,6 @@ export async function runTiktokPublishForJob(input: {
 	// --- Upload + poll ----------------------------------------------------------
 
 	try {
-		// User-edited caption override (set during pre-publish review) takes priority.
 		const caption = job.publishCaptionOverride?.trim()
 			? job.publishCaptionOverride.trim()
 			: buildTiktokVideoCaption({
@@ -275,7 +245,6 @@ export async function runTiktokPublishForJob(input: {
 					inputPayload: job.inputPayload,
 				})
 
-		// Per-job disclosure overrides channel default (only set when per-video controls re-enabled).
 		const disclosure =
 			job.publishSettings?.tiktokDisclosure ??
 			(channelConfig.tiktok_disclosure?.enabled
@@ -287,7 +256,6 @@ export async function runTiktokPublishForJob(input: {
 				: undefined)
 		const uploadParams = {
 			accessToken,
-			// outputUrl is guaranteed non-null — checked in the claim phase.
 			videoUrl: job.outputUrl ?? "",
 			caption,
 			privacyLevel,
@@ -301,9 +269,6 @@ export async function runTiktokPublishForJob(input: {
 
 		const initResult = await initTiktokVideoUpload(uploadParams).catch(
 			(e: unknown) => {
-				// App not yet audited by TikTok — can only post as SELF_ONLY (private).
-				// Retry with SELF_ONLY so the video still lands in the creator's account.
-				// Once the app passes TikTok review this error will no longer occur.
 				if (
 					e instanceof Error &&
 					e.message.includes(
@@ -326,8 +291,6 @@ export async function runTiktokPublishForJob(input: {
 
 		const result = await pollTiktokPublishStatus({ accessToken, publishId })
 
-		// Store publishId as the video identifier. TikTok's actual post_id becomes
-		// available asynchronously (after moderation); publishId is usable for now.
 		await db
 			.update(videoJobs)
 			.set({
@@ -359,20 +322,4 @@ export async function runTiktokPublishForJob(input: {
 		await clearPublishAttempt(jobId, userId, msg)
 		return { ok: false, error: msg }
 	}
-}
-
-async function clearPublishAttempt(
-	jobId: string,
-	userId: string,
-	errorMessage: string,
-): Promise<void> {
-	const db = getDb()
-	await db
-		.update(videoJobs)
-		.set({
-			publishStartedAt: null,
-			publishLastError: errorMessage.slice(0, 4000),
-			updatedAt: new Date(),
-		})
-		.where(and(eq(videoJobs.id, jobId), eq(videoJobs.userId, userId)))
 }
