@@ -14,13 +14,14 @@ import type { PreparedAssets } from "./prepare";
 /**
  * Stage 3: FFmpeg slideshow → concat → mux audio → optional watermark → R2 upload.
  * All intermediate files are tracked for cleanup by the caller.
+ * Returns the actual encoded duration (whole seconds) probed from the final output.
  */
 export async function runAssembleStage(
 	spec: ProcessorJobSpec,
 	assets: PreparedAssets,
 	tmpDir: { path: (suffix: string) => string },
 	cleanup: string[],
-): Promise<void> {
+): Promise<{ durationSec: number }> {
 	const stageStart = Date.now();
 	logger.info("assemble_stage_start", { jobId: spec.jobId });
 
@@ -98,6 +99,12 @@ export async function runAssembleStage(
 		}
 		await reportProgress(spec, "assemble", 90);
 
+		// Probe actual encoded duration before reading into memory.
+		const rawDuration = await withRetries("ffprobe_output", 3, () =>
+			ffprobeDuration(finalPath),
+		);
+		const durationSec = Math.round(rawDuration);
+
 		// Upload final video to R2 via presigned PUT URL.
 		const buf = await readFile(finalPath);
 		await uploadBufferToPresignedUrl(
@@ -108,8 +115,10 @@ export async function runAssembleStage(
 		await reportProgress(spec, "assemble", 100);
 		logger.info("assemble_stage_complete", {
 			jobId: spec.jobId,
+			durationSec,
 			durationMs: Date.now() - stageStart,
 		});
+		return { durationSec };
 	} catch (e) {
 		logger.error("assemble_stage_error", {
 			jobId: spec.jobId,

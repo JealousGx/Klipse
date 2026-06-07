@@ -102,6 +102,7 @@ export async function reportComplete(
 	title?: string,
 	description?: string,
 	tags?: string[],
+	durationSec?: number,
 ): Promise<void> {
 	const body: ProcessorCompletePayload = {
 		jobId: spec.jobId,
@@ -112,6 +113,7 @@ export async function reportComplete(
 		title,
 		description,
 		tags,
+		durationSec,
 	};
 	await postCallback(
 		spec.callbackBaseUrl,

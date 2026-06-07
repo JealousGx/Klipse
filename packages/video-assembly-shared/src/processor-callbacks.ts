@@ -43,4 +43,6 @@ export type ProcessorCompletePayload = {
 	description?: string;
 	/** AI-generated tags (lowercase strings, no # prefix). */
 	tags?: string[];
+	/** Actual encoded video duration in whole seconds — probed from the final output file. */
+	durationSec?: number;
 };

@@ -82,7 +82,7 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 
 		// Stage 3: FFmpeg encode → watermark → R2 upload.
 		const stageAssembleStart = Date.now();
-		await withTiming(
+		const { durationSec } = await withTiming(
 			"executor",
 			"stage.assemble",
 			() =>
@@ -110,6 +110,7 @@ export async function executeJob(spec: ProcessorJobSpec): Promise<void> {
 			title,
 			description,
 			tags,
+			durationSec,
 		).catch((e) => {
 			const msg = e instanceof Error ? e.message : String(e);
 			// 409 invalid_state = job already in a terminal state (e.g. re-dispatched while
