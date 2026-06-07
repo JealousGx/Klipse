@@ -14,7 +14,10 @@ import {
 	InsufficientCreditsError,
 } from "@/features/billing/credit-usage.server";
 import { POLAR_USAGE_STAGES } from "@/features/billing/meter-events";
-import { ChannelNotFoundError } from "@/features/channels/channel-errors";
+import {
+	ChannelNotFoundError,
+	TiktokChannelConfigIncompleteError,
+} from "@/features/channels/channel-errors";
 import { getChannelForUser } from "@/features/channels/channels.service.server";
 import {
 	assertFreeTierAssemblyQuotaAllowed,
@@ -59,8 +62,27 @@ export async function executeContentPipelineWithIdempotency(input: {
 
 	const db = getDb();
 
-	if (!(await getChannelForUser(input.userId, channelId))) {
+	const channel = await getChannelForUser(input.userId, channelId);
+	if (!channel) {
 		throw new ChannelNotFoundError();
+	}
+
+	// TikTok channels must have all required posting defaults configured before
+	// a job is created — prevents wasting credits on videos that can't publish.
+	if (channel.platform === "tiktok") {
+		const cfg = channel.config;
+		if (!cfg.confirmed_terms.includes("tiktok_music_usage")) {
+			throw new TiktokChannelConfigIncompleteError("music_usage_not_confirmed");
+		}
+		if (!cfg.tiktok_default_privacy_level?.trim()) {
+			throw new TiktokChannelConfigIncompleteError("privacy_level_not_set");
+		}
+		const disc = cfg.tiktok_disclosure;
+		if (disc?.enabled && !disc.brand_organic && !disc.branded_content) {
+			throw new TiktokChannelConfigIncompleteError(
+				"disclosure_enabled_but_incomplete",
+			);
+		}
 	}
 
 	const inputPayload: VideoJobInputPayload = { idea };
