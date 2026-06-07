@@ -30,6 +30,8 @@ type Props = {
 	isResuming: boolean
 	/** Creator+ only — if false, button is shown but disabled with upgrade hint. */
 	canTriggerNow: boolean
+	/** False when channel has no active OAuth token — blocks generate now. */
+	oauthConnected: boolean
 	onTriggerNow: () => void
 	isTriggeringNow: boolean
 }
@@ -83,6 +85,7 @@ export function DestinationScheduleFields({
 	isPausing,
 	isResuming,
 	canTriggerNow,
+	oauthConnected,
 	onTriggerNow,
 	isTriggeringNow,
 }: Props) {
@@ -202,9 +205,11 @@ export function DestinationScheduleFields({
 				<div>
 					<p className="text-sm font-medium text-foreground">Generate now</p>
 					<p className="text-xs text-muted-foreground">
-						{canTriggerNow
-							? "Trigger the next video immediately and advance your schedule."
-							: "Upgrade to Creator or higher to generate on demand."}
+						{!canTriggerNow
+							? "Upgrade to Creator or higher to generate on demand."
+							: !oauthConnected
+								? "Connect a publishing account to this destination to generate on demand."
+								: "Trigger the next video immediately and advance your schedule."}
 					</p>
 				</div>
 				<Button
@@ -212,12 +217,14 @@ export function DestinationScheduleFields({
 					variant="outline"
 					size="sm"
 					className="gap-2 self-start sm:self-auto"
-					disabled={!canTriggerNow || isTriggeringNow}
-					onClick={canTriggerNow ? onTriggerNow : undefined}
+					disabled={!canTriggerNow || !oauthConnected || isTriggeringNow}
+					onClick={canTriggerNow && oauthConnected ? onTriggerNow : undefined}
 					title={
 						!canTriggerNow
 							? "Requires Creator plan or higher"
-							: "Generate a video now and advance your schedule"
+							: !oauthConnected
+								? "Connect a publishing account to this destination first"
+								: "Generate a video now and advance your schedule"
 					}
 				>
 					<FastForward className="size-3.5" />
