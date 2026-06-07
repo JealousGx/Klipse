@@ -6,6 +6,7 @@ import { getDb } from "@/db";
 import { channels } from "@/db/schema/channels";
 import { schedules } from "@/db/schema/schedules";
 import { InsufficientCreditsError } from "@/features/billing/credit-usage.server";
+import { TiktokChannelConfigIncompleteError } from "@/features/channels/channel-errors";
 import type { ChannelConfig } from "@/features/channels/channel-config.schema";
 import { executeContentPipelineWithIdempotency } from "@/features/video/content-pipeline-execute.server";
 import { scheduleRowId } from "@/lib/id";
@@ -308,6 +309,13 @@ export async function triggerDueSchedules(): Promise<TriggerSchedulesResult> {
 				logger.warn("[scheduling] insufficient credits for schedule", {
 					scheduleId: schedule.id,
 					userId: schedule.userId,
+				});
+			} else if (e instanceof TiktokChannelConfigIncompleteError) {
+				// TikTok destination missing required config — skip silently until user fixes it.
+				logger.warn("[scheduling] tiktok config incomplete, skipping schedule", {
+					scheduleId: schedule.id,
+					userId: schedule.userId,
+					reason: e.reason,
 				});
 			} else {
 				logger.error("[scheduling] pipeline failed for schedule", {
