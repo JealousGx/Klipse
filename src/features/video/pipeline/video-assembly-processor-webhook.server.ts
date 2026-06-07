@@ -1,33 +1,35 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { videoJobAssemblyOutputKey } from "@klipse/video-assembly-shared";
-import { and, eq, inArray } from "drizzle-orm";
+import { videoJobAssemblyOutputKey } from "@klipse/video-assembly-shared"
+import { and, eq, inArray } from "drizzle-orm"
 
-import { getDb } from "@/db";
-import { videoJobs } from "@/db/schema/video-jobs";
-import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server";
-import { logger } from "@/lib/logger";
-import { captureException } from "@/lib/sentry";
-import { publicUrlForR2Key } from "@/lib/storage/r2.server";
-import { markFreeTierVideoConsumedIfNeeded } from "./free-tier-video-consumed.server";
-import { PIPELINE_STAGE } from "./pipeline-kind";
-import { markVideoJobFailed } from "./process-stub-pipeline.server";
-import { runAfterVideoRenderComplete } from "./video-job-after-render.server";
+import { getDb } from "@/db"
+import { videoJobs } from "@/db/schema/video-jobs"
+import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server"
+import { logger } from "@/lib/logger"
+import { captureException } from "@/lib/sentry"
+import { publicUrlForR2Key } from "@/lib/storage/r2.server"
+import { markFreeTierVideoConsumedIfNeeded } from "./free-tier-video-consumed.server"
+import { PIPELINE_STAGE } from "./pipeline-kind"
+import { markVideoJobFailed } from "./process-stub-pipeline.server"
+import { runAfterVideoRenderComplete } from "./video-job-after-render.server"
 
 export type VideoProcessorWebhookInput = {
-	jobId: string;
-	userId: string;
-	status: "completed" | "failed";
-	error?: string;
-	scriptText?: string;
-	title?: string;
-	description?: string;
-	tags?: string[];
-};
+	jobId: string
+	userId: string
+	status: "completed" | "failed"
+	error?: string
+	scriptText?: string
+	title?: string
+	description?: string
+	tags?: string[]
+	/** Actual encoded video duration in whole seconds — probed from the final output file. */
+	durationSec?: number
+}
 
 export type VideoProcessorWebhookResult =
 	| { ok: true; replayed: boolean }
-	| { ok: false; code: "job_not_found" | "user_mismatch" | "invalid_state" };
+	| { ok: false; code: "job_not_found" | "user_mismatch" | "invalid_state" }
 
 /**
  * Idempotent: duplicate webhooks for the same terminal state return `{ replayed: true }`.
@@ -35,9 +37,9 @@ export type VideoProcessorWebhookResult =
 export async function applyVideoProcessorWebhook(
 	input: VideoProcessorWebhookInput,
 ): Promise<VideoProcessorWebhookResult> {
-	const db = getDb();
-	const jobId = input.jobId.trim();
-	const userId = input.userId.trim();
+	const db = getDb()
+	const jobId = input.jobId.trim()
+	const userId = input.userId.trim()
 
 	const [job] = await db
 		.select({
@@ -48,21 +50,21 @@ export async function applyVideoProcessorWebhook(
 		})
 		.from(videoJobs)
 		.where(eq(videoJobs.id, jobId))
-		.limit(1);
+		.limit(1)
 
 	if (!job) {
 		logger.warn("webhook_received_job_not_found", {
 			jobId,
 			jobStatus: input.status,
-		});
-		return { ok: false, code: "job_not_found" };
+		})
+		return { ok: false, code: "job_not_found" }
 	}
 	if (job.userId !== userId) {
-		logger.warn("webhook_received_user_mismatch", { jobId, userId });
-		return { ok: false, code: "user_mismatch" };
+		logger.warn("webhook_received_user_mismatch", { jobId, userId })
+		return { ok: false, code: "user_mismatch" }
 	}
 
-	logger.info("webhook_received", { jobId, userId, jobStatus: input.status });
+	logger.info("webhook_received", { jobId, userId, jobStatus: input.status })
 
 	if (job.status === "completed" || job.status === "failed") {
 		if (input.status === "completed" && job.status === "completed") {
@@ -70,30 +72,30 @@ export async function applyVideoProcessorWebhook(
 				jobId,
 				userId,
 				jobStatus: job.status,
-			});
-			return { ok: true, replayed: true };
+			})
+			return { ok: true, replayed: true }
 		}
 		if (input.status === "failed" && job.status === "failed") {
 			logger.warn("webhook_already_terminal", {
 				jobId,
 				userId,
 				jobStatus: job.status,
-			});
-			return { ok: true, replayed: true };
+			})
+			return { ok: true, replayed: true }
 		}
-		return { ok: false, code: "invalid_state" };
+		return { ok: false, code: "invalid_state" }
 	}
 
 	const readyForWebhook =
-		job.status === "dispatched" || job.status === "processing";
+		job.status === "dispatched" || job.status === "processing"
 
 	if (input.status === "completed") {
 		if (!readyForWebhook) {
-			return { ok: false, code: "invalid_state" };
+			return { ok: false, code: "invalid_state" }
 		}
 
-		const key = videoJobAssemblyOutputKey(userId, jobId);
-		const outputUrl = publicUrlForR2Key(key);
+		const key = videoJobAssemblyOutputKey(userId, jobId)
+		const outputUrl = publicUrlForR2Key(key)
 
 		const updateResult = await db
 			.update(videoJobs)
@@ -104,7 +106,11 @@ export async function applyVideoProcessorWebhook(
 				outputUrl,
 				errorMessage: null,
 				updatedAt: new Date(),
-				...(input.scriptText || input.title || input.description || input.tags
+				...(input.scriptText ||
+				input.title ||
+				input.description ||
+				input.tags ||
+				input.durationSec
 					? {
 							artifacts: {
 								...(input.scriptText ? { scriptText: input.scriptText } : {}),
@@ -113,6 +119,9 @@ export async function applyVideoProcessorWebhook(
 									? { description: input.description }
 									: {}),
 								...(input.tags ? { tags: input.tags } : {}),
+								...(input.durationSec
+									? { durationSec: input.durationSec }
+									: {}),
 							},
 						}
 					: {}),
@@ -123,45 +132,45 @@ export async function applyVideoProcessorWebhook(
 					eq(videoJobs.userId, userId),
 					inArray(videoJobs.status, ["dispatched", "processing"]),
 				),
-			);
+			)
 
 		if (mysqlAffectedRowsFromUpdateResult(updateResult) === 0) {
 			const [again] = await db
 				.select({ status: videoJobs.status })
 				.from(videoJobs)
 				.where(eq(videoJobs.id, jobId))
-				.limit(1);
+				.limit(1)
 			if (again?.status === "completed") {
-				return { ok: true, replayed: true };
+				return { ok: true, replayed: true }
 			}
-			return { ok: false, code: "invalid_state" };
+			return { ok: false, code: "invalid_state" }
 		}
 
-		await markFreeTierVideoConsumedIfNeeded(userId);
+		await markFreeTierVideoConsumedIfNeeded(userId)
 
-		logger.info("video_job_complete", { jobId, userId });
+		logger.info("video_job_complete", { jobId, userId })
 
 		await runAfterVideoRenderComplete({
 			jobId,
 			userId,
 			channelId: job.channelId,
 			logicalKey: key,
-		});
+		})
 
-		return { ok: true, replayed: false };
+		return { ok: true, replayed: false }
 	}
 
 	if (!readyForWebhook) {
-		return { ok: false, code: "invalid_state" };
+		return { ok: false, code: "invalid_state" }
 	}
 
-	const message = (input.error ?? "processor_failed").trim().slice(0, 4000);
-	logger.error("video_job_failed", { jobId, userId, errorMessage: message });
+	const message = (input.error ?? "processor_failed").trim().slice(0, 4000)
+	logger.error("video_job_failed", { jobId, userId, errorMessage: message })
 	captureException(new Error(`video_processor_job_failed: ${message}`), {
 		jobId,
 		userId,
 		processorError: message,
-	});
-	await markVideoJobFailed({ jobId, message });
-	return { ok: true, replayed: false };
+	})
+	await markVideoJobFailed({ jobId, message })
+	return { ok: true, replayed: false }
 }
