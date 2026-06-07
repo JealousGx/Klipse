@@ -80,7 +80,10 @@ export async function runAfterVideoRenderComplete(input: {
 		return;
 	}
 
-	if (planAllowsPaidPublishingConnections(plan) && !channel.config.auto_post) {
+	const requiresReview =
+		!channel.config.auto_post || channel.config.review_before_publishing;
+
+	if (planAllowsPaidPublishingConnections(plan) && requiresReview) {
 		await db
 			.update(videoJobs)
 			.set({
