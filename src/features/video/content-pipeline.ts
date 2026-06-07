@@ -3,7 +3,10 @@ import { getRequest } from "@tanstack/react-start/server";
 import { z } from "zod";
 
 import { InsufficientCreditsError } from "@/features/billing/credit-usage.server";
-import { ChannelNotFoundError } from "@/features/channels/channel-errors";
+import {
+	ChannelNotFoundError,
+	TiktokChannelConfigIncompleteError,
+} from "@/features/channels/channel-errors";
 import { FreeTierVideoQuotaExhaustedError } from "@/features/entitlements";
 import { auth } from "@/lib/auth";
 
@@ -34,7 +37,12 @@ export type RunContentPipelineResult =
 			remaining: number;
 	  }
 	| { ok: false; code: "channel_not_found" }
-	| { ok: false; code: "free_tier_video_exhausted" };
+	| { ok: false; code: "free_tier_video_exhausted" }
+	| {
+			ok: false;
+			code: "tiktok_config_incomplete";
+			reason: string;
+	  };
 
 export const runContentPipeline = createServerFn({ method: "POST" })
 	.inputValidator((raw: unknown) => inputSchema.parse(raw))
@@ -78,6 +86,13 @@ export const runContentPipeline = createServerFn({ method: "POST" })
 			}
 			if (e instanceof FreeTierVideoQuotaExhaustedError) {
 				return { ok: false, code: "free_tier_video_exhausted" };
+			}
+			if (e instanceof TiktokChannelConfigIncompleteError) {
+				return {
+					ok: false,
+					code: "tiktok_config_incomplete",
+					reason: e.reason,
+				};
 			}
 			throw e;
 		}
