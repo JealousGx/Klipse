@@ -244,10 +244,10 @@ export function PublishingDestinationView({
 										onPrivacyLevelChange={onTiktokPrivacyLevelChange}
 										onDisclosureChange={onTiktokDisclosureChange}
 									/>
-									{(PLATFORM_REQUIRED_TERMS["tiktok"] ?? []).length > 0 ? (
+									{(PLATFORM_REQUIRED_TERMS.tiktok ?? []).length > 0 ? (
 										<div className="border-t border-border pt-5">
 											<DestinationTermsFields
-												requiredTerms={PLATFORM_REQUIRED_TERMS["tiktok"] ?? []}
+												requiredTerms={PLATFORM_REQUIRED_TERMS.tiktok ?? []}
 												confirmedTerms={confirmedTerms}
 												onConfirmTerm={onConfirmTerm}
 												isConfirming={isConfirmingTerm}

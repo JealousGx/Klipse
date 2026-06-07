@@ -97,8 +97,7 @@ export function DestinationConnectionFields({
 					isUnlinked ? (
 						// Platform picker — shown for new unlinked destinations.
 						canConnectPublishing ? (
-							<>
-								{CONNECTABLE_PLATFORMS.map((p) => {
+							CONNECTABLE_PLATFORMS.map((p) => {
 									const href = platformOAuthStartUrl(p, destinationId)
 									const provider = platformAuthProviderName(p)
 									return href ? (
@@ -111,8 +110,7 @@ export function DestinationConnectionFields({
 											<a href={href}>Connect with {provider}</a>
 										</Button>
 									) : null
-								})}
-							</>
+								})
 						) : (
 							<Button type="button" className="w-fit gap-2 shadow-sm" asChild>
 								<Link to="/dashboard/billing">Upgrade to connect</Link>
