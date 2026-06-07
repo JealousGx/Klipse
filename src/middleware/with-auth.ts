@@ -1,5 +1,3 @@
-import "@tanstack/react-start/server-only"
-
 import { createMiddleware } from "@tanstack/react-start"
 
 import { auth } from "@/lib/auth"
