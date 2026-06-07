@@ -42,8 +42,10 @@ import {
 import type { MeResponse } from "@/features/user/types/me";
 
 import {
+	platformAuthProviderName,
 	platformChannelUrl,
 	platformDisplayName,
+	platformOAuthStartUrl,
 } from "@/lib/platform-publishing";
 import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
 import { cn } from "@/lib/utils";
@@ -68,6 +70,8 @@ type PublishingListChannel = {
 	externalChannelId: string | null;
 	externalChannelTitle: string | null;
 	externalChannelThumbnailUrl: string | null;
+	/** True when an active OAuth refresh token is stored. Drives the Linked badge. */
+	oauthConnected: boolean;
 };
 
 type DestinationCardProps = {
@@ -83,7 +87,9 @@ function DestinationCard({
 	deletePending,
 	deleteTargetId,
 }: DestinationCardProps) {
-	const isLinked = ch.platform !== "unlinked" && Boolean(ch.externalChannelId);
+	// "Linked" means an active OAuth token is stored — not just that a channel ID
+	// happens to be on file. externalChannelId can survive a disconnect intentionally.
+	const isLinked = ch.oauthConnected;
 
 	return (
 		<Card
@@ -403,9 +409,15 @@ function PublishingIndexPage() {
 										asChild
 									>
 										<a
-											href={`/api/youtube/oauth/start?channelId=${encodeURIComponent(primaryDestinationId)}`}
+											href={
+												platformOAuthStartUrl(
+													firstNeedingOAuth.platform,
+													primaryDestinationId,
+												) ?? "#"
+											}
 										>
-											Connect with YouTube
+											Connect with{" "}
+											{platformAuthProviderName(firstNeedingOAuth.platform)}
 											<ArrowUpRight className="size-4 opacity-90" aria-hidden />
 										</a>
 									</Button>
