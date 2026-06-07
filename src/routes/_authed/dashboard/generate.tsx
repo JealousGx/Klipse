@@ -100,6 +100,16 @@ function GeneratePage() {
 				setError(
 					"Free accounts include one video. Upgrade your plan to generate more.",
 				);
+			} else if (r.code === "tiktok_config_incomplete") {
+				const detail =
+					r.reason === "music_usage_not_confirmed"
+						? "confirm Music Usage in destination settings"
+						: r.reason === "privacy_level_not_set"
+							? "set a default visibility in destination settings"
+							: "complete the commercial content disclosure in destination settings";
+				setError(
+					`Your TikTok destination isn't ready to publish yet — ${detail} before generating.`,
+				);
 			} else {
 				setError("You need to be signed in to generate videos.");
 			}
