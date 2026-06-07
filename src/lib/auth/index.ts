@@ -1,28 +1,28 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { betterAuth, type GenericEndpointContext } from "better-auth";
-import { drizzleAdapter } from "better-auth/adapters/drizzle";
-import { APIError } from "better-auth/api";
-import { admin, emailOTP } from "better-auth/plugins";
-import { tanstackStartCookies } from "better-auth/tanstack-start";
+import { betterAuth, type GenericEndpointContext } from "better-auth"
+import { drizzleAdapter } from "better-auth/adapters/drizzle"
+import { APIError } from "better-auth/api"
+import { admin, emailOTP } from "better-auth/plugins"
+import { tanstackStartCookies } from "better-auth/tanstack-start"
 
-import { getDb } from "@/db";
-import * as schema from "@/db/schema";
-import { siteSettings } from "@/db/schema/site-settings";
+import { getDb } from "@/db"
+import * as schema from "@/db/schema"
+import { siteSettings } from "@/db/schema/site-settings"
 
-import { env } from "@/env";
-import { createPolarBillingPlugin } from "@/features/billing/polar-plugin.server";
-import { getPolarSdk } from "@/features/billing/polar-sdk.server";
-import { additionalUserFields } from "@/lib/auth/additional-user-fields";
-import { ac, adminRoles } from "@/lib/auth/admin-access-control";
-import { isAdminCreate } from "@/lib/auth/admin-create-context";
-import { sendAuthOTPEmail } from "@/lib/email/auth-otp";
-import { accountId, sessionId, userId, verificationId } from "@/lib/id";
-import { logger } from "@/lib/logger";
+import { env } from "@/env"
+import { createPolarBillingPlugin } from "@/features/billing/polar-plugin.server"
+import { getPolarSdk } from "@/features/billing/polar-sdk.server"
+import { additionalUserFields } from "@/lib/auth/additional-user-fields"
+import { ac, adminRoles } from "@/lib/auth/admin-access-control"
+import { isAdminCreate } from "@/lib/auth/admin-create-context"
+import { sendAuthOTPEmail } from "@/lib/email/auth-otp"
+import { accountId, sessionId, userId, verificationId } from "@/lib/id"
+import { logger } from "@/lib/logger"
 
-const OTP_LENGTH = 6;
-const OTP_EXPIRATION_SECONDS = 600;
-const ALLOWED_OTP_ATTEMPTS = 5;
+const OTP_LENGTH = 6
+const OTP_EXPIRATION_SECONDS = 600
+const ALLOWED_OTP_ATTEMPTS = 5
 
 export const auth = betterAuth({
 	baseURL: env.SERVER_URL ?? "http://localhost:3000",
@@ -49,56 +49,56 @@ export const auth = betterAuth({
 				before: async (_user) => {
 					// Admin-initiated creation bypasses the registration kill switch.
 					// The async context is set by runAsAdminCreate() in admin-user.server.ts.
-					if (isAdminCreate()) return;
+					if (isAdminCreate()) return
 					// Env var override — emergency kill switch, wins over DB
 					if (!env.REGISTRATION_ENABLED) {
 						throw new APIError("FORBIDDEN", {
 							message:
 								"Registration is currently disabled. Please try again later.",
-						});
+						})
 					}
 					// DB flag — admin dashboard toggle
 					const [row] = await getDb()
 						.select({ registrationEnabled: siteSettings.registrationEnabled })
 						.from(siteSettings)
-						.limit(1);
+						.limit(1)
 					if (row?.registrationEnabled === false) {
 						throw new APIError("FORBIDDEN", {
 							message:
 								"Registration is currently disabled. Please try again later.",
-						});
+						})
 					}
 				},
 				after: async (user) => {
 					// Polar's createCustomerOnSignUp=false — we create customer here
 					// (after hook) so the Polar API is never called when registration is
 					// blocked by the before hook above.
-					if (user.isAnonymous) return;
+					if (user.isAnonymous) return
 					try {
-						const polarSdk = getPolarSdk();
+						const polarSdk = getPolarSdk()
 						const { result: existing } = await polarSdk.customers.list({
 							email: user.email,
-						});
-						const existingCustomer = existing.items[0];
+						})
+						const existingCustomer = existing.items[0]
 						if (existingCustomer) {
 							if (existingCustomer.externalId !== user.id) {
 								await polarSdk.customers.update({
 									id: existingCustomer.id,
 									customerUpdate: { externalId: user.id },
-								});
+								})
 							}
 						} else {
 							await polarSdk.customers.create({
 								email: user.email,
 								name: user.name,
 								externalId: user.id,
-							});
+							})
 						}
 					} catch (e) {
 						logger.error("polar_customer_create_failed", {
 							userId: user.id,
 							error: String(e),
-						});
+						})
 					}
 				},
 			},
@@ -149,40 +149,40 @@ export const auth = betterAuth({
 			generateId: ({ model }) => {
 				switch (model) {
 					case "user": {
-						return userId();
+						return userId()
 					}
 					case "session": {
-						return sessionId();
+						return sessionId()
 					}
 					case "account": {
-						return accountId();
+						return accountId()
 					}
 					case "verification": {
-						return verificationId();
+						return verificationId()
 					}
 					default: {
-						return false;
+						return false
 					}
 				}
 			},
 		},
 	},
-});
+})
 
 async function sendVerificationOTP(
 	data: {
-		email: string;
-		otp: string;
-		type: "sign-in" | "email-verification" | "forget-password" | "change-email";
+		email: string
+		otp: string
+		type: "sign-in" | "email-verification" | "forget-password" | "change-email"
 	},
 	_ctx?: GenericEndpointContext | undefined,
 ) {
-	const { email, otp, type } = data;
+	const { email, otp, type } = data
 
 	if (env.ENVIRONMENT === "local" || env.ENVIRONMENT === "development") {
-		logger.debug("dev_otp", { email, otp, type });
-		return;
+		logger.debug("dev_otp", { email, otp, type })
+		return
 	}
 
-	await sendAuthOTPEmail({ email, otp });
+	await sendAuthOTPEmail({ email, otp })
 }

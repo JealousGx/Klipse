@@ -71,8 +71,9 @@ export function DestinationTiktokDefaultsFields({
 		staleTime: 5 * 60 * 1000,
 	})
 
-	const privacyOptions =
-		optionsQuery.data?.ok ? optionsQuery.data.privacyLevelOptions : []
+	const privacyOptions = optionsQuery.data?.ok
+		? optionsQuery.data.privacyLevelOptions
+		: []
 
 	const disclosureIncomplete =
 		localEnabled && !localBrandOrganic && !localBrandedContent
@@ -117,7 +118,9 @@ export function DestinationTiktokDefaultsFields({
 		<div className="space-y-5">
 			{/* Default privacy level */}
 			<div className="space-y-1.5">
-				<p className="text-sm font-medium text-foreground">Default visibility</p>
+				<p className="text-sm font-medium text-foreground">
+					Default visibility
+				</p>
 				<p className="text-sm text-muted-foreground">
 					Who can see videos posted to this TikTok account by default.
 				</p>

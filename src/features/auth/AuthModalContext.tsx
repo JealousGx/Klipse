@@ -4,32 +4,32 @@ import {
 	useContext,
 	useMemo,
 	useState,
-} from "react";
+} from "react"
 
-export type AuthModalMode = "login" | "signUp";
+export type AuthModalMode = "login" | "signUp"
 
 type AuthModalContextValue = {
-	isOpen: boolean;
-	mode: AuthModalMode;
-	openAuthModal: (mode: AuthModalMode) => void;
-	closeAuthModal: () => void;
-	setMode: (mode: AuthModalMode) => void;
-};
+	isOpen: boolean
+	mode: AuthModalMode
+	openAuthModal: (mode: AuthModalMode) => void
+	closeAuthModal: () => void
+	setMode: (mode: AuthModalMode) => void
+}
 
-const AuthModalContext = createContext<AuthModalContextValue | null>(null);
+const AuthModalContext = createContext<AuthModalContextValue | null>(null)
 
 export function AuthModalProvider({ children }: { children: React.ReactNode }) {
-	const [isOpen, setIsOpen] = useState(false);
-	const [mode, setMode] = useState<AuthModalMode>("login");
+	const [isOpen, setIsOpen] = useState(false)
+	const [mode, setMode] = useState<AuthModalMode>("login")
 
 	const openAuthModal = useCallback((next: AuthModalMode) => {
-		setMode(next);
-		setIsOpen(true);
-	}, []);
+		setMode(next)
+		setIsOpen(true)
+	}, [])
 
 	const closeAuthModal = useCallback(() => {
-		setIsOpen(false);
-	}, []);
+		setIsOpen(false)
+	}, [])
 
 	const value = useMemo(
 		() => ({
@@ -40,19 +40,19 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
 			setMode,
 		}),
 		[isOpen, mode, openAuthModal, closeAuthModal],
-	);
+	)
 
 	return (
 		<AuthModalContext.Provider value={value}>
 			{children}
 		</AuthModalContext.Provider>
-	);
+	)
 }
 
 export function useAuthModal() {
-	const ctx = useContext(AuthModalContext);
+	const ctx = useContext(AuthModalContext)
 	if (!ctx) {
-		throw new Error("useAuthModal must be used within AuthModalProvider");
+		throw new Error("useAuthModal must be used within AuthModalProvider")
 	}
-	return ctx;
+	return ctx
 }

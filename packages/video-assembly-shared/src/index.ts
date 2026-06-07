@@ -6,7 +6,7 @@
 export {
 	videoJobAssemblyOutputKey,
 	type VideoProcessorHandoffPayload,
-} from "./assembly-types";
+} from "./assembly-types"
 
 // Full content pipeline (content_pipeline_v1) — ProcessorJobSpec sent to Cloud Run.
 export type {
@@ -14,7 +14,7 @@ export type {
 	ProcessorProviderKeys,
 	ProcessorPresignedUrls,
 	ProcessorJobSpec,
-} from "./processor-spec";
+} from "./processor-spec"
 
 // Processor → main app callback payload types.
 export type {
@@ -22,4 +22,4 @@ export type {
 	ProcessorKeyFailureProvider,
 	ProcessorKeyFailurePayload,
 	ProcessorCompletePayload,
-} from "./processor-callbacks";
+} from "./processor-callbacks"

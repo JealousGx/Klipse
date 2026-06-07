@@ -388,7 +388,8 @@ export function JobDetailPane({
 					/>
 				) : null}
 				{/* Publishing in progress — manual approval or auto-post in flight */}
-				{(job.publishApprovalStatus === "approved" || Boolean(job.publishStartedAt)) &&
+				{(job.publishApprovalStatus === "approved" ||
+					Boolean(job.publishStartedAt)) &&
 				!job.publishedVideoId &&
 				!job.publishLastError &&
 				job.status === "completed" &&

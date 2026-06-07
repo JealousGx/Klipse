@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router"
 
-import { isAllowedToIndex, siteConfig } from "@/config/site";
+import { isAllowedToIndex, siteConfig } from "@/config/site"
 
 export const Route = createFileRoute("/robots.txt")({
 	server: {
@@ -8,7 +8,7 @@ export const Route = createFileRoute("/robots.txt")({
 			GET: () => {
 				const shouldIndex = isAllowedToIndex(
 					new URL(siteConfig.origin).hostname,
-				);
+				)
 
 				const content = shouldIndex
 					? `User-agent: *
@@ -21,12 +21,12 @@ Sitemap: ${siteConfig.origin}/sitemap.xml
 `
 					: `User-agent: *
 Disallow: /
-`;
+`
 
 				return new Response(content, {
 					headers: { "Content-Type": "text/plain; charset=utf-8" },
-				});
+				})
 			},
 		},
 	},
-});
+})

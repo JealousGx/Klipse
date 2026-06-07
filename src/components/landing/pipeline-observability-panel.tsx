@@ -1,14 +1,14 @@
-import { Activity, BarChart3, RefreshCw, ShieldCheck } from "lucide-react";
+import { Activity, BarChart3, RefreshCw, ShieldCheck } from "lucide-react"
 
-import { Badge } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge"
 import {
 	Card,
 	CardContent,
 	CardDescription,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+} from "@/components/ui/card"
+import { Separator } from "@/components/ui/separator"
 
 const rows = [
 	{
@@ -35,7 +35,7 @@ const rows = [
 		value: "Validated pre-publish",
 		badge: "OK" as const,
 	},
-] as const;
+] as const
 
 /** Complements the narrative column in “Your whole pipeline, visible”. */
 export function PipelineObservabilityPanel() {
@@ -53,7 +53,7 @@ export function PipelineObservabilityPanel() {
 			</CardHeader>
 			<CardContent className="space-y-0">
 				{rows.map((row, i) => {
-					const Icon = row.icon;
+					const Icon = row.icon
 					return (
 						<div key={row.label}>
 							{i > 0 ? <Separator className="my-4" /> : null}
@@ -74,9 +74,9 @@ export function PipelineObservabilityPanel() {
 								</Badge>
 							</div>
 						</div>
-					);
+					)
 				})}
 			</CardContent>
 		</Card>
-	);
+	)
 }

@@ -366,7 +366,10 @@ export function usePublishingDestinationPage(
 	const updateTiktokDefaultsMutation = useMutation({
 		mutationFn: async (
 			updates: Partial<
-				Pick<ChannelConfig, "tiktok_default_privacy_level" | "tiktok_disclosure">
+				Pick<
+					ChannelConfig,
+					"tiktok_default_privacy_level" | "tiktok_disclosure"
+				>
 			>,
 		) => {
 			const c = queryClient.getQueryData(["channel", destinationId]) as

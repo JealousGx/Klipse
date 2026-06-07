@@ -1,17 +1,17 @@
-import { useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, KeyRound, Loader2, Lock, Mail, X } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate } from "@tanstack/react-router"
+import { ArrowLeft, KeyRound, Loader2, Lock, Mail, X } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
 
-import { GoogleIcon } from "@/components/icons/google";
-import { Button } from "@/components/ui/button";
+import { GoogleIcon } from "@/components/icons/google"
+import { Button } from "@/components/ui/button"
 
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@/config/site"
 
-import { authClient, signIn, signUp } from "@/lib/auth/client";
-import { readBetterAuthActionError } from "@/lib/client-errors";
-import { cn } from "@/lib/utils";
+import { authClient, signIn, signUp } from "@/lib/auth/client"
+import { readBetterAuthActionError } from "@/lib/client-errors"
+import { cn } from "@/lib/utils"
 
-import type { AuthModalMode } from "./AuthModalContext";
+import type { AuthModalMode } from "./AuthModalContext"
 
 type AuthMethod =
 	| "select"
@@ -20,173 +20,173 @@ type AuthMethod =
 	| "password-login"
 	| "password-signup"
 	| "forgot-send"
-	| "forgot-reset";
+	| "forgot-reset"
 
 type AuthModalProps = {
-	mode: AuthModalMode;
-	onClose: () => void;
-};
+	mode: AuthModalMode
+	onClose: () => void
+}
 
 const inputClass =
-	"w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none ring-offset-2 transition focus:ring-2 focus:ring-ring";
+	"w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none ring-offset-2 transition focus:ring-2 focus:ring-ring"
 
 export default function AuthModal({ mode, onClose }: AuthModalProps) {
-	const navigate = useNavigate();
-	const { data: session, isPending } = authClient.useSession();
+	const navigate = useNavigate()
+	const { data: session, isPending } = authClient.useSession()
 
-	const defaultView = mode === "signUp" ? "signup" : "login";
+	const defaultView = mode === "signUp" ? "signup" : "login"
 
-	const [method, setMethod] = useState<AuthMethod>("select");
-	const [error, setError] = useState<string | null>(null);
-	const [isLoading, setIsLoading] = useState(false);
+	const [method, setMethod] = useState<AuthMethod>("select")
+	const [error, setError] = useState<string | null>(null)
+	const [isLoading, setIsLoading] = useState(false)
 
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
-	const [newPassword, setNewPassword] = useState("");
-	const [confirmPassword, setConfirmPassword] = useState("");
-	const [name, setName] = useState("");
-	const [otp, setOtp] = useState(["", "", "", "", "", ""]);
-	const [termsAccepted, setTermsAccepted] = useState(false);
+	const [email, setEmail] = useState("")
+	const [password, setPassword] = useState("")
+	const [newPassword, setNewPassword] = useState("")
+	const [confirmPassword, setConfirmPassword] = useState("")
+	const [name, setName] = useState("")
+	const [otp, setOtp] = useState(["", "", "", "", "", ""])
+	const [termsAccepted, setTermsAccepted] = useState(false)
 
-	const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+	const otpRefs = useRef<(HTMLInputElement | null)[]>([])
 	const otpSlotIds = useRef(
 		Array.from({ length: 6 }, (_, i) => `otp-slot-${i}`),
-	).current;
+	).current
 
 	const resetForm = useCallback(() => {
-		setEmail("");
-		setPassword("");
-		setNewPassword("");
-		setConfirmPassword("");
-		setName("");
-		setOtp(["", "", "", "", "", ""]);
-		setTermsAccepted(false);
-		setError(null);
-		setIsLoading(false);
-	}, []);
+		setEmail("")
+		setPassword("")
+		setNewPassword("")
+		setConfirmPassword("")
+		setName("")
+		setOtp(["", "", "", "", "", ""])
+		setTermsAccepted(false)
+		setError(null)
+		setIsLoading(false)
+	}, [])
 
 	useEffect(() => {
-		setMethod("select");
-		resetForm();
-	}, [resetForm]);
+		setMethod("select")
+		resetForm()
+	}, [resetForm])
 
 	useEffect(() => {
-		if (isPending) return;
+		if (isPending) return
 		if (session?.user) {
-			onClose();
+			onClose()
 		}
-	}, [isPending, onClose, session?.user]);
+	}, [isPending, onClose, session?.user])
 
 	useEffect(() => {
-		const prev = document.body.style.overflow;
-		document.body.style.overflow = "hidden";
+		const prev = document.body.style.overflow
+		document.body.style.overflow = "hidden"
 		return () => {
-			document.body.style.overflow = prev;
-		};
-	}, []);
+			document.body.style.overflow = prev
+		}
+	}, [])
 
 	const navigateTo = (to: AuthMethod) => {
-		setError(null);
-		setMethod(to);
-	};
+		setError(null)
+		setMethod(to)
+	}
 
 	const goBack = () => {
 		if (method === "otp-verify") {
-			setOtp(["", "", "", "", "", ""]);
-			navigateTo("otp-send");
+			setOtp(["", "", "", "", "", ""])
+			navigateTo("otp-send")
 		} else if (method === "forgot-reset") {
-			setOtp(["", "", "", "", "", ""]);
-			navigateTo("forgot-send");
+			setOtp(["", "", "", "", "", ""])
+			navigateTo("forgot-send")
 		} else if (method === "forgot-send") {
-			navigateTo("password-login");
+			navigateTo("password-login")
 		} else {
-			navigateTo("select");
+			navigateTo("select")
 		}
-	};
+	}
 
 	const finishAuthSuccess = () => {
-		onClose();
-		resetForm();
-		void navigate({ to: "/dashboard" });
-	};
+		onClose()
+		resetForm()
+		void navigate({ to: "/dashboard" })
+	}
 
 	const handleGoogle = async () => {
-		setIsLoading(true);
-		setError(null);
+		setIsLoading(true)
+		setError(null)
 		try {
 			await signIn.social({
 				provider: "google",
 				callbackURL: "/dashboard",
-			});
+			})
 		} catch {
-			setError("Google sign-in failed. Please try again.");
-			setIsLoading(false);
+			setError("Google sign-in failed. Please try again.")
+			setIsLoading(false)
 		}
-	};
+	}
 
 	const handleSendOtp = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setIsLoading(true);
-		setError(null);
+		e.preventDefault()
+		setIsLoading(true)
+		setError(null)
 		try {
 			const result = await authClient.emailOtp.sendVerificationOtp({
 				email,
 				type: "sign-in",
-			});
+			})
 			const msg = readBetterAuthActionError(
 				result,
 				"Failed to send code. Please try again.",
-			);
-			if (msg) setError(msg);
+			)
+			if (msg) setError(msg)
 			else {
-				navigateTo("otp-verify");
-				setTimeout(() => otpRefs.current[0]?.focus(), 150);
+				navigateTo("otp-verify")
+				setTimeout(() => otpRefs.current[0]?.focus(), 150)
 			}
 		} catch {
-			setError("Failed to send code. Please try again.");
+			setError("Failed to send code. Please try again.")
 		} finally {
-			setIsLoading(false);
+			setIsLoading(false)
 		}
-	};
+	}
 
 	const handleOtpChange = (index: number, value: string) => {
-		if (!/^\d*$/.test(value)) return;
-		const next = [...otp];
-		next[index] = value.slice(-1);
-		setOtp(next);
+		if (!/^\d*$/.test(value)) return
+		const next = [...otp]
+		next[index] = value.slice(-1)
+		setOtp(next)
 		if (value && index < 5) {
-			otpRefs.current[index + 1]?.focus();
+			otpRefs.current[index + 1]?.focus()
 		}
-	};
+	}
 
 	const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
 		if (e.key === "Backspace" && !otp[index] && index > 0) {
-			otpRefs.current[index - 1]?.focus();
+			otpRefs.current[index - 1]?.focus()
 		}
-	};
+	}
 
 	const handleOtpPaste = (e: React.ClipboardEvent) => {
-		e.preventDefault();
+		e.preventDefault()
 		const pasted = e.clipboardData
 			.getData("text")
 			.replace(/\D/g, "")
-			.slice(0, 6);
-		if (!pasted) return;
-		const next = [...otp];
+			.slice(0, 6)
+		if (!pasted) return
+		const next = [...otp]
 		for (let i = 0; i < pasted.length; i++) {
-			next[i] = pasted[i] ?? "";
+			next[i] = pasted[i] ?? ""
 		}
-		setOtp(next);
-		const focusIdx = Math.min(pasted.length, 5);
-		otpRefs.current[focusIdx]?.focus();
-	};
+		setOtp(next)
+		const focusIdx = Math.min(pasted.length, 5)
+		otpRefs.current[focusIdx]?.focus()
+	}
 
 	const handleVerifyOtp = async (e: React.FormEvent) => {
-		e.preventDefault();
-		const code = otp.join("");
-		if (code.length !== 6) return;
-		setIsLoading(true);
-		setError(null);
+		e.preventDefault()
+		const code = otp.join("")
+		if (code.length !== 6) return
+		setIsLoading(true)
+		setError(null)
 		try {
 			const result = await signIn.emailOtp({
 				email,
@@ -196,139 +196,133 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 						? name.trim() ||
 							(email.includes("@") ? (email.split("@")[0] ?? "User") : "User")
 						: undefined,
-			});
+			})
 			const msg = readBetterAuthActionError(
 				result,
 				"Invalid code. Please try again.",
-			);
-			if (msg) setError(msg);
-			else finishAuthSuccess();
+			)
+			if (msg) setError(msg)
+			else finishAuthSuccess()
 		} catch {
-			setError("Verification failed. Please try again.");
+			setError("Verification failed. Please try again.")
 		} finally {
-			setIsLoading(false);
+			setIsLoading(false)
 		}
-	};
+	}
 
 	const handleResendOtp = async () => {
-		setIsLoading(true);
-		setError(null);
+		setIsLoading(true)
+		setError(null)
 		try {
 			const result = await authClient.emailOtp.sendVerificationOtp({
 				email,
 				type: "sign-in",
-			});
-			const msg = readBetterAuthActionError(result, "Failed to resend code.");
-			if (msg) setError(msg);
+			})
+			const msg = readBetterAuthActionError(result, "Failed to resend code.")
+			if (msg) setError(msg)
 			else {
-				setOtp(["", "", "", "", "", ""]);
-				otpRefs.current[0]?.focus();
+				setOtp(["", "", "", "", "", ""])
+				otpRefs.current[0]?.focus()
 			}
 		} catch {
-			setError("Failed to resend code.");
+			setError("Failed to resend code.")
 		} finally {
-			setIsLoading(false);
+			setIsLoading(false)
 		}
-	};
+	}
 
 	const handleForgotSendOtp = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setIsLoading(true);
-		setError(null);
+		e.preventDefault()
+		setIsLoading(true)
+		setError(null)
 		try {
 			const result = await authClient.emailOtp.requestPasswordReset({
 				email,
-			});
+			})
 			const msg = readBetterAuthActionError(
 				result,
 				"Failed to send reset code.",
-			);
-			if (msg) setError(msg);
+			)
+			if (msg) setError(msg)
 			else {
-				navigateTo("forgot-reset");
-				setTimeout(() => otpRefs.current[0]?.focus(), 150);
+				navigateTo("forgot-reset")
+				setTimeout(() => otpRefs.current[0]?.focus(), 150)
 			}
 		} catch {
-			setError("Failed to send reset code. Please try again.");
+			setError("Failed to send reset code. Please try again.")
 		} finally {
-			setIsLoading(false);
+			setIsLoading(false)
 		}
-	};
+	}
 
 	const handleResetPassword = async (e: React.FormEvent) => {
-		e.preventDefault();
-		const code = otp.join("");
-		if (code.length !== 6) return;
+		e.preventDefault()
+		const code = otp.join("")
+		if (code.length !== 6) return
 		if (newPassword !== confirmPassword) {
-			setError("Passwords do not match.");
-			return;
+			setError("Passwords do not match.")
+			return
 		}
-		setIsLoading(true);
-		setError(null);
+		setIsLoading(true)
+		setError(null)
 		try {
 			const result = await authClient.emailOtp.resetPassword({
 				email,
 				otp: code,
 				password: newPassword,
-			});
-			const msg = readBetterAuthActionError(
-				result,
-				"Failed to reset password.",
-			);
-			if (msg) setError(msg);
+			})
+			const msg = readBetterAuthActionError(result, "Failed to reset password.")
+			if (msg) setError(msg)
 			else {
-				setError(null);
-				navigateTo("password-login");
-				resetForm();
+				setError(null)
+				navigateTo("password-login")
+				resetForm()
 			}
 		} catch {
-			setError("Failed to reset password. Please try again.");
+			setError("Failed to reset password. Please try again.")
 		} finally {
-			setIsLoading(false);
+			setIsLoading(false)
 		}
-	};
+	}
 
 	const handlePasswordLogin = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setIsLoading(true);
-		setError(null);
+		e.preventDefault()
+		setIsLoading(true)
+		setError(null)
 		try {
-			const result = await signIn.email({ email, password });
+			const result = await signIn.email({ email, password })
 			const msg = readBetterAuthActionError(
 				result,
 				"Invalid email or password.",
-			);
-			if (msg) setError(msg);
-			else finishAuthSuccess();
+			)
+			if (msg) setError(msg)
+			else finishAuthSuccess()
 		} catch {
-			setError("Sign in failed. Please try again.");
+			setError("Sign in failed. Please try again.")
 		} finally {
-			setIsLoading(false);
+			setIsLoading(false)
 		}
-	};
+	}
 
 	const handlePasswordSignup = async (e: React.FormEvent) => {
-		e.preventDefault();
-		setIsLoading(true);
-		setError(null);
+		e.preventDefault()
+		setIsLoading(true)
+		setError(null)
 		try {
 			const result = await signUp.email({
 				name,
 				email,
 				password,
-			});
-			const msg = readBetterAuthActionError(
-				result,
-				"Could not create account.",
-			);
-			if (msg) setError(msg);
-			else finishAuthSuccess();
+			})
+			const msg = readBetterAuthActionError(result, "Could not create account.")
+			if (msg) setError(msg)
+			else finishAuthSuccess()
 		} catch {
-			setError("Could not create account.");
+			setError("Could not create account.")
 		} finally {
-			setIsLoading(false);
+			setIsLoading(false)
 		}
-	};
+	}
 
 	const title: Record<AuthMethod, string> = {
 		select: defaultView === "signup" ? "Create your account" : "Welcome back",
@@ -338,7 +332,7 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 		"password-signup": "Create your account",
 		"forgot-send": "Reset your password",
 		"forgot-reset": "Set new password",
-	};
+	}
 
 	const description: Record<AuthMethod, string> = {
 		select: `Continue to ${siteConfig.name}`,
@@ -348,9 +342,9 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 		"password-signup": `Start using ${siteConfig.name} today`,
 		"forgot-send": "We’ll send a reset code to your email",
 		"forgot-reset": `Enter the code sent to ${email || "your email"} and your new password`,
-	};
+	}
 
-	const showBack = method !== "select";
+	const showBack = method !== "select"
 
 	return (
 		<div
@@ -359,7 +353,7 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 			aria-modal="true"
 			onMouseDown={(e) => {
 				if (e.currentTarget === e.target) {
-					onClose();
+					onClose()
 				}
 			}}
 		>
@@ -572,7 +566,7 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 										<input
 											key={otpSlotIds[i]}
 											ref={(el) => {
-												otpRefs.current[i] = el;
+												otpRefs.current[i] = el
 											}}
 											type="text"
 											inputMode="numeric"
@@ -680,8 +674,8 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 								<button
 									type="button"
 									onClick={() => {
-										resetForm();
-										navigateTo("password-signup");
+										resetForm()
+										navigateTo("password-signup")
 									}}
 									className="font-medium text-primary hover:underline"
 								>
@@ -757,8 +751,8 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 								<button
 									type="button"
 									onClick={() => {
-										resetForm();
-										navigateTo("password-login");
+										resetForm()
+										navigateTo("password-login")
 									}}
 									className="font-medium text-primary hover:underline"
 								>
@@ -817,7 +811,7 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 										<input
 											key={`forgot-${otpSlotIds[i]}`}
 											ref={(el) => {
-												otpRefs.current[i] = el;
+												otpRefs.current[i] = el
 											}}
 											type="text"
 											inputMode="numeric"
@@ -886,5 +880,5 @@ export default function AuthModal({ mode, onClose }: AuthModalProps) {
 				</div>
 			</div>
 		</div>
-	);
+	)
 }

@@ -1,9 +1,9 @@
-import { logger } from "./logger";
+import { logger } from "./logger"
 
-const BASE_MS = 500;
+const BASE_MS = 500
 
 export function sleep(ms: number): Promise<void> {
-	return new Promise((r) => setTimeout(r, ms));
+	return new Promise((r) => setTimeout(r, ms))
 }
 
 /**
@@ -12,8 +12,8 @@ export function sleep(ms: number): Promise<void> {
  */
 export class NonRetriableError extends Error {
 	constructor(message: string) {
-		super(message);
-		this.name = "NonRetriableError";
+		super(message)
+		this.name = "NonRetriableError"
 	}
 }
 
@@ -27,19 +27,19 @@ export async function withRetries<T>(
 	attempts: number,
 	fn: (attempt: number) => Promise<T>,
 ): Promise<T> {
-	let last: unknown;
+	let last: unknown
 	for (let attempt = 1; attempt <= attempts; attempt++) {
 		try {
-			return await fn(attempt);
+			return await fn(attempt)
 		} catch (e) {
-			last = e;
+			last = e
 			// Non-retriable: stop immediately regardless of remaining attempts.
 			if (e instanceof NonRetriableError) {
 				logger.warn("retry_non_retriable", {
 					label,
 					error: e.message,
-				});
-				break;
+				})
+				break
 			}
 			if (attempt === attempts) {
 				logger.warn("retry_attempt_failed_final", {
@@ -47,21 +47,21 @@ export async function withRetries<T>(
 					attempt,
 					attempts,
 					error: e instanceof Error ? e.message : String(e),
-				});
-				break;
+				})
+				break
 			}
-			const delay = BASE_MS * 2 ** (attempt - 1);
+			const delay = BASE_MS * 2 ** (attempt - 1)
 			logger.warn("retry_attempt_failed", {
 				label,
 				attempt,
 				attempts,
 				delayMs: delay,
 				error: e instanceof Error ? e.message : String(e),
-			});
-			await sleep(delay);
+			})
+			await sleep(delay)
 		}
 	}
 	throw last instanceof Error
 		? last
-		: new Error(`${label}_failed:${String(last)}`);
+		: new Error(`${label}_failed:${String(last)}`)
 }

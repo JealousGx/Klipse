@@ -1,5 +1,5 @@
-import { Route } from "@/routes/__root";
+import { Route } from "@/routes/__root"
 
 export const useRootRouteContext = () => {
-	return Route.useRouteContext();
-};
+	return Route.useRouteContext()
+}

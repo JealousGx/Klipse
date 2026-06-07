@@ -1,100 +1,100 @@
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { Eye, EyeOff, KeyRound, LogOut, Settings } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { Eye, EyeOff, KeyRound, LogOut, Settings } from "lucide-react"
+import { useCallback, useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
 
-import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
-import { DashboardSection } from "@/components/dashboard/dashboard-section";
-import { Button } from "@/components/ui/button";
-import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
-import type { MeResponse } from "@/features/user/types/me";
+import { DashboardPanel } from "@/components/dashboard/dashboard-panel"
+import { DashboardSection } from "@/components/dashboard/dashboard-section"
+import { Button } from "@/components/ui/button"
+import { useDashboardRouteContext } from "@/context/useDashboardRouteContext"
+import type { MeResponse } from "@/features/user/types/me"
 import {
 	deleteUserAccountFn,
 	hasPasswordAccountFn,
-} from "@/features/user/user-settings.functions";
-import { authClient } from "@/lib/auth/client";
+} from "@/features/user/user-settings.functions"
+import { authClient } from "@/lib/auth/client"
 
 export const Route = createFileRoute("/_authed/dashboard/settings")({
 	staticData: { dashboardTitle: "Settings" },
 	component: SettingsPage,
-});
+})
 
 const planLabel: Record<MeResponse["plan"], string> = {
 	free: "Free",
 	starter: "Starter",
 	creator: "Creator",
 	empire: "Empire",
-};
+}
 
 const fieldClass =
-	"w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none ring-offset-2 transition focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50";
+	"w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none ring-offset-2 transition focus:ring-2 focus:ring-ring disabled:cursor-not-allowed disabled:opacity-50"
 
 function SettingsPage() {
-	const { session } = useDashboardRouteContext();
-	const user = session.user;
-	const { refetch: refetchSession } = authClient.useSession();
+	const { session } = useDashboardRouteContext()
+	const user = session.user
+	const { refetch: refetchSession } = authClient.useSession()
 
-	const [name, setName] = useState(user.name ?? "");
-	const [isSavingName, setIsSavingName] = useState(false);
-	const [isSigningOut, setIsSigningOut] = useState(false);
+	const [name, setName] = useState(user.name ?? "")
+	const [isSavingName, setIsSavingName] = useState(false)
+	const [isSigningOut, setIsSigningOut] = useState(false)
 
 	const handleSaveName = async () => {
-		const trimmed = name.trim();
-		if (!trimmed || trimmed === (user.name ?? "")) return;
-		setIsSavingName(true);
+		const trimmed = name.trim()
+		if (!trimmed || trimmed === (user.name ?? "")) return
+		setIsSavingName(true)
 		try {
-			await authClient.updateUser({ name: trimmed });
-			await refetchSession({ query: { disableCookieCache: true } });
-			toast.success("Name updated");
+			await authClient.updateUser({ name: trimmed })
+			await refetchSession({ query: { disableCookieCache: true } })
+			toast.success("Name updated")
 		} catch {
-			toast.error("Could not save name. Please try again.");
+			toast.error("Could not save name. Please try again.")
 		} finally {
-			setIsSavingName(false);
+			setIsSavingName(false)
 		}
 	}
 
 	const handleSignOut = async () => {
-		setIsSigningOut(true);
+		setIsSigningOut(true)
 		try {
-			await authClient.signOut();
-			window.location.href = "/";
+			await authClient.signOut()
+			window.location.href = "/"
 		} catch {
-			toast.error("Sign out failed. Please try again.");
-			setIsSigningOut(false);
+			toast.error("Sign out failed. Please try again.")
+			setIsSigningOut(false)
 		}
 	}
 
 	// ── Notification prefs — seeded from session, saved via authClient ────────
 	// Better Auth syncs these to the DB via `additionalUserFields` (input: true).
 	const notifyApproval =
-		(user as { notifyVideoApproval?: boolean }).notifyVideoApproval ?? true;
+		(user as { notifyVideoApproval?: boolean }).notifyVideoApproval ?? true
 	const notifyReady =
-		(user as { notifyVideoReady?: boolean }).notifyVideoReady ?? true;
-	const [notifApproval, setNotifApproval] = useState(notifyApproval);
-	const [notifReady, setNotifReady] = useState(notifyReady);
-	const [isSavingNotifs, setIsSavingNotifs] = useState(false);
+		(user as { notifyVideoReady?: boolean }).notifyVideoReady ?? true
+	const [notifApproval, setNotifApproval] = useState(notifyApproval)
+	const [notifReady, setNotifReady] = useState(notifyReady)
+	const [isSavingNotifs, setIsSavingNotifs] = useState(false)
 
 	const handleToggleNotification = async (
 		key: "notifyVideoApproval" | "notifyVideoReady",
 		next: boolean,
 	) => {
-		if (key === "notifyVideoApproval") setNotifApproval(next);
-		else setNotifReady(next);
+		if (key === "notifyVideoApproval") setNotifApproval(next)
+		else setNotifReady(next)
 
-		setIsSavingNotifs(true);
+		setIsSavingNotifs(true)
 		try {
 			await authClient.updateUser({ [key]: next } as Parameters<
 				typeof authClient.updateUser
 			>[0])
-			await refetchSession({ query: { disableCookieCache: true } });
+			await refetchSession({ query: { disableCookieCache: true } })
 		} catch {
 			// Roll back optimistic update
-			if (key === "notifyVideoApproval") setNotifApproval(!next);
-			else setNotifReady(!next);
-			toast.error("Could not save notification preference.");
+			if (key === "notifyVideoApproval") setNotifApproval(!next)
+			else setNotifReady(!next)
+			toast.error("Could not save notification preference.")
 		} finally {
-			setIsSavingNotifs(false);
+			setIsSavingNotifs(false)
 		}
 	}
 
@@ -283,8 +283,8 @@ function PasswordSection({ email }: { email: string }) {
 	const { data, isPending } = useQuery({
 		queryKey: ["has-password-account"],
 		queryFn: async () => {
-			const r = await hasPasswordAccountFn();
-			if (!r.ok) throw new Error("unauthorized");
+			const r = await hasPasswordAccountFn()
+			if (!r.ok) throw new Error("unauthorized")
 			return r
 		},
 		staleTime: 5 * 60 * 1_000,
@@ -306,23 +306,23 @@ function PasswordSection({ email }: { email: string }) {
 // ── Change password (user already has one) ──────────────────────────────────
 
 function ChangePasswordForm() {
-	const [currentPassword, setCurrentPassword] = useState("");
-	const [newPassword, setNewPassword] = useState("");
-	const [confirmPassword, setConfirmPassword] = useState("");
-	const [showCurrent, setShowCurrent] = useState(false);
-	const [showNew, setShowNew] = useState(false);
-	const [isSaving, setIsSaving] = useState(false);
+	const [currentPassword, setCurrentPassword] = useState("")
+	const [newPassword, setNewPassword] = useState("")
+	const [confirmPassword, setConfirmPassword] = useState("")
+	const [showCurrent, setShowCurrent] = useState(false)
+	const [showNew, setShowNew] = useState(false)
+	const [isSaving, setIsSaving] = useState(false)
 
 	const isValid =
 		currentPassword.length > 0 &&
 		newPassword.length >= 8 &&
-		newPassword === confirmPassword;
+		newPassword === confirmPassword
 
 	const handleSubmit = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!isValid) return;
+		e.preventDefault()
+		if (!isValid) return
 
-		setIsSaving(true);
+		setIsSaving(true)
 		try {
 			const result = await authClient.changePassword({
 				currentPassword,
@@ -330,17 +330,17 @@ function ChangePasswordForm() {
 				revokeOtherSessions: true,
 			})
 			if (result.error) {
-				toast.error(result.error.message ?? "Could not change password.");
+				toast.error(result.error.message ?? "Could not change password.")
 				return
 			}
-			toast.success("Password changed. Other sessions have been signed out.");
-			setCurrentPassword("");
-			setNewPassword("");
-			setConfirmPassword("");
+			toast.success("Password changed. Other sessions have been signed out.")
+			setCurrentPassword("")
+			setNewPassword("")
+			setConfirmPassword("")
 		} catch {
-			toast.error("Something went wrong. Please try again.");
+			toast.error("Something went wrong. Please try again.")
 		} finally {
-			setIsSaving(false);
+			setIsSaving(false)
 		}
 	}
 
@@ -449,53 +449,53 @@ function ChangePasswordForm() {
 
 // ── Set password (user signed up via Google / OTP, no password yet) ─────────
 
-type SetPasswordStep = "idle" | "otp-sent" | "saving";
+type SetPasswordStep = "idle" | "otp-sent" | "saving"
 
 function SetPasswordForm({ email }: { email: string }) {
-	const [step, setStep] = useState<SetPasswordStep>("idle");
-	const [otp, setOtp] = useState("");
-	const [newPassword, setNewPassword] = useState("");
-	const [confirmPassword, setConfirmPassword] = useState("");
-	const [showNew, setShowNew] = useState(false);
-	const [isBusy, setIsBusy] = useState(false);
-	const otpRef = useRef<HTMLInputElement>(null);
+	const [step, setStep] = useState<SetPasswordStep>("idle")
+	const [otp, setOtp] = useState("")
+	const [newPassword, setNewPassword] = useState("")
+	const [confirmPassword, setConfirmPassword] = useState("")
+	const [showNew, setShowNew] = useState(false)
+	const [isBusy, setIsBusy] = useState(false)
+	const otpRef = useRef<HTMLInputElement>(null)
 
 	useEffect(() => {
 		if (step === "otp-sent") {
-			otpRef.current?.focus();
+			otpRef.current?.focus()
 		}
-	}, [step]);
+	}, [step])
 
 	const isValid =
 		otp.length === 6 &&
 		newPassword.length >= 8 &&
-		newPassword === confirmPassword;
+		newPassword === confirmPassword
 
 	const handleSendCode = async () => {
-		setIsBusy(true);
+		setIsBusy(true)
 		try {
 			const result = await authClient.emailOtp.sendVerificationOtp({
 				email,
 				type: "forget-password",
 			})
 			if (result.error) {
-				toast.error(result.error.message ?? "Could not send code.");
+				toast.error(result.error.message ?? "Could not send code.")
 				return
 			}
-			setStep("otp-sent");
-			toast.success(`Verification code sent to ${email}`);
+			setStep("otp-sent")
+			toast.success(`Verification code sent to ${email}`)
 		} catch {
-			toast.error("Something went wrong. Please try again.");
+			toast.error("Something went wrong. Please try again.")
 		} finally {
-			setIsBusy(false);
+			setIsBusy(false)
 		}
 	}
 
 	const handleSetPassword = async (e: React.FormEvent) => {
-		e.preventDefault();
-		if (!isValid) return;
+		e.preventDefault()
+		if (!isValid) return
 
-		setIsBusy(true);
+		setIsBusy(true)
 		try {
 			const result = await authClient.emailOtp.resetPassword({
 				email,
@@ -503,19 +503,19 @@ function SetPasswordForm({ email }: { email: string }) {
 				password: newPassword,
 			})
 			if (result.error) {
-				toast.error(result.error.message ?? "Could not set password.");
+				toast.error(result.error.message ?? "Could not set password.")
 				return
 			}
-			toast.success("Password set. You can now sign in with email + password.");
+			toast.success("Password set. You can now sign in with email + password.")
 			// Reset form — next query refresh will show ChangePasswordForm
-			setStep("idle");
-			setOtp("");
-			setNewPassword("");
-			setConfirmPassword("");
+			setStep("idle")
+			setOtp("")
+			setNewPassword("")
+			setConfirmPassword("")
 		} catch {
-			toast.error("Something went wrong. Please try again.");
+			toast.error("Something went wrong. Please try again.")
 		} finally {
-			setIsBusy(false);
+			setIsBusy(false)
 		}
 	}
 
@@ -544,17 +544,17 @@ function SetPasswordForm({ email }: { email: string }) {
 	}
 
 	return (
-        <form className="space-y-4" onSubmit={(e) => void handleSetPassword(e)}>
-            <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+		<form className="space-y-4" onSubmit={(e) => void handleSetPassword(e)}>
+			<div className="flex items-center gap-2 text-sm font-medium text-foreground">
 				<KeyRound className="size-4 text-muted-foreground" />
 				Set a password
 			</div>
-            <p className="text-sm text-muted-foreground">
+			<p className="text-sm text-muted-foreground">
 				A 6-digit code was sent to{" "}
 				<span className="font-medium text-foreground">{email}</span>. Enter it
 				below along with your new password.
 			</p>
-            <div className="space-y-2">
+			<div className="space-y-2">
 				<label htmlFor="set-otp" className="text-sm text-muted-foreground">
 					Verification code
 				</label>
@@ -573,7 +573,7 @@ function SetPasswordForm({ email }: { email: string }) {
 					required
 				/>
 			</div>
-            <div className="space-y-2">
+			<div className="space-y-2">
 				<label htmlFor="set-new-pw" className="text-sm text-muted-foreground">
 					New password
 					<span className="ml-1 text-xs text-muted-foreground/70">
@@ -607,7 +607,7 @@ function SetPasswordForm({ email }: { email: string }) {
 					</button>
 				</div>
 			</div>
-            <div className="space-y-2">
+			<div className="space-y-2">
 				<label
 					htmlFor="set-confirm-pw"
 					className="text-sm text-muted-foreground"
@@ -628,7 +628,7 @@ function SetPasswordForm({ email }: { email: string }) {
 					<p className="text-xs text-destructive">Passwords do not match.</p>
 				)}
 			</div>
-            <div className="flex gap-3">
+			<div className="flex gap-3">
 				<Button type="submit" size="sm" disabled={!isValid || isBusy}>
 					{isBusy ? "Setting…" : "Set password"}
 				</Button>
@@ -642,8 +642,8 @@ function SetPasswordForm({ email }: { email: string }) {
 					Resend code
 				</Button>
 			</div>
-        </form>
-    )
+		</form>
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -657,13 +657,13 @@ function NotificationRow({
 	disabled,
 	onToggle,
 }: {
-	label: string;
-	description: string;
-	enabled: boolean;
-	disabled?: boolean;
-	onToggle: (value: boolean) => void;
+	label: string
+	description: string
+	enabled: boolean
+	disabled?: boolean
+	onToggle: (value: boolean) => void
 }) {
-	const id = `notif-${label.replace(/\s+/g, "-").toLowerCase()}`;
+	const id = `notif-${label.replace(/\s+/g, "-").toLowerCase()}`
 	return (
 		<div className="flex items-start justify-between gap-6">
 			<div className="min-w-0">
@@ -706,44 +706,44 @@ function NotificationRow({
 // ---------------------------------------------------------------------------
 
 function DeleteAccountSection({ email }: { email: string }) {
-	const [showConfirm, setShowConfirm] = useState(false);
-	const [typedEmail, setTypedEmail] = useState("");
-	const [isDeleting, setIsDeleting] = useState(false);
-	const inputRef = useRef<HTMLInputElement>(null);
+	const [showConfirm, setShowConfirm] = useState(false)
+	const [typedEmail, setTypedEmail] = useState("")
+	const [isDeleting, setIsDeleting] = useState(false)
+	const inputRef = useRef<HTMLInputElement>(null)
 
-	const canDelete = typedEmail.trim().toLowerCase() === email.toLowerCase();
+	const canDelete = typedEmail.trim().toLowerCase() === email.toLowerCase()
 
 	// Focus the confirmation input when the panel opens.
 	const handleOpen = useCallback(() => {
-		setTypedEmail("");
-		setShowConfirm(true);
-		requestAnimationFrame(() => inputRef.current?.focus());
-	}, []);
+		setTypedEmail("")
+		setShowConfirm(true)
+		requestAnimationFrame(() => inputRef.current?.focus())
+	}, [])
 
 	const handleCancel = () => {
-		setShowConfirm(false);
-		setTypedEmail("");
+		setShowConfirm(false)
+		setTypedEmail("")
 	}
 
 	const handleDelete = async () => {
-		if (!canDelete) return;
-		setIsDeleting(true);
+		if (!canDelete) return
+		setIsDeleting(true)
 		try {
-			const result = await deleteUserAccountFn();
+			const result = await deleteUserAccountFn()
 			if (!result.ok) {
 				toast.error(
 					result.message ?? "Account deletion failed. Please contact support.",
 				)
-				setIsDeleting(false);
+				setIsDeleting(false)
 				return
 			}
 			// Success — sign out and redirect
-			toast.success("Your account has been deleted.");
-			await authClient.signOut();
-			window.location.href = "/";
+			toast.success("Your account has been deleted.")
+			await authClient.signOut()
+			window.location.href = "/"
 		} catch {
-			toast.error("Something went wrong. Please try again or contact support.");
-			setIsDeleting(false);
+			toast.error("Something went wrong. Please try again or contact support.")
+			setIsDeleting(false)
 		}
 	}
 

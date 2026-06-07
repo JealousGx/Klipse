@@ -1,10 +1,10 @@
-import type { ProcessorJobSpec } from "@klipse/video-assembly-shared";
+import type { ProcessorJobSpec } from "@klipse/video-assembly-shared"
 
-import { generateScript } from "../../providers/script-gen";
-import { reportProgress } from "../../utils/callbacks";
-import { logger } from "../../utils/logger";
+import { generateScript } from "../../providers/script-gen"
+import { reportProgress } from "../../utils/callbacks"
+import { logger } from "../../utils/logger"
 
-const IMAGE_COUNT = 3;
+const IMAGE_COUNT = 3
 
 // ---------------------------------------------------------------------------
 // Fallback helpers (used only when model returns non-JSON)
@@ -20,7 +20,7 @@ function stripMarkdown(s: string): string {
 		.replace(/`[^`]*`/g, "") // inline code
 		.replace(/[*_~`>#]/g, "") // stray symbols
 		.replace(/\s+/g, " ")
-		.trim();
+		.trim()
 }
 
 /**
@@ -34,31 +34,31 @@ function visualPromptsFromScript(markdown: string): string[] {
 	// --- Primary: extract from [VISUAL_SCENES] tags ---
 	const tagged = markdown.match(
 		/\[VISUAL_SCENES\]([\s\S]*?)\[\/VISUAL_SCENES\]/i,
-	);
+	)
 	if (tagged?.[1]) {
 		const items = tagged[1]
 			.split(/\n/)
 			.map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim())
 			.map(stripMarkdown)
-			.filter((s) => s.length > 15);
+			.filter((s) => s.length > 15)
 		if (items.length >= IMAGE_COUNT) {
-			return items.slice(0, IMAGE_COUNT).map((s) => s.slice(0, 800));
+			return items.slice(0, IMAGE_COUNT).map((s) => s.slice(0, 800))
 		}
 	}
 
 	// --- Secondary: parse markdown "Visual scenes" section ---
 	const visualSectionMatch = markdown.match(
 		/\*{0,2}Visual scenes?\*{0,2}[^\n]*\n([\s\S]*?)(?=\n\*{0,2}[A-Z]|\n#{1,3}|\s*$)/i,
-	);
+	)
 	if (visualSectionMatch) {
-		const section = visualSectionMatch[1] ?? "";
+		const section = visualSectionMatch[1] ?? ""
 		const items = section
 			.split(/\n/)
 			.map((l) => l.replace(/^\s*\d+[.)]\s*/, "").trim())
 			.map(stripMarkdown)
-			.filter((s) => s.length > 15);
+			.filter((s) => s.length > 15)
 		if (items.length >= IMAGE_COUNT) {
-			return items.slice(0, IMAGE_COUNT).map((s) => s.slice(0, 800));
+			return items.slice(0, IMAGE_COUNT).map((s) => s.slice(0, 800))
 		}
 	}
 
@@ -67,26 +67,26 @@ function visualPromptsFromScript(markdown: string): string[] {
 		.split(/\n+/)
 		.map(stripMarkdown)
 		.filter((s) => {
-			if (s.length < 30) return false;
+			if (s.length < 30) return false
 			if (
 				/^(Script for|short.?form|channel|section|part \d|scene \d|visual scenes?)/i.test(
 					s,
 				)
 			)
-				return false;
-			if (/^\[.*\]$/.test(s)) return false;
-			return true;
-		});
+				return false
+			if (/^\[.*\]$/.test(s)) return false
+			return true
+		})
 
-	const out: string[] = [];
+	const out: string[] = []
 	for (const line of lines) {
-		if (out.length >= IMAGE_COUNT) break;
-		out.push(line.slice(0, 800));
+		if (out.length >= IMAGE_COUNT) break
+		out.push(line.slice(0, 800))
 	}
 	while (out.length < IMAGE_COUNT) {
-		out.push(out[0] ?? "cinematic imagery, dramatic lighting, high detail");
+		out.push(out[0] ?? "cinematic imagery, dramatic lighting, high detail")
 	}
-	return out.slice(0, IMAGE_COUNT);
+	return out.slice(0, IMAGE_COUNT)
 }
 
 /**
@@ -96,14 +96,14 @@ function visualPromptsFromScript(markdown: string): string[] {
  * Fallback: metadata-section cutoff + line-level stripping.
  */
 function sanitizeForTts(raw: string): string {
-	const tagged = raw.match(/\[VOICEOVER\]([\s\S]*?)\[\/VOICEOVER\]/i);
+	const tagged = raw.match(/\[VOICEOVER\]([\s\S]*?)\[\/VOICEOVER\]/i)
 	if (tagged?.[1]) {
 		return tagged[1]
 			.replace(/\*+/g, "")
 			.replace(/[""]/g, '"')
 			.replace(/[\u{1F300}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}]/gu, "")
 			.replace(/\s+/g, " ")
-			.trim();
+			.trim()
 	}
 
 	const METADATA_SECTION = new RegExp(
@@ -116,9 +116,9 @@ function sanitizeForTts(raw: string): string {
 		]
 			.map((r) => r.source)
 			.join("|"),
-	);
-	const cutIdx = raw.search(METADATA_SECTION);
-	const body = cutIdx !== -1 ? raw.slice(0, cutIdx) : raw;
+	)
+	const cutIdx = raw.search(METADATA_SECTION)
+	const body = cutIdx !== -1 ? raw.slice(0, cutIdx) : raw
 
 	return body
 		.replace(/^[^\n]*(Visual|Caption|Sound)\s*:\*?[^\n]*/gim, "")
@@ -141,7 +141,7 @@ function sanitizeForTts(raw: string): string {
 		.replace(/[""]/g, '"')
 		.replace(/\n{3,}/g, "\n\n")
 		.replace(/\s+/g, " ")
-		.trim();
+		.trim()
 }
 
 // ---------------------------------------------------------------------------
@@ -149,12 +149,12 @@ function sanitizeForTts(raw: string): string {
 // ---------------------------------------------------------------------------
 
 type ScriptJson = {
-	voiceover: string;
-	imagePrompts: string[];
-	title?: string;
-	description?: string;
-	tags?: string[];
-};
+	voiceover: string
+	imagePrompts: string[]
+	title?: string
+	description?: string
+	tags?: string[]
+}
 
 function isScriptJson(obj: unknown): obj is ScriptJson {
 	return (
@@ -162,7 +162,7 @@ function isScriptJson(obj: unknown): obj is ScriptJson {
 		obj !== null &&
 		typeof (obj as Record<string, unknown>).voiceover === "string" &&
 		Array.isArray((obj as Record<string, unknown>).imagePrompts)
-	);
+	)
 }
 
 /**
@@ -172,53 +172,53 @@ function isScriptJson(obj: unknown): obj is ScriptJson {
  * (e.g. a tags array cut short) but structurally valid for JSON.parse.
  */
 function repairTruncatedJson(s: string): string {
-	let out = s.trimEnd();
+	let out = s.trimEnd()
 
 	// If the last character is inside an open string, close it.
 	// Simple heuristic: count unescaped quotes; odd count = open string.
-	let inString = false;
-	let escaped = false;
+	let inString = false
+	let escaped = false
 	for (const ch of out) {
 		if (escaped) {
-			escaped = false;
-			continue;
+			escaped = false
+			continue
 		}
 		if (ch === "\\") {
-			escaped = true;
-			continue;
+			escaped = true
+			continue
 		}
-		if (ch === '"') inString = !inString;
+		if (ch === '"') inString = !inString
 	}
-	if (inString) out += '"';
+	if (inString) out += '"'
 
 	// Remove trailing comma before closing (invalid JSON)
-	out = out.replace(/,\s*$/, "");
+	out = out.replace(/,\s*$/, "")
 
 	// Balance brackets/braces
-	const stack: string[] = [];
-	inString = false;
-	escaped = false;
+	const stack: string[] = []
+	inString = false
+	escaped = false
 	for (const ch of out) {
 		if (escaped) {
-			escaped = false;
-			continue;
+			escaped = false
+			continue
 		}
 		if (ch === "\\") {
-			escaped = true;
-			continue;
+			escaped = true
+			continue
 		}
 		if (ch === '"') {
-			inString = !inString;
-			continue;
+			inString = !inString
+			continue
 		}
-		if (inString) continue;
-		if (ch === "{") stack.push("}");
-		else if (ch === "[") stack.push("]");
-		else if (ch === "}" || ch === "]") stack.pop();
+		if (inString) continue
+		if (ch === "{") stack.push("}")
+		else if (ch === "[") stack.push("]")
+		else if (ch === "}" || ch === "]") stack.pop()
 	}
-	while (stack.length) out += stack.pop();
+	while (stack.length) out += stack.pop()
 
-	return out;
+	return out
 }
 
 /**
@@ -232,51 +232,51 @@ function repairTruncatedJson(s: string): string {
  *  5. Truncated JSON     — response cut at max_tokens; repaired before parsing
  */
 function parseScriptJson(raw: string): ScriptJson | null {
-	const candidates: string[] = [raw];
+	const candidates: string[] = [raw]
 
 	// Strip markdown code fences: ```json ... ``` or ``` ... ```
-	const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/);
-	if (fenced?.[1]) candidates.push(fenced[1].trim());
+	const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/)
+	if (fenced?.[1]) candidates.push(fenced[1].trim())
 
 	// Extract outermost JSON object from anywhere in the text
-	const firstBrace = raw.indexOf("{");
-	const lastBrace = raw.lastIndexOf("}");
+	const firstBrace = raw.indexOf("{")
+	const lastBrace = raw.lastIndexOf("}")
 	if (firstBrace !== -1 && lastBrace > firstBrace) {
-		candidates.push(raw.slice(firstBrace, lastBrace + 1));
+		candidates.push(raw.slice(firstBrace, lastBrace + 1))
 	}
 
 	// Truncation recovery: slice from first `{` to end and repair unclosed structure
 	if (firstBrace !== -1) {
-		candidates.push(repairTruncatedJson(raw.slice(firstBrace)));
+		candidates.push(repairTruncatedJson(raw.slice(firstBrace)))
 	}
 
 	for (const candidate of candidates) {
 		try {
-			const parsed = JSON.parse(candidate) as unknown;
-			if (isScriptJson(parsed)) return parsed as ScriptJson;
+			const parsed = JSON.parse(candidate) as unknown
+			if (isScriptJson(parsed)) return parsed as ScriptJson
 			if (Array.isArray(parsed) && parsed.length > 0 && isScriptJson(parsed[0]))
-				return parsed[0] as ScriptJson;
+				return parsed[0] as ScriptJson
 		} catch {
 			// try next candidate
 		}
 	}
-	return null;
+	return null
 }
 
 function truncateToWords(text: string, maxWords: number): string {
-	const words = text.split(/\s+/);
-	if (words.length <= maxWords) return text;
-	return `${words.slice(0, maxWords).join(" ")}…`;
+	const words = text.split(/\s+/)
+	if (words.length <= maxWords) return text
+	return `${words.slice(0, maxWords).join(" ")}…`
 }
 
 export type ScriptResult = {
-	scriptMarkdown: string;
-	ttsText: string;
-	imagePrompts: string[];
-	title?: string;
-	description?: string;
-	tags?: string[];
-};
+	scriptMarkdown: string
+	ttsText: string
+	imagePrompts: string[]
+	title?: string
+	description?: string
+	tags?: string[]
+}
 
 /**
  * Stage 1: Generate video script via OpenRouter.
@@ -288,33 +288,33 @@ export type ScriptResult = {
 export async function runScriptStage(
 	spec: ProcessorJobSpec,
 ): Promise<ScriptResult> {
-	const stageStart = Date.now();
-	logger.info("script_stage_start", { jobId: spec.jobId });
-	await reportProgress(spec, "script", 10);
+	const stageStart = Date.now()
+	logger.info("script_stage_start", { jobId: spec.jobId })
+	await reportProgress(spec, "script", 10)
 
-	let raw: string;
+	let raw: string
 	try {
-		raw = await generateScript(spec);
+		raw = await generateScript(spec)
 	} catch (e) {
 		logger.error("script_stage_error", {
 			jobId: spec.jobId,
 			durationMs: Date.now() - stageStart,
 			error: e instanceof Error ? e.message : String(e),
-		});
-		throw e;
+		})
+		throw e
 	}
-	await reportProgress(spec, "script", 90);
+	await reportProgress(spec, "script", 90)
 
 	// ~140 words/min, conservative estimate.
-	const maxWords = Math.ceil((spec.targetDuration / 60) * 140);
+	const maxWords = Math.ceil((spec.targetDuration / 60) * 140)
 
-	const parsed = parseScriptJson(raw);
+	const parsed = parseScriptJson(raw)
 
-	let ttsText: string;
-	let imagePrompts: string[];
-	let title: string | undefined;
-	let description: string | undefined;
-	let tags: string[] | undefined;
+	let ttsText: string
+	let imagePrompts: string[]
+	let title: string | undefined
+	let description: string | undefined
+	let tags: string[] | undefined
 
 	if (parsed) {
 		// Clean path: structured JSON from model.
@@ -328,35 +328,35 @@ export async function runScriptStage(
 				.replace(/\s+/g, " ")
 				.trim(),
 			maxWords,
-		);
+		)
 		imagePrompts = (parsed.imagePrompts as string[])
 			.slice(0, IMAGE_COUNT)
 			.map((s) => String(s).trim().slice(0, 800))
-			.filter((s) => s.length > 0);
+			.filter((s) => s.length > 0)
 		while (imagePrompts.length < IMAGE_COUNT) {
 			imagePrompts.push(
 				imagePrompts[0] ?? "cinematic imagery, dramatic lighting, high detail",
-			);
+			)
 		}
-		title = parsed.title?.trim().slice(0, 100) || undefined;
-		description = parsed.description?.trim().slice(0, 2000) || undefined;
+		title = parsed.title?.trim().slice(0, 100) || undefined
+		description = parsed.description?.trim().slice(0, 2000) || undefined
 		tags = Array.isArray(parsed.tags)
 			? (parsed.tags as unknown[])
 					.map((t) => String(t).toLowerCase().trim())
 					.filter((t) => t.length > 0)
 					.slice(0, 100)
-			: undefined;
+			: undefined
 	} else {
 		// Fallback: tag/regex sanitization — title/description/tags unavailable.
-		ttsText = truncateToWords(sanitizeForTts(raw), maxWords);
-		imagePrompts = visualPromptsFromScript(raw);
+		ttsText = truncateToWords(sanitizeForTts(raw), maxWords)
+		imagePrompts = visualPromptsFromScript(raw)
 	}
 
-	await reportProgress(spec, "script", 100);
+	await reportProgress(spec, "script", 100)
 	logger.info("script_stage_complete", {
 		jobId: spec.jobId,
 		durationMs: Date.now() - stageStart,
-	});
+	})
 	return {
 		scriptMarkdown: ttsText,
 		ttsText,
@@ -364,5 +364,5 @@ export async function runScriptStage(
 		title,
 		description,
 		tags,
-	};
+	}
 }

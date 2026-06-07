@@ -1,13 +1,13 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { siteConfig } from "@/config/site";
-import { getTransactionEmailFrom, sendEmail } from ".";
-import { brandEmailHtml, escapeHtml } from "./brand-layout";
+import { siteConfig } from "@/config/site"
+import { getTransactionEmailFrom, sendEmail } from "."
+import { brandEmailHtml, escapeHtml } from "./brand-layout"
 
 export interface YoutubeDisconnectEmailInput {
-	to: string;
-	channelName: string;
-	publishingUrl: string;
+	to: string
+	channelName: string
+	publishingUrl: string
 }
 
 /**
@@ -17,10 +17,10 @@ export interface YoutubeDisconnectEmailInput {
 export async function sendYoutubeDisconnectEmail(
 	input: YoutubeDisconnectEmailInput,
 ): Promise<void> {
-	const { to, channelName, publishingUrl } = input;
-	const safeName = channelName.trim() || "your YouTube channel";
+	const { to, channelName, publishingUrl } = input
+	const safeName = channelName.trim() || "your YouTube channel"
 
-	const preheader = `Your ${safeName} YouTube connection needs to be refreshed.`;
+	const preheader = `Your ${safeName} YouTube connection needs to be refreshed.`
 
 	const content = `
 <h2 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#111827;text-align:center;line-height:1.3;">
@@ -53,7 +53,7 @@ export async function sendYoutubeDisconnectEmail(
 <p style="margin:0;font-size:13px;line-height:1.5;color:#9ca3af;text-align:center;">
   If you no longer want to publish to this channel, you can remove it from your publishing destinations.
 </p>
-`.trim();
+`.trim()
 
 	const text = [
 		`YouTube channel disconnected — ${safeName}`,
@@ -64,7 +64,7 @@ export async function sendYoutubeDisconnectEmail(
 		`Reconnect YouTube: ${publishingUrl}`,
 		"",
 		"Once reconnected, any pending videos will publish automatically.",
-	].join("\n");
+	].join("\n")
 
 	await sendEmail({
 		from: getTransactionEmailFrom(),
@@ -72,5 +72,5 @@ export async function sendYoutubeDisconnectEmail(
 		subject: `${siteConfig.name} · Reconnect your YouTube channel — ${safeName}`,
 		html: brandEmailHtml({ preheader, content }),
 		text,
-	});
+	})
 }

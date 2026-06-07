@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm"
 import {
 	index,
 	json,
@@ -7,15 +7,15 @@ import {
 	timestamp,
 	uniqueIndex,
 	varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/mysql-core"
 
-import { users } from "./users";
+import { users } from "./users"
 
 export type StubGenerateIdempotencyResult = {
-	creditsRemaining: number;
-	ref: string;
-	creditsCharged: number;
-};
+	creditsRemaining: number
+	ref: string
+	creditsCharged: number
+}
 
 /**
  * Dedupe keyed operations (e.g. stub generate) so retries / double submits do not double-charge.
@@ -49,7 +49,7 @@ export const usageIdempotency = mysqlTable(
 		),
 		index("usage_idempotency_userId_idx").on(table.userId),
 	],
-);
+)
 
 export const usageIdempotencyRelations = relations(
 	usageIdempotency,
@@ -59,4 +59,4 @@ export const usageIdempotencyRelations = relations(
 			references: [users.id],
 		}),
 	}),
-);
+)

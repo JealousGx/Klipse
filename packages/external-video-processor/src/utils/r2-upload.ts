@@ -1,6 +1,6 @@
-import { withRetries } from "./retry";
+import { withRetries } from "./retry"
 
-const UPLOAD_ATTEMPTS = 4;
+const UPLOAD_ATTEMPTS = 4
 
 /**
  * Uploads a buffer to a presigned PUT URL (R2 or S3-compatible).
@@ -17,10 +17,10 @@ export async function uploadBufferToPresignedUrl(
 			headers: { "Content-Type": contentType },
 			body: buffer instanceof Buffer ? buffer : Buffer.from(buffer),
 			signal: AbortSignal.timeout(120_000),
-		});
+		})
 		if (!res.ok) {
-			const text = await res.text().catch(() => "");
-			throw new Error(`r2_put_${res.status}:${text.slice(0, 500)}`);
+			const text = await res.text().catch(() => "")
+			throw new Error(`r2_put_${res.status}:${text.slice(0, 500)}`)
 		}
-	});
+	})
 }

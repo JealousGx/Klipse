@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router"
 import {
 	ArrowUpRight,
 	Copy,
@@ -8,12 +8,12 @@ import {
 	Pencil,
 	Plus,
 	Trash2,
-} from "lucide-react";
-import { useEffect } from "react";
-import { toast } from "sonner";
+} from "lucide-react"
+import { useEffect } from "react"
+import { toast } from "sonner"
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
 	Card,
 	CardContent,
@@ -21,65 +21,65 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 
-import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
+import { useDashboardRouteContext } from "@/context/useDashboardRouteContext"
 
 import {
 	MAX_CHANNELS_BY_PLAN,
 	planAllowsPaidPublishingConnections,
-} from "@/features/billing/tier-config";
+} from "@/features/billing/tier-config"
 import {
 	createChannelFn,
 	deleteChannelFn,
 	reconcileYoutubeOAuthFn,
-} from "@/features/channels/channels.functions";
-import { PublishingChannelThumbnail } from "@/features/publishing-destination/publishing-channel-thumbnail";
+} from "@/features/channels/channels.functions"
+import { PublishingChannelThumbnail } from "@/features/publishing-destination/publishing-channel-thumbnail"
 import {
 	messageForPublishingConnectionErrorReason,
 	publishingDestinationSearchSchema,
-} from "@/features/publishing-destination/publishing-destination-search.schema";
-import type { MeResponse } from "@/features/user/types/me";
+} from "@/features/publishing-destination/publishing-destination-search.schema"
+import type { MeResponse } from "@/features/user/types/me"
 
 import {
 	platformAuthProviderName,
 	platformChannelUrl,
 	platformDisplayName,
 	platformOAuthStartUrl,
-} from "@/lib/platform-publishing";
-import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
-import { cn } from "@/lib/utils";
+} from "@/lib/platform-publishing"
+import { channelsQueryOptions } from "@/lib/queries/dashboard-queries"
+import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_authed/dashboard/publishing/")({
 	staticData: { dashboardTitle: "Publishing" },
 	validateSearch: (raw: Record<string, unknown>) => {
-		const p = publishingDestinationSearchSchema.safeParse(raw);
-		return p.success ? p.data : {};
+		const p = publishingDestinationSearchSchema.safeParse(raw)
+		return p.success ? p.data : {}
 	},
 	component: PublishingIndexPage,
-});
+})
 
 const DEFAULT_NEW_DESTINATION_NICHE =
-	"Link your Google account to publish finished videos to this destination.";
+	"Link your Google account to publish finished videos to this destination."
 
 type PublishingListChannel = {
-	id: string;
-	name: string;
-	niche: string;
-	platform: "unlinked" | "youtube" | "tiktok" | "instagram";
-	externalChannelId: string | null;
-	externalChannelTitle: string | null;
-	externalChannelThumbnailUrl: string | null;
+	id: string
+	name: string
+	niche: string
+	platform: "unlinked" | "youtube" | "tiktok" | "instagram"
+	externalChannelId: string | null
+	externalChannelTitle: string | null
+	externalChannelThumbnailUrl: string | null
 	/** True when an active OAuth refresh token is stored. Drives the Linked badge. */
-	oauthConnected: boolean;
-};
+	oauthConnected: boolean
+}
 
 type DestinationCardProps = {
-	ch: PublishingListChannel;
-	onDelete: (id: string) => void;
-	deletePending: boolean;
-	deleteTargetId: string | undefined;
-};
+	ch: PublishingListChannel
+	onDelete: (id: string) => void
+	deletePending: boolean
+	deleteTargetId: string | undefined
+}
 
 function DestinationCard({
 	ch,
@@ -89,7 +89,7 @@ function DestinationCard({
 }: DestinationCardProps) {
 	// "Linked" means an active OAuth token is stored — not just that a channel ID
 	// happens to be on file. externalChannelId can survive a disconnect intentionally.
-	const isLinked = ch.oauthConnected;
+	const isLinked = ch.oauthConnected
 
 	return (
 		<Card
@@ -181,7 +181,7 @@ function DestinationCard({
 													`${platformDisplayName(ch.platform)} channel id copied`,
 												),
 											() => toast.error("Could not copy"),
-										);
+										)
 								}}
 							>
 								<Copy className="size-3" aria-hidden />
@@ -249,106 +249,106 @@ function DestinationCard({
 				</Button>
 			</CardFooter>
 		</Card>
-	);
+	)
 }
 
 function PublishingIndexPage() {
-	const search = Route.useSearch();
-	const queryClient = useQueryClient();
-	const navigate = useNavigate();
-	const { session } = useDashboardRouteContext();
+	const search = Route.useSearch()
+	const queryClient = useQueryClient()
+	const navigate = useNavigate()
+	const { session } = useDashboardRouteContext()
 
 	useEffect(() => {
 		if (!search.oauth) {
-			return;
+			return
 		}
 		if (search.oauth === "connected") {
-			toast.success("Publishing account connected successfully.");
+			toast.success("Publishing account connected successfully.")
 		} else {
-			toast.error(messageForPublishingConnectionErrorReason(search.reason));
+			toast.error(messageForPublishingConnectionErrorReason(search.reason))
 		}
 		void navigate({
 			to: "/dashboard/publishing",
 			search: {},
 			replace: true,
-		});
-	}, [search.oauth, search.reason, navigate]);
+		})
+	}, [search.oauth, search.reason, navigate])
 
 	useEffect(() => {
-		let cancelled = false;
+		let cancelled = false
 		void reconcileYoutubeOAuthFn({ data: {} }).then((r) => {
 			if (cancelled || !r.ok || r.revokedChannelIds.length === 0) {
-				return;
+				return
 			}
 			toast.warning(
 				r.revokedChannelIds.length === 1
 					? "Google access for one publishing destination was revoked or expired. Open it and reconnect with Google."
 					: "Google access for some publishing destinations was revoked or expired. Reconnect each one under Publishing.",
 				{ id: "youtube-oauth-revoked-list" },
-			);
-			void queryClient.invalidateQueries({ queryKey: ["channels"] });
-		});
+			)
+			void queryClient.invalidateQueries({ queryKey: ["channels"] })
+		})
 		return () => {
-			cancelled = true;
-		};
-	}, [queryClient]);
+			cancelled = true
+		}
+	}, [queryClient])
 
-	const userPlan = (session.user.plan ?? "free") as MeResponse["plan"];
-	const maxDestinations = MAX_CHANNELS_BY_PLAN[userPlan];
-	const canConnectPublishing = planAllowsPaidPublishingConnections(userPlan);
+	const userPlan = (session.user.plan ?? "free") as MeResponse["plan"]
+	const maxDestinations = MAX_CHANNELS_BY_PLAN[userPlan]
+	const canConnectPublishing = planAllowsPaidPublishingConnections(userPlan)
 
-	const destinationsQuery = useQuery(channelsQueryOptions);
+	const destinationsQuery = useQuery(channelsQueryOptions)
 
 	const createMutation = useMutation({
 		mutationFn: async () => {
-			const n = (destinationsQuery.data?.length ?? 0) + 1;
+			const n = (destinationsQuery.data?.length ?? 0) + 1
 			return createChannelFn({
 				data: {
 					name: `Publishing destination ${n}`,
 					niche: DEFAULT_NEW_DESTINATION_NICHE,
 				},
-			});
+			})
 		},
 		onSuccess: async (r) => {
 			if (r.ok) {
-				toast.success("Publishing destination created");
-				await queryClient.invalidateQueries({ queryKey: ["channels"] });
+				toast.success("Publishing destination created")
+				await queryClient.invalidateQueries({ queryKey: ["channels"] })
 				void navigate({
 					to: "/dashboard/publishing/$destinationId",
 					params: { destinationId: r.channel.id },
-				});
-				return;
+				})
+				return
 			}
 			if (r.code === "channel_limit") {
-				toast.error(r.message ?? "Destination limit reached for your plan.");
-				return;
+				toast.error(r.message ?? "Destination limit reached for your plan.")
+				return
 			}
-			toast.error("Could not create destination");
+			toast.error("Could not create destination")
 		},
 		onError: (_err) => {
-			toast.error("Could not create destination");
+			toast.error("Could not create destination")
 		},
-	});
+	})
 
 	const deleteMutation = useMutation({
 		mutationFn: (channelId: string) => deleteChannelFn({ data: { channelId } }),
 		onSuccess: (r) => {
 			if (r.ok) {
-				toast.success("Destination removed");
-				void queryClient.invalidateQueries({ queryKey: ["channels"] });
-				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] });
-				return;
+				toast.success("Destination removed")
+				void queryClient.invalidateQueries({ queryKey: ["channels"] })
+				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] })
+				return
 			}
-			toast.error("Couldn’t remove destination");
+			toast.error("Couldn’t remove destination")
 		},
-	});
+	})
 
-	const loading = destinationsQuery.isPending;
-	const list = destinationsQuery.data ?? [];
-	const canAddDestination = list.length < maxDestinations;
+	const loading = destinationsQuery.isPending
+	const list = destinationsQuery.data ?? []
+	const canAddDestination = list.length < maxDestinations
 
-	const firstNeedingOAuth = list.find((c) => !c.oauthConnected);
-	const primaryDestinationId = firstNeedingOAuth?.id ?? list[0]?.id ?? null;
+	const firstNeedingOAuth = list.find((c) => !c.oauthConnected)
+	const primaryDestinationId = firstNeedingOAuth?.id ?? list[0]?.id ?? null
 
 	const handleDelete = (channelId: string) => {
 		if (
@@ -357,10 +357,10 @@ function PublishingIndexPage() {
 				"Remove this publishing destination? Associated video jobs may be deleted.",
 			)
 		) {
-			return;
+			return
 		}
-		deleteMutation.mutate(channelId);
-	};
+		deleteMutation.mutate(channelId)
+	}
 
 	return (
 		<div className="space-y-12">
@@ -547,5 +547,5 @@ function PublishingIndexPage() {
 				)}
 			</section>
 		</div>
-	);
+	)
 }

@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm"
 import {
 	index,
 	int,
@@ -7,9 +7,9 @@ import {
 	mysqlTable,
 	timestamp,
 	varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/mysql-core"
 
-import { users } from "./users";
+import { users } from "./users"
 
 export const creditTransactions = mysqlTable(
 	"credit_transactions",
@@ -30,7 +30,7 @@ export const creditTransactions = mysqlTable(
 		index("credit_transactions_userId_idx").on(table.userId),
 		index("credit_transactions_createdAt_idx").on(table.createdAt),
 	],
-);
+)
 
 export const creditTransactionsRelations = relations(
 	creditTransactions,
@@ -40,4 +40,4 @@ export const creditTransactionsRelations = relations(
 			references: [users.id],
 		}),
 	}),
-);
+)

@@ -1,20 +1,20 @@
-import { useRouter } from "@tanstack/react-router";
-import { AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react";
+import { useRouter } from "@tanstack/react-router"
+import { AlertTriangle, ArrowLeft, RefreshCw } from "lucide-react"
 
 interface ErrorPageProps {
-	error?: unknown;
-	reset?: () => void;
+	error?: unknown
+	reset?: () => void
 }
 
 function getErrorMessage(error: unknown): string {
-	if (error instanceof Error) return error.message;
-	if (typeof error === "string") return error;
-	return "An unexpected error occurred.";
+	if (error instanceof Error) return error.message
+	if (typeof error === "string") return error
+	return "An unexpected error occurred."
 }
 
 export function ErrorPage({ error, reset }: ErrorPageProps) {
-	const router = useRouter();
-	const message = getErrorMessage(error);
+	const router = useRouter()
+	const message = getErrorMessage(error)
 
 	return (
 		<div className="flex min-h-dvh flex-col items-center justify-center bg-background px-4 text-center">
@@ -31,9 +31,7 @@ export function ErrorPage({ error, reset }: ErrorPageProps) {
 			<h1 className="mb-3 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
 				Something went wrong
 			</h1>
-			<p className="mb-2 max-w-sm text-base text-muted-foreground">
-				{message}
-			</p>
+			<p className="mb-2 max-w-sm text-base text-muted-foreground">{message}</p>
 			<p className="mb-8 text-xs text-muted-foreground/60">
 				If this keeps happening, please contact support.
 			</p>
@@ -59,5 +57,5 @@ export function ErrorPage({ error, reset }: ErrorPageProps) {
 				</button>
 			</div>
 		</div>
-	);
+	)
 }

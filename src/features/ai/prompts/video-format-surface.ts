@@ -3,10 +3,10 @@
  * These inform script pacing (tight vs. deep) — they are not tied to any
  * specific publishing platform, app, or brand name.
  */
-export const SHORT_FORM_TARGET_SECONDS_MAX = 180;
+export const SHORT_FORM_TARGET_SECONDS_MAX = 180
 
 export function isShortFormTargetSeconds(targetSeconds: number): boolean {
-	return targetSeconds <= SHORT_FORM_TARGET_SECONDS_MAX;
+	return targetSeconds <= SHORT_FORM_TARGET_SECONDS_MAX
 }
 
 /**
@@ -16,5 +16,5 @@ export function isShortFormTargetSeconds(targetSeconds: number): boolean {
 export function publishingSurfaceLabel(targetSeconds: number): string {
 	return isShortFormTargetSeconds(targetSeconds)
 		? "Short-form video"
-		: "Long-form video";
+		: "Long-form video"
 }

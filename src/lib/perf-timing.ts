@@ -1,21 +1,21 @@
-import { performance } from "node:perf_hooks";
+import { performance } from "node:perf_hooks"
 
 /** JSON lines — easy to grep locally or ship to Axiom / log drains later. */
-const LOG_TYPE = "klipse.perf";
+const LOG_TYPE = "klipse.perf"
 
 function perfEnabled(): boolean {
-	if (typeof process === "undefined" || !process.env) return false;
+	if (typeof process === "undefined" || !process.env) return false
 	return (
 		process.env.KLIPSE_PERF_LOG === "1" ||
 		process.env.NODE_ENV === "development"
-	);
+	)
 }
 
 function nowMs(): number {
-	return performance.now();
+	return performance.now()
 }
 
-export type PerfFields = Record<string, unknown>;
+export type PerfFields = Record<string, unknown>
 
 /**
  * Emits one JSON object per line: `{ type, event, ms, ...fields }`.
@@ -26,14 +26,14 @@ export function logPerfEvent(
 	ms: number,
 	fields: PerfFields | undefined,
 ): void {
-	if (!perfEnabled()) return;
+	if (!perfEnabled()) return
 	const line = JSON.stringify({
 		type: LOG_TYPE,
 		event,
 		ms: Math.round(ms * 100) / 100,
 		...fields,
-	});
-	console.log(line);
+	})
+	console.log(line)
 }
 
 export async function withPerfTiming<T>(
@@ -42,20 +42,20 @@ export async function withPerfTiming<T>(
 	fn: () => Promise<T>,
 ): Promise<T> {
 	if (!perfEnabled()) {
-		return fn();
+		return fn()
 	}
-	const start = nowMs();
+	const start = nowMs()
 	try {
-		const result = await fn();
-		logPerfEvent(event, nowMs() - start, { ...fields, ok: true });
-		return result;
+		const result = await fn()
+		logPerfEvent(event, nowMs() - start, { ...fields, ok: true })
+		return result
 	} catch (err) {
-		const message = err instanceof Error ? err.message : String(err);
+		const message = err instanceof Error ? err.message : String(err)
 		logPerfEvent(event, nowMs() - start, {
 			...fields,
 			ok: false,
 			error: message,
-		});
-		throw err;
+		})
+		throw err
 	}
 }

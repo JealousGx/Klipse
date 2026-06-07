@@ -1,29 +1,23 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import {
-	checkout,
-	polar,
-	portal,
-	usage,
-	webhooks,
-} from "@polar-sh/better-auth";
+import { checkout, polar, portal, usage, webhooks } from "@polar-sh/better-auth"
 
-import { env } from "@/env";
-import { getPolarSdk } from "./polar-sdk.server";
+import { env } from "@/env"
+import { getPolarSdk } from "./polar-sdk.server"
 import {
 	handlePolarOrderPaid,
 	handlePolarSubscriptionActive,
 	handlePolarSubscriptionRevoked,
-} from "./polar-sync.server";
+} from "./polar-sync.server"
 
 function appOrigin(): string {
-	return env.SERVER_URL ?? "http://localhost:3000";
+	return env.SERVER_URL ?? "http://localhost:3000"
 }
 
 export function createPolarBillingPlugin() {
-	const polarSdk = getPolarSdk();
+	const polarSdk = getPolarSdk()
 
-	const origin = appOrigin();
+	const origin = appOrigin()
 
 	const products = [
 		{
@@ -46,7 +40,7 @@ export function createPolarBillingPlugin() {
 			productId: env.POLAR_PRODUCT_CREDITS_LARGE,
 			slug: "credits-3k",
 		},
-	];
+	]
 
 	return polar({
 		client: polarSdk,
@@ -74,5 +68,5 @@ export function createPolarBillingPlugin() {
 				onSubscriptionRevoked: handlePolarSubscriptionRevoked,
 			}),
 		],
-	});
+	})
 }

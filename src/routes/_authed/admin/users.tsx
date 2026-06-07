@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
 import {
 	Ban,
 	CreditCard,
@@ -11,11 +11,11 @@ import {
 	UserPlus,
 	Users,
 	X,
-} from "lucide-react";
-import { useEffect, useState } from "react";
-import { toast } from "sonner";
+} from "lucide-react"
+import { useEffect, useState } from "react"
+import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -23,14 +23,14 @@ import {
 	DropdownMenuLabel,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
 	type AdminUserRow,
 	adjustUserCreditsFn,
@@ -40,25 +40,25 @@ import {
 	listAdminUsersFn,
 	setUserRoleFn,
 	unbanUserFn,
-} from "@/features/admin/admin-user.functions";
+} from "@/features/admin/admin-user.functions"
 
 export const Route = createFileRoute("/_authed/admin/users")({
 	component: AdminUsersPage,
-});
+})
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const PAGE_SIZE = 20; // page size constant for cursor fetch
+const PAGE_SIZE = 20 // page size constant for cursor fetch
 
-type AdminUserCursor = { createdAt: string; id: string };
+type AdminUserCursor = { createdAt: string; id: string }
 
-const PLANS = ["free", "starter", "creator", "empire"] as const;
-type Plan = (typeof PLANS)[number];
+const PLANS = ["free", "starter", "creator", "empire"] as const
+type Plan = (typeof PLANS)[number]
 
 const fieldClass =
-	"w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 outline-none ring-offset-0 transition placeholder:text-zinc-500 focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 disabled:cursor-not-allowed disabled:opacity-50";
+	"w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 outline-none ring-offset-0 transition placeholder:text-zinc-500 focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 disabled:cursor-not-allowed disabled:opacity-50"
 
 // ---------------------------------------------------------------------------
 // Helpers / Sub-components
@@ -72,7 +72,7 @@ function PlanBadge({ plan }: { plan: string }) {
 				? "bg-purple-500/15 text-purple-400 border-purple-500/30"
 				: plan === "empire"
 					? "bg-amber-500/15 text-amber-400 border-amber-500/30"
-					: "bg-zinc-700/50 text-zinc-400 border-zinc-600/50";
+					: "bg-zinc-700/50 text-zinc-400 border-zinc-600/50"
 
 	return (
 		<span
@@ -80,7 +80,7 @@ function PlanBadge({ plan }: { plan: string }) {
 		>
 			{plan}
 		</span>
-	);
+	)
 }
 
 function RoleBadge({ role }: { role: string | null }) {
@@ -90,9 +90,9 @@ function RoleBadge({ role }: { role: string | null }) {
 				<ShieldCheck className="size-3" />
 				Admin
 			</span>
-		);
+		)
 	}
-	return <span className="text-xs text-zinc-500">User</span>;
+	return <span className="text-xs text-zinc-500">User</span>
 }
 
 function StatCard({ label, value }: { label: string; value: number }) {
@@ -103,7 +103,7 @@ function StatCard({ label, value }: { label: string; value: number }) {
 			</p>
 			<p className="mt-1 text-3xl font-bold text-zinc-100">{value}</p>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -114,29 +114,29 @@ function AdjustCreditsModal({
 	user,
 	onClose,
 }: {
-	user: AdminUserRow;
-	onClose: () => void;
+	user: AdminUserRow
+	onClose: () => void
 }) {
-	const queryClient = useQueryClient();
-	const [delta, setDelta] = useState<number>(0);
-	const [reason, setReason] = useState("");
+	const queryClient = useQueryClient()
+	const [delta, setDelta] = useState<number>(0)
+	const [reason, setReason] = useState("")
 
 	const mutation = useMutation({
 		mutationFn: () =>
 			adjustUserCreditsFn({ data: { userId: user.id, delta, reason } }),
 		onSuccess: (result) => {
 			if (result.ok) {
-				toast.success(`Credits adjusted. New balance: ${result.newCredits}`);
-				queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-				onClose();
+				toast.success(`Credits adjusted. New balance: ${result.newCredits}`)
+				queryClient.invalidateQueries({ queryKey: ["admin-users"] })
+				onClose()
 			} else if (result.code === "below_zero") {
-				toast.error("This adjustment would result in negative credits.");
+				toast.error("This adjustment would result in negative credits.")
 			} else {
-				toast.error("Failed to adjust credits.");
+				toast.error("Failed to adjust credits.")
 			}
 		},
 		onError: () => toast.error("Failed to adjust credits."),
-	});
+	})
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -227,7 +227,7 @@ function AdjustCreditsModal({
 				</div>
 			</div>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -238,25 +238,25 @@ function ChangePlanModal({
 	user,
 	onClose,
 }: {
-	user: AdminUserRow;
-	onClose: () => void;
+	user: AdminUserRow
+	onClose: () => void
 }) {
-	const queryClient = useQueryClient();
-	const [plan, setPlan] = useState<Plan>(user.plan as Plan);
+	const queryClient = useQueryClient()
+	const [plan, setPlan] = useState<Plan>(user.plan as Plan)
 
 	const mutation = useMutation({
 		mutationFn: () => changeUserPlanFn({ data: { userId: user.id, plan } }),
 		onSuccess: (result) => {
 			if (result.ok) {
-				toast.success(`Plan changed to ${plan}.`);
-				queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-				onClose();
+				toast.success(`Plan changed to ${plan}.`)
+				queryClient.invalidateQueries({ queryKey: ["admin-users"] })
+				onClose()
 			} else {
-				toast.error("Failed to change plan.");
+				toast.error("Failed to change plan.")
 			}
 		},
 		onError: () => toast.error("Failed to change plan."),
-	});
+	})
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -323,7 +323,7 @@ function ChangePlanModal({
 				</div>
 			</div>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -334,11 +334,11 @@ function BanModal({
 	user,
 	onClose,
 }: {
-	user: AdminUserRow;
-	onClose: () => void;
+	user: AdminUserRow
+	onClose: () => void
 }) {
-	const queryClient = useQueryClient();
-	const [reason, setReason] = useState("");
+	const queryClient = useQueryClient()
+	const [reason, setReason] = useState("")
 
 	const mutation = useMutation({
 		mutationFn: () =>
@@ -347,17 +347,17 @@ function BanModal({
 			}),
 		onSuccess: (result) => {
 			if (result.ok) {
-				toast.success("User banned.");
-				queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-				onClose();
+				toast.success("User banned.")
+				queryClient.invalidateQueries({ queryKey: ["admin-users"] })
+				onClose()
 			} else if (result.code === "cannot_ban_admin") {
-				toast.error("Cannot ban another admin.");
+				toast.error("Cannot ban another admin.")
 			} else {
-				toast.error("Failed to ban user.");
+				toast.error("Failed to ban user.")
 			}
 		},
 		onError: () => toast.error("Failed to ban user."),
-	});
+	})
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -413,7 +413,7 @@ function BanModal({
 				</div>
 			</div>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -421,32 +421,32 @@ function BanModal({
 // ---------------------------------------------------------------------------
 
 function InviteUserModal({ onClose }: { onClose: () => void }) {
-	const queryClient = useQueryClient();
-	const [email, setEmail] = useState("");
-	const [name, setName] = useState("");
+	const queryClient = useQueryClient()
+	const [email, setEmail] = useState("")
+	const [name, setName] = useState("")
 
 	const mutation = useMutation({
 		mutationFn: () =>
 			createUserFn({ data: { email: email.trim(), name: name.trim() } }),
 		onSuccess: (result) => {
 			if (result.ok) {
-				toast.success("User created — Invitation email sent.");
-				queryClient.invalidateQueries({ queryKey: ["admin-users"] });
-				onClose();
+				toast.success("User created — Invitation email sent.")
+				queryClient.invalidateQueries({ queryKey: ["admin-users"] })
+				onClose()
 			} else if (result.code === "email_taken") {
-				toast.error("An account with this email already exists.");
+				toast.error("An account with this email already exists.")
 			} else {
-				toast.error("Failed to create user. Please try again.");
+				toast.error("Failed to create user. Please try again.")
 			}
 		},
 		onError: () => toast.error("Failed to create user. Please try again."),
-	});
+	})
 
 	const canSubmit =
 		email.trim().length > 0 &&
 		email.includes("@") &&
 		name.trim().length > 0 &&
-		!mutation.isPending;
+		!mutation.isPending
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -524,7 +524,7 @@ function InviteUserModal({ onClose }: { onClose: () => void }) {
 				</div>
 			</div>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -536,48 +536,48 @@ type ActiveModal =
 	| { type: "credits"; user: AdminUserRow }
 	| { type: "plan"; user: AdminUserRow }
 	| { type: "ban"; user: AdminUserRow }
-	| null;
+	| null
 
 function RowActions({
 	row,
 	onOpenModal,
 }: {
-	row: AdminUserRow;
-	onOpenModal: (modal: ActiveModal) => void;
+	row: AdminUserRow
+	onOpenModal: (modal: ActiveModal) => void
 }) {
-	const queryClient = useQueryClient();
+	const queryClient = useQueryClient()
 
 	const roleMutation = useMutation({
 		mutationFn: (role: "admin" | "user") =>
 			setUserRoleFn({ data: { userId: row.id, role } }),
 		onSuccess: (result) => {
 			if (result.ok) {
-				toast.success("Role updated.");
-				queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+				toast.success("Role updated.")
+				queryClient.invalidateQueries({ queryKey: ["admin-users"] })
 			} else if (result.code === "cannot_self_demote") {
-				toast.error("You cannot demote yourself.");
+				toast.error("You cannot demote yourself.")
 			} else {
-				toast.error("Failed to update role.");
+				toast.error("Failed to update role.")
 			}
 		},
 		onError: () => toast.error("Failed to update role."),
-	});
+	})
 
 	const unbanMutation = useMutation({
 		mutationFn: () => unbanUserFn({ data: { userId: row.id } }),
 		onSuccess: (result) => {
 			if (result.ok) {
-				toast.success("User unbanned.");
-				queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+				toast.success("User unbanned.")
+				queryClient.invalidateQueries({ queryKey: ["admin-users"] })
 			} else {
-				toast.error("Failed to unban user.");
+				toast.error("Failed to unban user.")
 			}
 		},
 		onError: () => toast.error("Failed to unban user."),
-	});
+	})
 
-	const isAdmin = row.role === "admin";
-	const isBanned = row.banned ?? false;
+	const isAdmin = row.role === "admin"
+	const isBanned = row.banned ?? false
 
 	return (
 		<DropdownMenu>
@@ -608,13 +608,13 @@ function RowActions({
 				</DropdownMenuItem>
 				<DropdownMenuItem
 					onClick={() => {
-						const newRole = isAdmin ? "user" : "admin";
+						const newRole = isAdmin ? "user" : "admin"
 						if (
 							window.confirm(
 								`${isAdmin ? "Revoke admin from" : "Grant admin to"} ${row.email}?`,
 							)
 						) {
-							roleMutation.mutate(newRole);
+							roleMutation.mutate(newRole)
 						}
 					}}
 					disabled={roleMutation.isPending}
@@ -631,7 +631,7 @@ function RowActions({
 					<DropdownMenuItem
 						onClick={() => {
 							if (window.confirm(`Unban ${row.email}?`)) {
-								unbanMutation.mutate();
+								unbanMutation.mutate()
 							}
 						}}
 						disabled={unbanMutation.isPending}
@@ -650,7 +650,7 @@ function RowActions({
 				)}
 			</DropdownMenuContent>
 		</DropdownMenu>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -658,23 +658,23 @@ function RowActions({
 // ---------------------------------------------------------------------------
 
 function AdminUsersPage() {
-	const [search, setSearch] = useState("");
-	const [debouncedSearch, setDebouncedSearch] = useState("");
-	const [cursorStack, setCursorStack] = useState<AdminUserCursor[]>([]);
-	const [activeModal, setActiveModal] = useState<ActiveModal>(null);
+	const [search, setSearch] = useState("")
+	const [debouncedSearch, setDebouncedSearch] = useState("")
+	const [cursorStack, setCursorStack] = useState<AdminUserCursor[]>([])
+	const [activeModal, setActiveModal] = useState<ActiveModal>(null)
 
 	const currentCursor =
-		cursorStack.length > 0 ? cursorStack[cursorStack.length - 1] : undefined;
-	const currentPage = cursorStack.length + 1;
+		cursorStack.length > 0 ? cursorStack[cursorStack.length - 1] : undefined
+	const currentPage = cursorStack.length + 1
 
 	// Debounce search — reset cursor stack on new search term.
 	useEffect(() => {
 		const t = setTimeout(() => {
-			setDebouncedSearch(search);
-			setCursorStack([]);
-		}, 300);
-		return () => clearTimeout(t);
-	}, [search]);
+			setDebouncedSearch(search)
+			setCursorStack([])
+		}, 300)
+		return () => clearTimeout(t)
+	}, [search])
 
 	const { data, isLoading, isError, refetch, isFetching } = useQuery({
 		queryKey: ["admin-users", debouncedSearch, currentCursor ?? null],
@@ -687,16 +687,16 @@ function AdminUsersPage() {
 				},
 			}),
 		staleTime: 30_000,
-	});
+	})
 
-	const users: AdminUserRow[] = data?.ok ? data.users : [];
-	const total = data?.ok ? data.total : 0;
-	const nextCursor = data?.ok ? data.nextCursor : null;
-	const hasPrev = cursorStack.length > 0;
-	const hasNext = !!nextCursor;
+	const users: AdminUserRow[] = data?.ok ? data.users : []
+	const total = data?.ok ? data.total : 0
+	const nextCursor = data?.ok ? data.nextCursor : null
+	const hasPrev = cursorStack.length > 0
+	const hasNext = !!nextCursor
 
-	const adminCount = users.filter((u) => u.role === "admin").length;
-	const bannedCount = users.filter((u) => u.banned).length;
+	const adminCount = users.filter((u) => u.role === "admin").length
+	const bannedCount = users.filter((u) => u.banned).length
 
 	return (
 		<div className="space-y-8">
@@ -893,5 +893,5 @@ function AdminUsersPage() {
 				/>
 			)}
 		</div>
-	);
+	)
 }

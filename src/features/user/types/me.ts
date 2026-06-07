@@ -1,6 +1,6 @@
-import { z } from "zod";
+import { z } from "zod"
 
-export const planSchema = z.enum(["free", "starter", "creator", "empire"]);
+export const planSchema = z.enum(["free", "starter", "creator", "empire"])
 
 export const meResponseSchema = z.object({
 	id: z.string(),
@@ -11,6 +11,6 @@ export const meResponseSchema = z.object({
 	creditsUsed: z.number().int(),
 	freeVideoConsumed: z.boolean(),
 	image: z.string().nullable().optional(),
-});
+})
 
-export type MeResponse = z.infer<typeof meResponseSchema>;
+export type MeResponse = z.infer<typeof meResponseSchema>

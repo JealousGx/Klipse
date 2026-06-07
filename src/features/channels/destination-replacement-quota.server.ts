@@ -1,33 +1,33 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { and, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm"
 
-import { getDb } from "@/db";
-import type { LocalDb } from "@/db/local";
-import { channels, users } from "@/db/schema";
+import { getDb } from "@/db"
+import type { LocalDb } from "@/db/local"
+import { channels, users } from "@/db/schema"
 
 import {
 	maxDestinationReplacementsPerCycle,
 	planAllowsPaidPublishingConnections,
-} from "@/features/billing/tier-config";
-import type { MeResponse } from "@/features/user/types/me";
+} from "@/features/billing/tier-config"
+import type { MeResponse } from "@/features/user/types/me"
 
-import { ChannelNotFoundError } from "./channel-errors";
-import { setChannelOAuthConnectionTx } from "./channels.service.server";
-import { logger } from "@/lib/logger";
+import { ChannelNotFoundError } from "./channel-errors"
+import { setChannelOAuthConnectionTx } from "./channels.service.server"
+import { logger } from "@/lib/logger"
 import {
 	consumesDestinationReplacementQuota,
 	priorExternalChannelIdFromDestinationRow,
-} from "./destination-replacement-policy";
+} from "./destination-replacement-policy"
 
 export type ApplyDestinationConnectionResult =
 	| { ok: true }
 	| {
-			ok: false;
-			code: "free_plan_blocked" | "destination_replacements_exhausted";
-	  };
+			ok: false
+			code: "free_plan_blocked" | "destination_replacements_exhausted"
+	  }
 
-type ChannelRowSelect = typeof channels.$inferSelect;
+type ChannelRowSelect = typeof channels.$inferSelect
 
 /**
  * Core transactional flow: lock user + destination rows, apply replacement quota,
@@ -35,27 +35,27 @@ type ChannelRowSelect = typeof channels.$inferSelect;
  * `persistAfterQuotaCheck` for Instagram/TikTok later).
  */
 export async function runDestinationReplacementQuotaTransaction(input: {
-	userId: string;
-	channelId: string;
-	newExternalChannelId: string;
+	userId: string
+	channelId: string
+	newExternalChannelId: string
 	/**
 	 * How to read “what was linked before” from the DB row. Defaults to YouTube
 	 * bound/external columns; swap for other platforms when you add columns or rules.
 	 */
 	priorExternalChannelIdFromChannelRow?: (
 		row: ChannelRowSelect,
-	) => string | null;
-	persistAfterQuotaCheck: (tx: LocalDb) => Promise<void>;
+	) => string | null
+	persistAfterQuotaCheck: (tx: LocalDb) => Promise<void>
 }): Promise<ApplyDestinationConnectionResult> {
-	const db = getDb();
-	const trimmedNew = input.newExternalChannelId.trim();
+	const db = getDb()
+	const trimmedNew = input.newExternalChannelId.trim()
 	const resolvePrior =
 		input.priorExternalChannelIdFromChannelRow ??
 		((row: ChannelRowSelect) =>
 			priorExternalChannelIdFromDestinationRow({
 				boundExternalAccountId: row.boundExternalAccountId,
 				externalChannelId: row.externalChannelId,
-			}));
+			}))
 
 	return db.transaction(async (tx) => {
 		const [u] = await tx
@@ -65,20 +65,20 @@ export async function runDestinationReplacementQuotaTransaction(input: {
 			})
 			.from(users)
 			.where(eq(users.id, input.userId))
-			.for("update");
+			.for("update")
 
 		if (!u) {
-			return { ok: false, code: "free_plan_blocked" };
+			return { ok: false, code: "free_plan_blocked" }
 		}
 
-		const plan = u.plan as MeResponse["plan"];
+		const plan = u.plan as MeResponse["plan"]
 		if (!planAllowsPaidPublishingConnections(plan)) {
 			logger.warn("oauth_connect_blocked_free_plan", {
 				userId: input.userId,
 				channelId: input.channelId,
 				plan,
-			});
-			return { ok: false, code: "free_plan_blocked" };
+			})
+			return { ok: false, code: "free_plan_blocked" }
 		}
 
 		const [chRow] = await tx
@@ -90,23 +90,23 @@ export async function runDestinationReplacementQuotaTransaction(input: {
 					eq(channels.userId, input.userId),
 				),
 			)
-			.for("update");
+			.for("update")
 
 		if (!chRow) {
-			throw new ChannelNotFoundError();
+			throw new ChannelNotFoundError()
 		}
 
-		const prior = resolvePrior(chRow);
+		const prior = resolvePrior(chRow)
 
 		const consumes = consumesDestinationReplacementQuota({
 			plan,
 			priorExternalChannelId: prior,
 			newExternalChannelId: trimmedNew,
-		});
+		})
 
 		if (consumes) {
-			const max = maxDestinationReplacementsPerCycle(plan);
-			const used = Number(u.destinationReplacementsUsed ?? 0);
+			const max = maxDestinationReplacementsPerCycle(plan)
+			const used = Number(u.destinationReplacementsUsed ?? 0)
 			if (used >= max) {
 				logger.warn("oauth_connect_replacements_exhausted", {
 					userId: input.userId,
@@ -114,8 +114,8 @@ export async function runDestinationReplacementQuotaTransaction(input: {
 					plan,
 					used,
 					max,
-				});
-				return { ok: false, code: "destination_replacements_exhausted" };
+				})
+				return { ok: false, code: "destination_replacements_exhausted" }
 			}
 			await tx
 				.update(users)
@@ -123,39 +123,39 @@ export async function runDestinationReplacementQuotaTransaction(input: {
 					destinationReplacementsUsed: used + 1,
 					updatedAt: new Date(),
 				})
-				.where(eq(users.id, input.userId));
+				.where(eq(users.id, input.userId))
 			logger.info("oauth_connect_replacement_quota_consumed", {
 				userId: input.userId,
 				channelId: input.channelId,
 				plan,
 				usedAfter: used + 1,
 				max,
-			});
+			})
 		}
 
-		await input.persistAfterQuotaCheck(tx);
+		await input.persistAfterQuotaCheck(tx)
 
 		logger.info("oauth_connect_applied", {
 			userId: input.userId,
 			channelId: input.channelId,
 			newExternalChannelId: trimmedNew,
 			consumedQuota: consumes,
-		});
+		})
 
-		return { ok: true };
-	});
+		return { ok: true }
+	})
 }
 
 /** Persists OAuth tokens + channel metadata after quota checks. */
 export async function applyOAuthConnectionWithQuota(input: {
-	userId: string;
-	channelId: string;
-	platform: "youtube" | "tiktok" | "instagram";
-	refreshToken: string;
-	externalChannelId: string;
-	externalChannelTitle: string | null;
-	externalChannelHandle: string | null;
-	externalChannelThumbnailUrl: string | null;
+	userId: string
+	channelId: string
+	platform: "youtube" | "tiktok" | "instagram"
+	refreshToken: string
+	externalChannelId: string
+	externalChannelTitle: string | null
+	externalChannelHandle: string | null
+	externalChannelThumbnailUrl: string | null
 }): Promise<ApplyDestinationConnectionResult> {
 	return runDestinationReplacementQuotaTransaction({
 		userId: input.userId,
@@ -171,22 +171,22 @@ export async function applyOAuthConnectionWithQuota(input: {
 				externalChannelTitle: input.externalChannelTitle,
 				externalChannelHandle: input.externalChannelHandle,
 				externalChannelThumbnailUrl: input.externalChannelThumbnailUrl,
-			});
+			})
 		},
-	});
+	})
 }
 
 /** Called from Polar webhooks when a new billing cycle begins (plan change / renewal). */
 export async function resetDestinationReplacementsUsedForUser(
 	userId: string,
 ): Promise<void> {
-	const db = getDb();
+	const db = getDb()
 	await db
 		.update(users)
 		.set({
 			destinationReplacementsUsed: 0,
 			updatedAt: new Date(),
 		})
-		.where(eq(users.id, userId));
-	logger.info("destination_replacements_reset", { userId });
+		.where(eq(users.id, userId))
+	logger.info("destination_replacements_reset", { userId })
 }

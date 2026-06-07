@@ -1,18 +1,18 @@
-import { useState } from "react";
+import { useState } from "react"
 
-import { Link } from "@/components/ui/link";
-import { siteConfig } from "@/config/site";
-import { cn } from "@/lib/utils";
+import { Link } from "@/components/ui/link"
+import { siteConfig } from "@/config/site"
+import { cn } from "@/lib/utils"
 
-import { OptimizedImage } from "./OptimizedImage";
+import { OptimizedImage } from "./OptimizedImage"
 
 export interface BrandLogoProps {
-	size?: "sm" | "md" | "lg" | "xl";
-	withText?: boolean;
-	className?: string;
-	to?: "/" | "/dashboard";
-	wordmarkClassName?: string;
-	priority?: boolean;
+	size?: "sm" | "md" | "lg" | "xl"
+	withText?: boolean
+	className?: string
+	to?: "/" | "/dashboard"
+	wordmarkClassName?: string
+	priority?: boolean
 }
 
 const sizeConfig = {
@@ -40,7 +40,7 @@ const sizeConfig = {
 		text: "text-2xl sm:text-[1.75rem]",
 		rounded: "rounded-xl",
 	},
-} as const;
+} as const
 
 export function BrandLogo({
 	size = "md",
@@ -50,8 +50,8 @@ export function BrandLogo({
 	wordmarkClassName,
 	priority = false,
 }: BrandLogoProps) {
-	const config = sizeConfig[size];
-	const [imgFailed, setImgFailed] = useState(false);
+	const config = sizeConfig[size]
+	const [imgFailed, setImgFailed] = useState(false)
 
 	const mark = imgFailed ? (
 		<div
@@ -83,7 +83,7 @@ export function BrandLogo({
 			priority={priority}
 			onError={() => setImgFailed(true)}
 		/>
-	);
+	)
 
 	const logoLinkClass = cn(
 		"inline-flex !h-auto min-h-0 !justify-start gap-0 !rounded-none !bg-transparent !p-0 !shadow-none hover:!bg-transparent dark:hover:!bg-transparent",
@@ -91,7 +91,7 @@ export function BrandLogo({
 		withText &&
 			"items-center font-heading font-bold tracking-tight text-foreground",
 		className,
-	);
+	)
 
 	if (!withText) {
 		return (
@@ -103,7 +103,7 @@ export function BrandLogo({
 			>
 				{mark}
 			</Link>
-		);
+		)
 	}
 
 	return (
@@ -115,5 +115,5 @@ export function BrandLogo({
 				</span>
 			</span>
 		</Link>
-	);
+	)
 }

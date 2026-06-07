@@ -1,4 +1,4 @@
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
 const proseStyles = [
 	// Headings
@@ -19,14 +19,14 @@ const proseStyles = [
 	"[&_strong]:font-semibold [&_strong]:text-foreground",
 	// Horizontal rule
 	"[&_hr]:my-8 [&_hr]:border-border/50",
-].join(" ");
+].join(" ")
 
 export function LegalArticle({
 	children,
 	className,
 }: {
-	children: React.ReactNode;
-	className?: string;
+	children: React.ReactNode
+	className?: string
 }) {
-	return <article className={cn(proseStyles, className)}>{children}</article>;
+	return <article className={cn(proseStyles, className)}>{children}</article>
 }

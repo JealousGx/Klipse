@@ -1,81 +1,81 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import type { ProviderHttpError } from "./provider-http-error.server";
+import type { ProviderHttpError } from "./provider-http-error.server"
 
 /** RFC 7231 `Retry-After`: delta-seconds or HTTP-date. */
 export function parseRetryAfterHeader(
 	raw: string | null | undefined,
 ): Date | null {
 	if (raw == null || raw === "") {
-		return null;
+		return null
 	}
-	const t = raw.trim();
-	const seconds = Number(t);
+	const t = raw.trim()
+	const seconds = Number(t)
 	if (Number.isFinite(seconds) && seconds >= 0) {
-		return new Date(Date.now() + seconds * 1000);
+		return new Date(Date.now() + seconds * 1000)
 	}
-	const ms = Date.parse(t);
+	const ms = Date.parse(t)
 	if (!Number.isNaN(ms)) {
-		return new Date(ms);
+		return new Date(ms)
 	}
-	return null;
+	return null
 }
 
 /** Parses protobuf-style durations like `39s`, `3.5s`. */
 function parseDurationToMs(s: string): number | null {
-	const m = /^(\d+(?:\.\d+)?)s$/i.exec(s.trim());
+	const m = /^(\d+(?:\.\d+)?)s$/i.exec(s.trim())
 	if (!m?.[1]) {
-		return null;
+		return null
 	}
-	const n = Number(m[1]);
-	return Number.isFinite(n) ? n * 1000 : null;
+	const n = Number(m[1])
+	return Number.isFinite(n) ? n * 1000 : null
 }
 
 function walkForRetryDelay(o: unknown): string | null {
 	if (o == null) {
-		return null;
+		return null
 	}
 	if (typeof o === "object" && !Array.isArray(o)) {
-		const r = o as Record<string, unknown>;
+		const r = o as Record<string, unknown>
 		if (typeof r.retryDelay === "string") {
-			return r.retryDelay;
+			return r.retryDelay
 		}
 		if (typeof r.retry_delay === "string") {
-			return r.retry_delay;
+			return r.retry_delay
 		}
 		for (const v of Object.values(r)) {
-			const w = walkForRetryDelay(v);
+			const w = walkForRetryDelay(v)
 			if (w) {
-				return w;
+				return w
 			}
 		}
 	}
 	if (Array.isArray(o)) {
 		for (const v of o) {
-			const w = walkForRetryDelay(v);
+			const w = walkForRetryDelay(v)
 			if (w) {
-				return w;
+				return w
 			}
 		}
 	}
-	return null;
+	return null
 }
 
 /** Google-style JSON error bodies (`google.rpc.RetryInfo.retryDelay`, etc.). */
 function parseRetryDelayFromJsonBody(bodySnippet: string): Date | null {
 	try {
-		const json = JSON.parse(bodySnippet) as unknown;
-		const delay = walkForRetryDelay(json);
+		const json = JSON.parse(bodySnippet) as unknown
+		const delay = walkForRetryDelay(json)
 		if (!delay) {
-			return null;
+			return null
 		}
-		const ms = parseDurationToMs(delay);
+		const ms = parseDurationToMs(delay)
 		if (ms == null) {
-			return null;
+			return null
 		}
-		return new Date(Date.now() + ms);
+		return new Date(Date.now() + ms)
 	} catch {
-		return null;
+		return null
 	}
 }
 
@@ -85,22 +85,22 @@ function parseRetryDelayFromJsonBody(bodySnippet: string): Date | null {
 export function parseQuotaResetFromProviderError(
 	e: ProviderHttpError,
 ): Date | null {
-	const now = Date.now();
+	const now = Date.now()
 	if (e.retryAfterAt && e.retryAfterAt.getTime() > now) {
-		return e.retryAfterAt;
+		return e.retryAfterAt
 	}
-	const fromJson = parseRetryDelayFromJsonBody(e.bodySnippet);
+	const fromJson = parseRetryDelayFromJsonBody(e.bodySnippet)
 	if (fromJson && fromJson.getTime() > now) {
-		return fromJson;
+		return fromJson
 	}
-	return null;
+	return null
 }
 
 /** Fallback when provider does not document a reset time. */
 export function startOfNextCalendarMonthUtc(now = new Date()): Date {
-	const y = now.getUTCFullYear();
-	const m = now.getUTCMonth();
-	return new Date(Date.UTC(y, m + 1, 1, 0, 0, 0, 0));
+	const y = now.getUTCFullYear()
+	const m = now.getUTCMonth()
+	return new Date(Date.UTC(y, m + 1, 1, 0, 0, 0, 0))
 }
 
 /**
@@ -111,13 +111,13 @@ export function resolveLongCooldownUntil(
 	e: ProviderHttpError,
 	storedQuotaResetAt: Date | null,
 ): Date {
-	const now = Date.now();
-	const parsed = parseQuotaResetFromProviderError(e);
+	const now = Date.now()
+	const parsed = parseQuotaResetFromProviderError(e)
 	if (parsed && parsed.getTime() > now) {
-		return parsed;
+		return parsed
 	}
 	if (storedQuotaResetAt && storedQuotaResetAt.getTime() > now) {
-		return storedQuotaResetAt;
+		return storedQuotaResetAt
 	}
-	return startOfNextCalendarMonthUtc();
+	return startOfNextCalendarMonthUtc()
 }

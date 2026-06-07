@@ -1,22 +1,22 @@
-import { Link } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router"
 
-import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types";
+import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types"
 
 import {
 	platformChannelUrl,
 	platformDisplayName,
-} from "@/lib/platform-publishing";
-import { cn } from "@/lib/utils";
+} from "@/lib/platform-publishing"
+import { cn } from "@/lib/utils"
 
-import { Button } from "../ui/button";
-import { tagFromNiche } from "./utils";
+import { Button } from "../ui/button"
+import { tagFromNiche } from "./utils"
 
 export function ActiveDestinationSnapshotCard({
 	channel,
 	isLoading,
 }: {
-	channel: ChannelSnapshot | null;
-	isLoading: boolean;
+	channel: ChannelSnapshot | null
+	isLoading: boolean
 }) {
 	if (isLoading) {
 		return (
@@ -30,7 +30,7 @@ export function ActiveDestinationSnapshotCard({
 					<div className="h-3 w-full animate-pulse rounded bg-muted/40" />
 				</div>
 			</div>
-		);
+		)
 	}
 
 	if (!channel) {
@@ -52,22 +52,22 @@ export function ActiveDestinationSnapshotCard({
 					<Link to="/dashboard/publishing">Publishing</Link>
 				</Button>
 			</section>
-		);
+		)
 	}
 
 	const linked =
-		channel.platform !== "unlinked" && Boolean(channel.externalChannelId);
-	const platformName = platformDisplayName(channel.platform);
+		channel.platform !== "unlinked" && Boolean(channel.externalChannelId)
+	const platformName = platformDisplayName(channel.platform)
 	const badgeLabel = channel.oauthConnected
 		? `${platformName} · connected`
 		: linked
 			? `${platformName} · linked`
-			: "Not connected";
+			: "Not connected"
 
 	const tagBits = [
 		platformDisplayName(channel.platform),
 		...tagFromNiche(channel.niche).slice(0, 3),
-	];
+	]
 
 	return (
 		<section
@@ -162,5 +162,5 @@ export function ActiveDestinationSnapshotCard({
 				) : null}
 			</div>
 		</section>
-	);
+	)
 }

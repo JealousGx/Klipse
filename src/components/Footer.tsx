@@ -1,17 +1,17 @@
-import { FeedbackButton } from "@/components/feedback";
-import { BrandLogo } from "@/components/shared/BrandLogo";
-import { Link } from "@/components/ui/link";
-import { Separator } from "@/components/ui/separator";
-import { siteConfig } from "@/config/site";
+import { FeedbackButton } from "@/components/feedback"
+import { BrandLogo } from "@/components/shared/BrandLogo"
+import { Link } from "@/components/ui/link"
+import { Separator } from "@/components/ui/separator"
+import { siteConfig } from "@/config/site"
 
 const legalLinks = [
 	{ to: "/terms", label: "Terms" },
 	{ to: "/privacy", label: "Privacy" },
 	{ to: "/refund", label: "Refund" },
-] as const;
+] as const
 
 export default function Footer() {
-	const year = new Date().getFullYear();
+	const year = new Date().getFullYear()
 
 	return (
 		<footer className="relative border-t border-border/80 bg-gradient-to-b from-muted/25 to-muted/40 dark:from-muted/15 dark:to-muted/25">
@@ -52,5 +52,5 @@ export default function Footer() {
 				</div>
 			</div>
 		</footer>
-	);
+	)
 }

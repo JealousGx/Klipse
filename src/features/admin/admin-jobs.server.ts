@@ -1,22 +1,22 @@
-import { and, desc, eq, lt, or, sql } from "drizzle-orm";
+import { and, desc, eq, lt, or, sql } from "drizzle-orm"
 
-import { getDb } from "@/db";
-import { channels } from "@/db/schema/channels";
-import { users } from "@/db/schema/users";
-import { videoJobs } from "@/db/schema/video-jobs";
-import { requireAdmin } from "@/features/admin/admin.guard.server";
+import { getDb } from "@/db"
+import { channels } from "@/db/schema/channels"
+import { users } from "@/db/schema/users"
+import { videoJobs } from "@/db/schema/video-jobs"
+import { requireAdmin } from "@/features/admin/admin.guard.server"
 import type {
 	AdminJobRow,
 	JobStatusCounts,
 	ListAdminJobsInput,
-} from "@/features/admin/admin-jobs.functions";
-import { logger } from "@/lib/logger";
+} from "@/features/admin/admin-jobs.functions"
+import { logger } from "@/lib/logger"
 
 // ---------------------------------------------------------------------------
 // Internal constants
 // ---------------------------------------------------------------------------
 
-const ACTIVE_STATUSES = ["queued", "dispatched", "processing"] as const;
+const ACTIVE_STATUSES = ["queued", "dispatched", "processing"] as const
 
 // ---------------------------------------------------------------------------
 // listAdminJobs
@@ -27,28 +27,28 @@ export async function listAdminJobs(
 	data: ListAdminJobsInput,
 ): Promise<
 	| {
-			ok: true;
-			jobs: AdminJobRow[];
-			nextCursor: { createdAt: string; id: string } | null;
+			ok: true
+			jobs: AdminJobRow[]
+			nextCursor: { createdAt: string; id: string } | null
 	  }
 	| { ok: false; code: "unauthorized" }
 > {
 	try {
-		await requireAdmin(request);
+		await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
-	const db = getDb();
+	const db = getDb()
 
 	const statusFilter =
 		data.status === "all"
 			? undefined
-			: eq(videoJobs.status, data.status as (typeof ACTIVE_STATUSES)[number]);
+			: eq(videoJobs.status, data.status as (typeof ACTIVE_STATUSES)[number])
 
 	const cursor = data.cursor
 		? { createdAt: new Date(data.cursor.createdAt), id: data.cursor.id }
-		: undefined;
+		: undefined
 
 	const cursorFilter = cursor
 		? or(
@@ -58,12 +58,12 @@ export async function listAdminJobs(
 					lt(videoJobs.id, cursor.id),
 				),
 			)
-		: undefined;
+		: undefined
 
 	const whereClause =
 		statusFilter && cursorFilter
 			? and(statusFilter, cursorFilter)
-			: (statusFilter ?? cursorFilter);
+			: (statusFilter ?? cursorFilter)
 
 	const rows = await db
 		.select({
@@ -86,15 +86,15 @@ export async function listAdminJobs(
 		.leftJoin(channels, eq(videoJobs.channelId, channels.id))
 		.where(whereClause)
 		.orderBy(desc(videoJobs.createdAt), desc(videoJobs.id))
-		.limit(data.limit + 1);
+		.limit(data.limit + 1)
 
-	const hasNextPage = rows.length > data.limit;
-	const sliced = hasNextPage ? rows.slice(0, data.limit) : rows;
-	const last = sliced[sliced.length - 1];
+	const hasNextPage = rows.length > data.limit
+	const sliced = hasNextPage ? rows.slice(0, data.limit) : rows
+	const last = sliced[sliced.length - 1]
 	const nextCursor =
 		hasNextPage && last
 			? { createdAt: last.createdAt.toISOString(), id: last.id }
-			: null;
+			: null
 
 	const jobs: AdminJobRow[] = sliced.map((r) => ({
 		id: r.id,
@@ -110,9 +110,9 @@ export async function listAdminJobs(
 		retryCount: r.retryCount,
 		createdAt: r.createdAt,
 		updatedAt: r.updatedAt,
-	}));
+	}))
 
-	return { ok: true, jobs, nextCursor };
+	return { ok: true, jobs, nextCursor }
 }
 
 // ---------------------------------------------------------------------------
@@ -126,24 +126,24 @@ export async function cancelAdminJob(
 	| { ok: true }
 	| { ok: false; code: "unauthorized" | "not_found" | "already_terminal" }
 > {
-	let adminInfo: { userId: string; email: string };
+	let adminInfo: { userId: string; email: string }
 	try {
-		adminInfo = await requireAdmin(request);
+		adminInfo = await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
-	const db = getDb();
+	const db = getDb()
 	const [job] = await db
 		.select({ id: videoJobs.id, status: videoJobs.status })
 		.from(videoJobs)
 		.where(eq(videoJobs.id, jobId))
-		.limit(1);
+		.limit(1)
 
-	if (!job) return { ok: false, code: "not_found" };
+	if (!job) return { ok: false, code: "not_found" }
 
-	const isActive = (ACTIVE_STATUSES as readonly string[]).includes(job.status);
-	if (!isActive) return { ok: false, code: "already_terminal" };
+	const isActive = (ACTIVE_STATUSES as readonly string[]).includes(job.status)
+	if (!isActive) return { ok: false, code: "already_terminal" }
 
 	await db
 		.update(videoJobs)
@@ -152,11 +152,11 @@ export async function cancelAdminJob(
 			errorMessage: `Cancelled by admin (${adminInfo.email})`,
 			updatedAt: new Date(),
 		})
-		.where(eq(videoJobs.id, jobId));
+		.where(eq(videoJobs.id, jobId))
 
-	logger.info("admin_job_cancelled", { jobId, adminEmail: adminInfo.email });
+	logger.info("admin_job_cancelled", { jobId, adminEmail: adminInfo.email })
 
-	return { ok: true };
+	return { ok: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -169,19 +169,19 @@ export async function getJobStatusCounts(
 	{ ok: true; counts: JobStatusCounts } | { ok: false; code: "unauthorized" }
 > {
 	try {
-		await requireAdmin(request);
+		await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
-	const db = getDb();
+	const db = getDb()
 	const rows = await db
 		.select({
 			status: videoJobs.status,
 			count: sql<number>`COUNT(*)`,
 		})
 		.from(videoJobs)
-		.groupBy(videoJobs.status);
+		.groupBy(videoJobs.status)
 
 	const counts: JobStatusCounts = {
 		queued: 0,
@@ -190,15 +190,15 @@ export async function getJobStatusCounts(
 		completed: 0,
 		failed: 0,
 		total: 0,
-	};
+	}
 
 	for (const r of rows) {
-		const n = Number(r.count);
-		counts.total += n;
+		const n = Number(r.count)
+		counts.total += n
 		if (r.status in counts) {
-			(counts as Record<string, number>)[r.status] = n;
+			;(counts as Record<string, number>)[r.status] = n
 		}
 	}
 
-	return { ok: true, counts };
+	return { ok: true, counts }
 }

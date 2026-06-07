@@ -1,20 +1,20 @@
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink } from "lucide-react"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
 	platformAuthProviderName,
 	platformChannelUrl,
 	platformDisplayName,
-} from "@/lib/platform-publishing";
-import { PublishingChannelThumbnail } from "./publishing-channel-thumbnail";
-import type { PublishingDestinationChannel } from "./publishing-destination-channel.types";
+} from "@/lib/platform-publishing"
+import { PublishingChannelThumbnail } from "./publishing-channel-thumbnail"
+import type { PublishingDestinationChannel } from "./publishing-destination-channel.types"
 
 type Props = {
-	channel: PublishingDestinationChannel;
-	onCopyChannelId: () => void;
+	channel: PublishingDestinationChannel
+	onCopyChannelId: () => void
 	/** False when the platform OAuth token is no longer valid (e.g. user revoked access). */
-	oauthAccessActive: boolean;
-};
+	oauthAccessActive: boolean
+}
 
 /**
  * Shown when we have channel metadata (active OAuth or last-linked channel after revoke).
@@ -25,15 +25,15 @@ export function DestinationExternalChannelFields({
 	onCopyChannelId,
 	oauthAccessActive,
 }: Props) {
-	const platformName = platformDisplayName(ch.platform);
-	const authProvider = platformAuthProviderName(ch.platform);
+	const platformName = platformDisplayName(ch.platform)
+	const authProvider = platformAuthProviderName(ch.platform)
 	const thumbAlt = ch.externalChannelTitle
 		? `${ch.externalChannelTitle} channel image`
-		: `${platformName} channel`;
+		: `${platformName} channel`
 
 	const channelUrl = ch.externalChannelId
 		? platformChannelUrl(ch.platform, ch.externalChannelId)
-		: null;
+		: null
 
 	return (
 		<div className="space-y-4">
@@ -119,5 +119,5 @@ export function DestinationExternalChannelFields({
 				section above.
 			</p>
 		</div>
-	);
+	)
 }

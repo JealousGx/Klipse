@@ -1,14 +1,14 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from "react"
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-type Variant = "default" | "emphasis" | "danger" | "muted";
+type Variant = "default" | "emphasis" | "danger" | "muted"
 
 type Props = {
-	children: ReactNode;
-	className?: string;
-	variant?: Variant;
-};
+	children: ReactNode
+	className?: string
+	variant?: Variant
+}
 
 /**
  * Light surface for grouped controls — softer than stacked `Card`s, consistent with
@@ -35,5 +35,5 @@ export function DashboardPanel({
 		>
 			{children}
 		</div>
-	);
+	)
 }

@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
 import {
 	AlertCircle,
 	BarChart3,
@@ -9,17 +9,17 @@ import {
 	RefreshCw,
 	Users,
 	Video,
-} from "lucide-react";
+} from "lucide-react"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
 	getSystemStatsFn,
 	type SystemStats,
-} from "@/features/admin/admin-system.functions";
+} from "@/features/admin/admin-system.functions"
 
 export const Route = createFileRoute("/_authed/admin/system")({
 	component: AdminSystemPage,
-});
+})
 
 // ---------------------------------------------------------------------------
 // Stat Card
@@ -33,12 +33,12 @@ function StatCard({
 	accent,
 	pulse,
 }: {
-	label: string;
-	value: number | string;
-	subtitle?: string;
-	icon?: React.ElementType;
-	accent?: "green" | "red" | "amber" | "blue" | "default";
-	pulse?: boolean;
+	label: string
+	value: number | string
+	subtitle?: string
+	icon?: React.ElementType
+	accent?: "green" | "red" | "amber" | "blue" | "default"
+	pulse?: boolean
 }) {
 	const valueClass =
 		accent === "green"
@@ -85,19 +85,19 @@ function ProviderHealthRow({
 	cooling,
 	disabled,
 }: {
-	provider: string;
-	total: number;
-	active: number;
-	cooling: number;
-	disabled: number;
+	provider: string
+	total: number
+	active: number
+	cooling: number
+	disabled: number
 }) {
-	const healthPercent = total > 0 ? Math.round((active / total) * 100) : 0;
+	const healthPercent = total > 0 ? Math.round((active / total) * 100) : 0
 	const barColor =
 		healthPercent === 100
 			? "bg-emerald-500"
 			: healthPercent >= 50
 				? "bg-amber-500"
-				: "bg-red-500";
+				: "bg-red-500"
 
 	return (
 		<div className="flex items-center gap-4 py-3">
@@ -152,13 +152,13 @@ function AdminSystemPage() {
 			queryFn: () => getSystemStatsFn(),
 			staleTime: 15_000,
 			refetchInterval: 30_000,
-		});
+		})
 
-	const stats: SystemStats | null = data?.ok ? data.stats : null;
+	const stats: SystemStats | null = data?.ok ? data.stats : null
 
 	const lastUpdated = dataUpdatedAt
 		? new Date(dataUpdatedAt).toLocaleTimeString()
-		: null;
+		: null
 
 	return (
 		<div className="space-y-8">

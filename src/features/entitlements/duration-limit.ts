@@ -1,4 +1,4 @@
-import type { MeResponse } from "@/features/user/types/me";
+import type { MeResponse } from "@/features/user/types/me"
 
 /**
  * Maximum video duration (seconds) each plan may request from the encoder (FEATURE_DOC §10.3).
@@ -10,7 +10,7 @@ export const MAX_DURATION_SECONDS_BY_PLAN: Record<MeResponse["plan"], number> =
 		starter: 30,
 		creator: 60,
 		empire: 600,
-	};
+	}
 
 /**
  * Returns the lesser of the requested duration and the plan cap.
@@ -21,5 +21,5 @@ export function clampTargetDuration(
 	requestedSeconds: number,
 	plan: MeResponse["plan"],
 ): number {
-	return Math.min(requestedSeconds, MAX_DURATION_SECONDS_BY_PLAN[plan]);
+	return Math.min(requestedSeconds, MAX_DURATION_SECONDS_BY_PLAN[plan])
 }

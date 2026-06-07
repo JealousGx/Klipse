@@ -1,8 +1,8 @@
-import { RefreshCw } from "lucide-react";
+import { RefreshCw } from "lucide-react"
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-const tags = ["shorts", "finance", "hook", "Q4"] as const;
+const tags = ["shorts", "finance", "hook", "Q4"] as const
 
 export function ProductStoryMock() {
 	return (
@@ -142,5 +142,5 @@ export function ProductStoryMock() {
 				</div>
 			</div>
 		</section>
-	);
+	)
 }

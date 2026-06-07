@@ -1,10 +1,10 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { execFile } from "node:child_process"
+import { promisify } from "node:util"
 
-import { ffmpegBin } from "./probe";
+import { ffmpegBin } from "./probe"
 
-const execFileAsync = promisify(execFile);
-const FFMPEG_OPTS = { timeout: 600_000, maxBuffer: 80 * 1024 * 1024 };
+const execFileAsync = promisify(execFile)
+const FFMPEG_OPTS = { timeout: 600_000, maxBuffer: 80 * 1024 * 1024 }
 
 /** Muxes a silent video with TTS audio. */
 export async function muxVideoAudio(
@@ -36,7 +36,7 @@ export async function muxVideoAudio(
 			outputPath,
 		],
 		FFMPEG_OPTS,
-	);
+	)
 }
 
 /**
@@ -77,5 +77,5 @@ export async function muxVideoWithSound(
 			outputPath,
 		],
 		FFMPEG_OPTS,
-	);
+	)
 }

@@ -1,18 +1,18 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import type { ChannelCreativeBrief } from "./creative-brief.types";
+import type { ChannelCreativeBrief } from "./creative-brief.types"
 
 export type VoiceoverTtsPayload = {
 	/** Plain text safe for any speech API (markdown stripped, duration-capped). */
-	plainText: string;
+	plainText: string
 	/** Voice ID for Unreal Speech fallback. Google TTS uses GOOGLE_TTS_VOICE_NAME env. */
-	voice: string;
+	voice: string
 	/** Target duration in seconds (passed through for caller reference). */
-	targetSeconds: number;
-};
+	targetSeconds: number
+}
 
 // Average spoken words per minute for TTS engines. Slightly conservative.
-const WORDS_PER_MINUTE = 140;
+const WORDS_PER_MINUTE = 140
 
 /**
  * Calculate the maximum word count for a given target duration.
@@ -20,7 +20,7 @@ const WORDS_PER_MINUTE = 140;
  * 60s → ~140 words (~700 chars)
  */
 export function targetDurationToMaxWords(targetSeconds: number): number {
-	return Math.ceil((targetSeconds / 60) * WORDS_PER_MINUTE);
+	return Math.ceil((targetSeconds / 60) * WORDS_PER_MINUTE)
 }
 
 /**
@@ -65,7 +65,7 @@ export function sanitizeScriptForTts(raw: string): string {
 			.replace(/\n{3,}/g, "\n\n")
 			.replace(/\s+/g, " ")
 			.trim()
-	);
+	)
 }
 
 /**
@@ -73,9 +73,9 @@ export function sanitizeScriptForTts(raw: string): string {
  * Adds "..." only if truncation actually occurred.
  */
 export function truncateToWordCount(text: string, maxWords: number): string {
-	const words = text.split(/\s+/);
-	if (words.length <= maxWords) return text;
-	return `${words.slice(0, maxWords).join(" ")}…`;
+	const words = text.split(/\s+/)
+	if (words.length <= maxWords) return text
+	return `${words.slice(0, maxWords).join(" ")}…`
 }
 
 /**
@@ -83,11 +83,11 @@ export function truncateToWordCount(text: string, maxWords: number): string {
  * Google TTS voice is controlled separately via GOOGLE_TTS_VOICE_NAME env.
  */
 export function selectVoiceForChannelTone(tone: string): string {
-	const t = tone.toLowerCase();
-	if (t === "dark") return "Will"; // deeper voice
-	if (t === "fun") return "Scarlett"; // energetic
-	if (t === "educational") return "Dan"; // authoritative
-	return "Scarlett"; // default
+	const t = tone.toLowerCase()
+	if (t === "dark") return "Will" // deeper voice
+	if (t === "fun") return "Scarlett" // energetic
+	if (t === "educational") return "Dan" // authoritative
+	return "Scarlett" // default
 }
 
 /**
@@ -103,12 +103,12 @@ export function buildVoiceoverTtsPayload(
 	scriptMarkdown: string,
 	voiceOverride?: string,
 ): VoiceoverTtsPayload {
-	const targetSeconds = brief.targetSeconds ?? 30;
-	const maxWords = targetDurationToMaxWords(targetSeconds);
+	const targetSeconds = brief.targetSeconds ?? 30
+	const maxWords = targetDurationToMaxWords(targetSeconds)
 
-	const sanitized = sanitizeScriptForTts(scriptMarkdown);
-	const plainText = truncateToWordCount(sanitized, maxWords);
-	const voice = voiceOverride?.trim() || selectVoiceForChannelTone(brief.tone);
+	const sanitized = sanitizeScriptForTts(scriptMarkdown)
+	const plainText = truncateToWordCount(sanitized, maxWords)
+	const voice = voiceOverride?.trim() || selectVoiceForChannelTone(brief.tone)
 
-	return { plainText, voice, targetSeconds };
+	return { plainText, voice, targetSeconds }
 }

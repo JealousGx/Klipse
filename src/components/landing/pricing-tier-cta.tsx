@@ -1,27 +1,27 @@
-"use client";
+"use client"
 
-import { useNavigate } from "@tanstack/react-router";
-import { Loader2 } from "lucide-react";
-import { useState } from "react";
+import { useNavigate } from "@tanstack/react-router"
+import { Loader2 } from "lucide-react"
+import { useState } from "react"
 
-import { Button } from "@/components/ui/button";
-import { Link } from "@/components/ui/link";
+import { Button } from "@/components/ui/button"
+import { Link } from "@/components/ui/link"
 
-import { useRootRouteContext } from "@/context/useRootRouteContext";
+import { useRootRouteContext } from "@/context/useRootRouteContext"
 
-import { setPolarCheckoutIntent } from "@/features/billing/polar-checkout-intent";
+import { setPolarCheckoutIntent } from "@/features/billing/polar-checkout-intent"
 
-import { authClient } from "@/lib/auth/client";
-import type { PolarCheckoutSlug } from "@/lib/billing/polar-checkout-slugs";
-import { cn } from "@/lib/utils";
+import { authClient } from "@/lib/auth/client"
+import type { PolarCheckoutSlug } from "@/lib/billing/polar-checkout-slugs"
+import { cn } from "@/lib/utils"
 
 export type PricingTierCtaProps = {
-	emphasis: boolean;
-	ctaLabel: string;
+	emphasis: boolean
+	ctaLabel: string
 	/** When set, triggers Polar checkout for this slug. When omitted (Free tier), only signup. */
-	checkoutSlug?: PolarCheckoutSlug;
-	className?: string;
-};
+	checkoutSlug?: PolarCheckoutSlug
+	className?: string
+}
 
 export function PricingTierCta({
 	emphasis,
@@ -29,9 +29,9 @@ export function PricingTierCta({
 	checkoutSlug,
 	className,
 }: PricingTierCtaProps) {
-	const navigate = useNavigate();
-	const { session } = useRootRouteContext();
-	const [loading, setLoading] = useState(false);
+	const navigate = useNavigate()
+	const { session } = useRootRouteContext()
+	const [loading, setLoading] = useState(false)
 
 	if (!checkoutSlug) {
 		return (
@@ -44,22 +44,22 @@ export function PricingTierCta({
 			>
 				{ctaLabel}
 			</Link>
-		);
+		)
 	}
 
 	const runCheckout = async () => {
-		setLoading(true);
+		setLoading(true)
 		try {
-			await authClient.checkout({ slug: checkoutSlug });
+			await authClient.checkout({ slug: checkoutSlug })
 		} finally {
-			setLoading(false);
+			setLoading(false)
 		}
-	};
+	}
 
 	const goSignupWithIntent = () => {
-		setPolarCheckoutIntent(checkoutSlug);
-		void navigate({ to: "/", search: { auth: "signup" } });
-	};
+		setPolarCheckoutIntent(checkoutSlug)
+		void navigate({ to: "/", search: { auth: "signup" } })
+	}
 
 	if (session?.user) {
 		return (
@@ -77,7 +77,7 @@ export function PricingTierCta({
 					ctaLabel
 				)}
 			</Button>
-		);
+		)
 	}
 
 	return (
@@ -90,5 +90,5 @@ export function PricingTierCta({
 		>
 			{ctaLabel}
 		</Button>
-	);
+	)
 }

@@ -1,13 +1,8 @@
-import { relations, sql } from "drizzle-orm";
-import {
-	index,
-	mysqlTable,
-	timestamp,
-	varchar,
-} from "drizzle-orm/mysql-core";
+import { relations, sql } from "drizzle-orm"
+import { index, mysqlTable, timestamp, varchar } from "drizzle-orm/mysql-core"
 
-import { users } from "./users";
-import { videoJobs } from "./video-jobs";
+import { users } from "./users"
+import { videoJobs } from "./video-jobs"
 
 /**
  * Tracks R2 objects subject to TTL purge.
@@ -34,7 +29,12 @@ export const expiringAssets = mysqlTable(
 		 * - `"output"` — final rendered video (plan-based retention)
 		 */
 		kind: varchar("kind", { length: 32 })
-			.$type<"tts_intermediate" | "image_intermediate" | "sound_intermediate" | "output">()
+			.$type<
+				| "tts_intermediate"
+				| "image_intermediate"
+				| "sound_intermediate"
+				| "output"
+			>()
 			.notNull(),
 		expiresAt: timestamp("expires_at", { fsp: 3 }).notNull(),
 		createdAt: timestamp("created_at", { fsp: 3 })
@@ -45,7 +45,7 @@ export const expiringAssets = mysqlTable(
 		index("expiring_assets_expires_idx").on(table.expiresAt),
 		index("expiring_assets_user_idx").on(table.userId),
 	],
-);
+)
 
 export const expiringAssetsRelations = relations(expiringAssets, ({ one }) => ({
 	user: one(users, {
@@ -56,4 +56,4 @@ export const expiringAssetsRelations = relations(expiringAssets, ({ one }) => ({
 		fields: [expiringAssets.videoJobId],
 		references: [videoJobs.id],
 	}),
-}));
+}))

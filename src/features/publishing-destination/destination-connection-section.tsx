@@ -1,26 +1,26 @@
-import { Link } from "@tanstack/react-router";
-import { CheckCircle2, Loader2, Unplug } from "lucide-react";
+import { Link } from "@tanstack/react-router"
+import { CheckCircle2, Loader2, Unplug } from "lucide-react"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
 	platformAuthProviderName,
 	platformDisplayName,
 	platformOAuthStartUrl,
-} from "@/lib/platform-publishing";
+} from "@/lib/platform-publishing"
 
-import type { PublishingDestinationChannel } from "./publishing-destination-channel.types";
+import type { PublishingDestinationChannel } from "./publishing-destination-channel.types"
 
 type Props = {
-	destinationId: string;
-	channel: PublishingDestinationChannel;
+	destinationId: string
+	channel: PublishingDestinationChannel
 	/** False on Free — paid publishing OAuth is blocked server-side. */
-	canConnectPublishing: boolean;
-	onDisconnect: () => void;
-	isDisconnectPending: boolean;
-};
+	canConnectPublishing: boolean
+	onDisconnect: () => void
+	isDisconnectPending: boolean
+}
 
 /** Implemented platforms a user can connect (ordered by launch priority). */
-const CONNECTABLE_PLATFORMS = ["youtube", "tiktok"] as const;
+const CONNECTABLE_PLATFORMS = ["youtube", "tiktok"] as const
 
 /** Inner body for the platform connection block (wrapped by `DashboardPanel` in the view). */
 export function DestinationConnectionFields({
@@ -30,31 +30,31 @@ export function DestinationConnectionFields({
 	onDisconnect,
 	isDisconnectPending,
 }: Props) {
-	const isUnlinked = ch.platform === "unlinked";
+	const isUnlinked = ch.platform === "unlinked"
 
 	// For a connected or platform-specific channel, use its assigned platform.
 	// For unlinked channels the platform picker below handles selection.
-	const connectPlatform = isUnlinked ? null : ch.platform;
+	const connectPlatform = isUnlinked ? null : ch.platform
 	const platformName = connectPlatform
 		? platformDisplayName(connectPlatform)
-		: null;
+		: null
 	const authProvider = connectPlatform
 		? platformAuthProviderName(connectPlatform)
-		: null;
+		: null
 	const oauthHref = connectPlatform
 		? platformOAuthStartUrl(connectPlatform, destinationId)
-		: null;
+		: null
 
 	// Only show Disconnect when an active OAuth token is stored.
-	const showDisconnect = ch.oauthConnected;
-	const needsOAuth = !ch.oauthConnected;
-	const boundId = ch.boundExternalAccountId;
-	const mustReconnectSameChannel = Boolean(boundId && !ch.oauthConnected);
+	const showDisconnect = ch.oauthConnected
+	const needsOAuth = !ch.oauthConnected
+	const boundId = ch.boundExternalAccountId
+	const mustReconnectSameChannel = Boolean(boundId && !ch.oauthConnected)
 	// Prefer a human-readable label over the raw external account id.
 	const boundLabel =
 		ch.externalChannelTitle?.trim() ||
 		ch.externalChannelHandle?.trim() ||
-		boundId;
+		boundId
 
 	return (
 		<div className="flex flex-col gap-5" data-section="publishing-connection">
@@ -99,8 +99,8 @@ export function DestinationConnectionFields({
 						canConnectPublishing ? (
 							<>
 								{CONNECTABLE_PLATFORMS.map((p) => {
-									const href = platformOAuthStartUrl(p, destinationId);
-									const provider = platformAuthProviderName(p);
+									const href = platformOAuthStartUrl(p, destinationId)
+									const provider = platformAuthProviderName(p)
 									return href ? (
 										<Button
 											key={p}
@@ -110,7 +110,7 @@ export function DestinationConnectionFields({
 										>
 											<a href={href}>Connect with {provider}</a>
 										</Button>
-									) : null;
+									) : null
 								})}
 							</>
 						) : (
@@ -169,5 +169,5 @@ export function DestinationConnectionFields({
 				) : null}
 			</div>
 		</div>
-	);
+	)
 }

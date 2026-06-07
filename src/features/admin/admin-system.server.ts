@@ -1,15 +1,15 @@
-import { desc, eq, gte, sql } from "drizzle-orm";
+import { desc, eq, gte, sql } from "drizzle-orm"
 
-import { getDb } from "@/db";
-import { providerApiKeys } from "@/db/schema/provider-api-keys";
-import { users } from "@/db/schema/users";
-import { videoJobs } from "@/db/schema/video-jobs";
-import { requireAdmin } from "@/features/admin/admin.guard.server";
+import { getDb } from "@/db"
+import { providerApiKeys } from "@/db/schema/provider-api-keys"
+import { users } from "@/db/schema/users"
+import { videoJobs } from "@/db/schema/video-jobs"
+import { requireAdmin } from "@/features/admin/admin.guard.server"
 
 import type {
 	ProviderKeyHealth,
 	SystemStats,
-} from "@/features/admin/admin-system.functions";
+} from "@/features/admin/admin-system.functions"
 
 // ---------------------------------------------------------------------------
 // getSystemStats
@@ -21,48 +21,48 @@ export async function getSystemStats(
 	{ ok: true; stats: SystemStats } | { ok: false; code: "unauthorized" }
 > {
 	try {
-		await requireAdmin(request);
+		await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
-	const db = getDb();
-	const now = new Date();
-	const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1_000);
-	const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1_000);
+	const db = getDb()
+	const now = new Date()
+	const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1_000)
+	const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1_000)
 
 	// ── User counts ───────────────────────────────────────────────────────
 	const [totalUsersRow] = await db
 		.select({ count: sql<number>`COUNT(*)` })
-		.from(users);
+		.from(users)
 
 	const [newUsersRow] = await db
 		.select({ count: sql<number>`COUNT(*)` })
 		.from(users)
-		.where(gte(users.createdAt, sevenDaysAgo));
+		.where(gte(users.createdAt, sevenDaysAgo))
 
 	// ── Job counts ────────────────────────────────────────────────────────
 	const [activeJobsRow] = await db
 		.select({ count: sql<number>`COUNT(*)` })
 		.from(videoJobs)
-		.where(sql`${videoJobs.status} IN ('queued', 'dispatched', 'processing')`);
+		.where(sql`${videoJobs.status} IN ('queued', 'dispatched', 'processing')`)
 
 	const [jobsLast24hRow] = await db
 		.select({ count: sql<number>`COUNT(*)` })
 		.from(videoJobs)
-		.where(gte(videoJobs.createdAt, oneDayAgo));
+		.where(gte(videoJobs.createdAt, oneDayAgo))
 
 	const [failedLast24hRow] = await db
 		.select({ count: sql<number>`COUNT(*)` })
 		.from(videoJobs)
 		.where(
 			sql`${videoJobs.status} = 'failed' AND ${videoJobs.updatedAt} >= ${oneDayAgo}`,
-		);
+		)
 
 	// ── Provider key health ───────────────────────────────────────────────
-	const keyRows = await db.select().from(providerApiKeys);
+	const keyRows = await db.select().from(providerApiKeys)
 
-	const healthMap = new Map<string, ProviderKeyHealth>();
+	const healthMap = new Map<string, ProviderKeyHealth>()
 	for (const key of keyRows) {
 		if (!healthMap.has(key.provider)) {
 			healthMap.set(key.provider, {
@@ -71,16 +71,16 @@ export async function getSystemStats(
 				active: 0,
 				disabled: 0,
 				cooling: 0,
-			});
+			})
 		}
-		const h = healthMap.get(key.provider) as ProviderKeyHealth;
-		h.total += 1;
+		const h = healthMap.get(key.provider) as ProviderKeyHealth
+		h.total += 1
 		if (key.disabled) {
-			h.disabled += 1;
+			h.disabled += 1
 		} else if (key.cooldownUntil && new Date(key.cooldownUntil) > now) {
-			h.cooling += 1;
+			h.cooling += 1
 		} else {
-			h.active += 1;
+			h.active += 1
 		}
 	}
 
@@ -96,7 +96,7 @@ export async function getSystemStats(
 		.leftJoin(users, eq(videoJobs.userId, users.id))
 		.where(eq(videoJobs.status, "failed"))
 		.orderBy(desc(videoJobs.updatedAt))
-		.limit(10);
+		.limit(10)
 
 	return {
 		ok: true,
@@ -114,5 +114,5 @@ export async function getSystemStats(
 				createdAt: r.createdAt,
 			})),
 		},
-	};
+	}
 }

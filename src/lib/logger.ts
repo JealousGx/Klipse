@@ -25,21 +25,21 @@
  *   logger.error("webhook_failed", { jobId, status: 500 });
  */
 
-export type LogLevel = "debug" | "info" | "warn" | "error";
+export type LogLevel = "debug" | "info" | "warn" | "error"
 
 export interface LogContext {
 	/** Authenticated user ID */
-	userId?: string;
+	userId?: string
 	/** Video generation job ID */
-	jobId?: string;
+	jobId?: string
 	/** Trace / correlation ID for a request */
-	requestId?: string;
+	requestId?: string
 	/** HTTP status code */
-	status?: number;
+	status?: number
 	/** Duration in milliseconds */
-	durationMs?: number;
+	durationMs?: number
 	/** Arbitrary extra fields */
-	[key: string]: unknown;
+	[key: string]: unknown
 }
 
 function getEnv(): string {
@@ -48,31 +48,31 @@ function getEnv(): string {
 			(typeof process !== "undefined" && process.env?.ENVIRONMENT) ||
 			(typeof process !== "undefined" && process.env?.NODE_ENV) ||
 			"unknown"
-		);
+		)
 	} catch {
-		return "unknown";
+		return "unknown"
 	}
 }
 
 function shouldLog(level: LogLevel): boolean {
-	if (level === "error" || level === "warn") return true;
+	if (level === "error" || level === "warn") return true
 	try {
 		const perfLog =
-			typeof process !== "undefined" && process.env?.KLIPSE_PERF_LOG === "1";
+			typeof process !== "undefined" && process.env?.KLIPSE_PERF_LOG === "1"
 		const nodeEnv =
-			typeof process !== "undefined" ? process.env?.NODE_ENV : undefined;
-		const isNonProd = nodeEnv !== "production";
-		if (level === "info") return perfLog || isNonProd;
-		return nodeEnv === "development";
+			typeof process !== "undefined" ? process.env?.NODE_ENV : undefined
+		const isNonProd = nodeEnv !== "production"
+		if (level === "info") return perfLog || isNonProd
+		return nodeEnv === "development"
 	} catch {
-		return false;
+		return false
 	}
 }
 
 function emit(level: LogLevel, message: string, ctx?: LogContext): void {
-	if (!shouldLog(level)) return;
+	if (!shouldLog(level)) return
 	try {
-		const now = Date.now();
+		const now = Date.now()
 		const fields = {
 			level,
 			message,
@@ -82,14 +82,14 @@ function emit(level: LogLevel, message: string, ctx?: LogContext): void {
 			// Axiom uses _time for event timestamp ordering
 			_time: new Date(now).toISOString(),
 			...ctx,
-		};
-		const line = JSON.stringify(fields);
+		}
+		const line = JSON.stringify(fields)
 		if (level === "error") {
-			console.error(line);
+			console.error(line)
 		} else if (level === "warn") {
-			console.warn(line);
+			console.warn(line)
 		} else {
-			console.log(line);
+			console.log(line)
 		}
 	} catch {
 		// Never throw from logger
@@ -101,4 +101,4 @@ export const logger = {
 	info: (message: string, ctx?: LogContext) => emit("info", message, ctx),
 	warn: (message: string, ctx?: LogContext) => emit("warn", message, ctx),
 	error: (message: string, ctx?: LogContext) => emit("error", message, ctx),
-} as const;
+} as const

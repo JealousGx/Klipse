@@ -1,16 +1,18 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router"
 
-import { Button } from "@/components/ui/button";
-import { publishingDestinationSearchSchema } from "@/features/publishing-destination/publishing-destination-search.schema";
-import { PublishingDestinationView } from "@/features/publishing-destination/publishing-destination-view";
-import { usePublishingDestinationPage } from "@/features/publishing-destination/use-publishing-destination-page";
-import { channelQueryOptions } from "@/lib/queries/dashboard-queries";
+import { Button } from "@/components/ui/button"
+import { publishingDestinationSearchSchema } from "@/features/publishing-destination/publishing-destination-search.schema"
+import { PublishingDestinationView } from "@/features/publishing-destination/publishing-destination-view"
+import { usePublishingDestinationPage } from "@/features/publishing-destination/use-publishing-destination-page"
+import { channelQueryOptions } from "@/lib/queries/dashboard-queries"
 
-export const Route = createFileRoute("/_authed/dashboard/publishing/$destinationId")({
+export const Route = createFileRoute(
+	"/_authed/dashboard/publishing/$destinationId",
+)({
 	staticData: { dashboardTitle: "Publishing destination" },
 	validateSearch: (raw: Record<string, unknown>) => {
-		const p = publishingDestinationSearchSchema.safeParse(raw);
-		return p.success ? p.data : {};
+		const p = publishingDestinationSearchSchema.safeParse(raw)
+		return p.success ? p.data : {}
 	},
 	beforeLoad: async ({ context, params }) => {
 		await context.queryClient.ensureQueryData(
@@ -18,15 +20,15 @@ export const Route = createFileRoute("/_authed/dashboard/publishing/$destination
 		)
 	},
 	component: PublishingDestinationPage,
-});
+})
 
 function PublishingDestinationPage() {
-	const { destinationId } = Route.useParams();
-	const search = Route.useSearch();
-	const page = usePublishingDestinationPage(destinationId, search);
+	const { destinationId } = Route.useParams()
+	const search = Route.useSearch()
+	const page = usePublishingDestinationPage(destinationId, search)
 
 	if (page.status === "loading") {
-		return <p className="text-sm text-muted-foreground">Loading…</p>;
+		return <p className="text-sm text-muted-foreground">Loading…</p>
 	}
 
 	if (page.status === "error") {
@@ -40,5 +42,5 @@ function PublishingDestinationPage() {
 		)
 	}
 
-	return <PublishingDestinationView {...page.viewProps} />;
+	return <PublishingDestinationView {...page.viewProps} />
 }

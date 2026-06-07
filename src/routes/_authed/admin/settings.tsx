@@ -1,24 +1,24 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { AlertTriangle, UserPlus } from "lucide-react";
-import { toast } from "sonner";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import { AlertTriangle, UserPlus } from "lucide-react"
+import { toast } from "sonner"
 
 import {
 	getAdminSettingsFn,
 	updateAdminSettingsFn,
-} from "@/features/admin/admin-settings.functions";
+} from "@/features/admin/admin-settings.functions"
 
 export const Route = createFileRoute("/_authed/admin/settings")({
 	component: AdminSettingsPage,
-});
+})
 
 function AdminSettingsPage() {
-	const queryClient = useQueryClient();
+	const queryClient = useQueryClient()
 
 	const { data, isLoading } = useQuery({
 		queryKey: ["admin-settings"],
 		queryFn: () => getAdminSettingsFn(),
-	});
+	})
 
 	const mutation = useMutation({
 		mutationFn: (registrationEnabled: boolean) =>
@@ -29,17 +29,17 @@ function AdminSettingsPage() {
 					result.code === "unauthorized"
 						? "Unauthorized."
 						: "Failed to update settings.",
-				);
-				return;
+				)
+				return
 			}
-			toast.success("Settings saved.");
-			void queryClient.invalidateQueries({ queryKey: ["admin-settings"] });
-			void queryClient.invalidateQueries({ queryKey: ["registration-status"] });
+			toast.success("Settings saved.")
+			void queryClient.invalidateQueries({ queryKey: ["admin-settings"] })
+			void queryClient.invalidateQueries({ queryKey: ["registration-status"] })
 		},
 		onError: () => toast.error("Failed to update settings."),
-	});
+	})
 
-	const settings = data?.ok ? data.settings : null;
+	const settings = data?.ok ? data.settings : null
 
 	return (
 		<div className="mx-auto max-w-2xl space-y-8">
@@ -93,8 +93,8 @@ function AdminSettingsPage() {
 							isLoading || mutation.isPending || settings?.envOverrideActive
 						}
 						onClick={() => {
-							if (!settings) return;
-							mutation.mutate(!settings.registrationEnabled);
+							if (!settings) return
+							mutation.mutate(!settings.registrationEnabled)
 						}}
 						className={[
 							"relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-primary/50 disabled:cursor-not-allowed disabled:opacity-40",
@@ -137,5 +137,5 @@ function AdminSettingsPage() {
 				</div>
 			</div>
 		</div>
-	);
+	)
 }

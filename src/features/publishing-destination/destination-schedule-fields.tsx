@@ -1,42 +1,42 @@
-import { CalendarClock, FastForward, Pause, Play } from "lucide-react";
+import { CalendarClock, FastForward, Pause, Play } from "lucide-react"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
-import type { ChannelConfig } from "@/features/channels/channel-config.schema";
+} from "@/components/ui/select"
+import type { ChannelConfig } from "@/features/channels/channel-config.schema"
 
-import { publishingDestinationFieldClass } from "./publishing-destination-field-class";
+import { publishingDestinationFieldClass } from "./publishing-destination-field-class"
 
 type ScheduleInfo = {
-	nextRunAt: Date;
-	frequency: ChannelConfig["posting_frequency"];
-	enabled: boolean;
-} | null;
+	nextRunAt: Date
+	frequency: ChannelConfig["posting_frequency"]
+	enabled: boolean
+} | null
 
 type Props = {
-	schedule: ScheduleInfo;
+	schedule: ScheduleInfo
 	/** Current frequency from the channel config (used for the selector). */
-	frequency: ChannelConfig["posting_frequency"];
-	onFrequencyChange: (value: ChannelConfig["posting_frequency"]) => void;
-	isChangingFrequency: boolean;
-	onPause: () => void;
-	onResume: () => void;
-	isPausing: boolean;
-	isResuming: boolean;
+	frequency: ChannelConfig["posting_frequency"]
+	onFrequencyChange: (value: ChannelConfig["posting_frequency"]) => void
+	isChangingFrequency: boolean
+	onPause: () => void
+	onResume: () => void
+	isPausing: boolean
+	isResuming: boolean
 	/** Creator+ only — if false, button is shown but disabled with upgrade hint. */
-	canTriggerNow: boolean;
-	onTriggerNow: () => void;
-	isTriggeringNow: boolean;
-};
+	canTriggerNow: boolean
+	onTriggerNow: () => void
+	isTriggeringNow: boolean
+}
 
 const FREQUENCY_OPTIONS: {
-	value: ChannelConfig["posting_frequency"];
-	label: string;
+	value: ChannelConfig["posting_frequency"]
+	label: string
 }[] = [
 	{ value: "daily", label: "Daily" },
 	{ value: "every_2_days", label: "Every 2 days" },
@@ -48,7 +48,7 @@ const FREQUENCY_OPTIONS: {
 	{ value: "every_2_weeks", label: "Every 2 weeks" },
 	{ value: "every_3_weeks", label: "Every 3 weeks" },
 	{ value: "monthly", label: "Monthly" },
-];
+]
 
 const FREQUENCY_LABEL: Record<ChannelConfig["posting_frequency"], string> = {
 	daily: "Generating daily",
@@ -61,7 +61,7 @@ const FREQUENCY_LABEL: Record<ChannelConfig["posting_frequency"], string> = {
 	every_2_weeks: "Generating every 2 weeks",
 	every_3_weeks: "Generating every 3 weeks",
 	monthly: "Generating monthly",
-};
+}
 
 function formatNextRun(date: Date): string {
 	return date.toLocaleString(undefined, {
@@ -70,7 +70,7 @@ function formatNextRun(date: Date): string {
 		day: "numeric",
 		hour: "numeric",
 		minute: "2-digit",
-	});
+	})
 }
 
 export function DestinationScheduleFields({
@@ -117,7 +117,7 @@ export function DestinationScheduleFields({
 				the frequency resets the next scheduled run.
 			</p>
 		</div>
-	);
+	)
 
 	if (!schedule) {
 		return (
@@ -127,11 +127,11 @@ export function DestinationScheduleFields({
 					No schedule active yet. Save the frequency above to begin.
 				</p>
 			</div>
-		);
+		)
 	}
 
 	const frequencyLabel =
-		FREQUENCY_LABEL[schedule.frequency] ?? "Generating on schedule";
+		FREQUENCY_LABEL[schedule.frequency] ?? "Generating on schedule"
 
 	if (!schedule.enabled) {
 		return (
@@ -163,7 +163,7 @@ export function DestinationScheduleFields({
 					</Button>
 				</div>
 			</div>
-		);
+		)
 	}
 
 	return (
@@ -225,5 +225,5 @@ export function DestinationScheduleFields({
 				</Button>
 			</div>
 		</div>
-	);
+	)
 }

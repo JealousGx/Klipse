@@ -1,20 +1,20 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { eq } from "drizzle-orm";
+import { eq } from "drizzle-orm"
 
-import { users } from "@/db/schema/users";
-import type { CreditUsageTx } from "@/features/billing/credit-usage.server";
-import type { MeResponse } from "@/features/user/types/me";
+import { users } from "@/db/schema/users"
+import type { CreditUsageTx } from "@/features/billing/credit-usage.server"
+import type { MeResponse } from "@/features/user/types/me"
 
 /**
  * Read-only user fields needed for entitlement checks. Loaded under `FOR UPDATE` inside a transaction.
  */
 export type UserEntitlementSnapshot = {
-	readonly plan: MeResponse["plan"];
-	readonly freeVideoConsumed: boolean;
-	readonly creditsRemaining: number;
-	readonly creditsUsed: number;
-};
+	readonly plan: MeResponse["plan"]
+	readonly freeVideoConsumed: boolean
+	readonly creditsRemaining: number
+	readonly creditsUsed: number
+}
 
 export async function selectUserEntitlementSnapshotForUpdate(
 	tx: CreditUsageTx,
@@ -29,10 +29,10 @@ export async function selectUserEntitlementSnapshotForUpdate(
 		})
 		.from(users)
 		.where(eq(users.id, userId))
-		.for("update");
+		.for("update")
 
 	if (!row) {
-		return null;
+		return null
 	}
 
 	return {
@@ -40,5 +40,5 @@ export async function selectUserEntitlementSnapshotForUpdate(
 		freeVideoConsumed: row.freeVideoConsumed,
 		creditsRemaining: row.creditsRemaining,
 		creditsUsed: row.creditsUsed,
-	};
+	}
 }

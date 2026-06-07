@@ -1,4 +1,4 @@
-import type { DBFieldAttribute } from "better-auth/db";
+import type { DBFieldAttribute } from "better-auth/db"
 
 /**
  * Better Auth `user.additionalFields` — matches `users` table columns.
@@ -44,4 +44,4 @@ export const additionalUserFields = {
 		input: true,
 		required: false,
 	},
-} satisfies Record<string, DBFieldAttribute>;
+} satisfies Record<string, DBFieldAttribute>

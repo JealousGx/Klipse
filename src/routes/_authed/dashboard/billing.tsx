@@ -1,5 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import {
 	ArrowUpRight,
 	Coins,
@@ -9,12 +9,12 @@ import {
 	Sparkles,
 	Wallet,
 	Zap,
-} from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
-import { z } from "zod";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+} from "lucide-react"
+import { useEffect, useRef, useState } from "react"
+import { toast } from "sonner"
+import { z } from "zod"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
 	Card,
 	CardContent,
@@ -22,46 +22,46 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
+} from "@/components/ui/card"
 
-import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
+import { useDashboardRouteContext } from "@/context/useDashboardRouteContext"
 import {
 	CREDIT_ADDON_AMOUNTS,
 	MONTHLY_CREDITS_BY_PLAN,
-} from "@/features/billing/tier-config";
-import type { MeResponse } from "@/features/user/types/me";
+} from "@/features/billing/tier-config"
+import type { MeResponse } from "@/features/user/types/me"
 
-import { authClient } from "@/lib/auth/client";
-import { analyticsQueryOptions } from "@/lib/queries/dashboard-queries";
-import { cn } from "@/lib/utils";
+import { authClient } from "@/lib/auth/client"
+import { analyticsQueryOptions } from "@/lib/queries/dashboard-queries"
+import { cn } from "@/lib/utils"
 
 const billingSearchSchema = z.object({
 	/** Set by Polar `successUrl` in `polar-plugin.server.ts` after checkout. */
 	checkout: z.literal("success").optional(),
-});
+})
 
 export const Route = createFileRoute("/_authed/dashboard/billing")({
 	staticData: { dashboardTitle: "Billing" },
 	validateSearch: (raw: Record<string, unknown>) => {
-		const parsed = billingSearchSchema.safeParse(raw);
-		return parsed.success ? parsed.data : {};
+		const parsed = billingSearchSchema.safeParse(raw)
+		return parsed.success ? parsed.data : {}
 	},
 	component: BillingPage,
-});
+})
 
 const planLabel: Record<MeResponse["plan"], string> = {
 	free: "Free",
 	starter: "Starter",
 	creator: "Creator",
 	empire: "Empire",
-};
+}
 
 const PLAN_RANK: Record<MeResponse["plan"], number> = {
 	free: 0,
 	starter: 1,
 	creator: 2,
 	empire: 3,
-};
+}
 
 const subscriptionSlugs = [
 	{
@@ -95,76 +95,76 @@ const subscriptionSlugs = [
 		accent: "from-chart-2/30 to-chart-3/10",
 		iconClass: "text-chart-2",
 	},
-];
+]
 
 function BillingPage() {
-	const search = Route.useSearch();
-	const navigate = Route.useNavigate();
-	const { refetch } = authClient.useSession();
-	const checkoutRefreshDone = useRef(false);
+	const search = Route.useSearch()
+	const navigate = Route.useNavigate()
+	const { refetch } = authClient.useSession()
+	const checkoutRefreshDone = useRef(false)
 
-	const { session } = useDashboardRouteContext();
-	const user = session.user;
-	const [loadingSlug, setLoadingSlug] = useState<string | null>(null);
-	const [portalLoading, setPortalLoading] = useState(false);
+	const { session } = useDashboardRouteContext()
+	const user = session.user
+	const [loadingSlug, setLoadingSlug] = useState<string | null>(null)
+	const [portalLoading, setPortalLoading] = useState(false)
 
-	const userPlan = user.plan as MeResponse["plan"];
-	const userRank = PLAN_RANK[userPlan] ?? 0;
-	const hasPaidPlan = userPlan !== "free";
+	const userPlan = user.plan as MeResponse["plan"]
+	const userRank = PLAN_RANK[userPlan] ?? 0
+	const hasPaidPlan = userPlan !== "free"
 
 	/** One DB-backed session load after Polar redirects here (webhook may lag cookie cache). */
 	useEffect(() => {
 		if (search.checkout !== "success" || checkoutRefreshDone.current) {
-			return;
+			return
 		}
-		checkoutRefreshDone.current = true;
+		checkoutRefreshDone.current = true
 		void refetch({ query: { disableCookieCache: true } }).finally(() => {
 			void navigate({
 				search: (prev) => {
-					const { checkout: _c, ...rest } = prev;
-					return rest;
+					const { checkout: _c, ...rest } = prev
+					return rest
 				},
 				replace: true,
-			});
-		});
-	}, [search.checkout, refetch, navigate]);
+			})
+		})
+	}, [search.checkout, refetch, navigate])
 
 	const runCheckout = async (slug: string) => {
-		setLoadingSlug(slug);
+		setLoadingSlug(slug)
 		try {
-			await authClient.checkout({ slug });
+			await authClient.checkout({ slug })
 		} finally {
-			setLoadingSlug(null);
+			setLoadingSlug(null)
 		}
-	};
+	}
 
 	const openPortal = async () => {
-		setPortalLoading(true);
+		setPortalLoading(true)
 		try {
-			const res = await authClient.customer.portal({ redirect: false });
+			const res = await authClient.customer.portal({ redirect: false })
 			if (res.error) {
 				toast.error("Couldn’t open portal", {
 					description: res.error.message ?? "Try again in a moment.",
-				});
-				return;
+				})
+				return
 			}
-			const url = res.data?.url;
+			const url = res.data?.url
 			if (url) {
-				window.open(url, "_blank", "noopener,noreferrer");
+				window.open(url, "_blank", "noopener,noreferrer")
 			}
 		} finally {
-			setPortalLoading(false);
+			setPortalLoading(false)
 		}
-	};
+	}
 
-	const credits = user.creditsRemaining ?? 0;
+	const credits = user.creditsRemaining ?? 0
 
-	const analyticsQuery = useQuery(analyticsQueryOptions);
+	const analyticsQuery = useQuery(analyticsQueryOptions)
 
 	const currentMonth = new Date().toLocaleString(undefined, {
 		month: "long",
-	});
-	const videosThisMonth = analyticsQuery.data?.totalCompleted ?? null;
+	})
+	const videosThisMonth = analyticsQuery.data?.totalCompleted ?? null
 
 	return (
 		<div className="space-y-12">
@@ -254,20 +254,20 @@ function BillingPage() {
 
 				<div className="grid gap-6 lg:grid-cols-3">
 					{subscriptionSlugs.map((tier) => {
-						const Icon = tier.icon;
-						const isCurrent = userPlan === tier.slug;
-						const tierRank = PLAN_RANK[tier.slug];
-						const loading = loadingSlug === tier.slug;
+						const Icon = tier.icon
+						const isCurrent = userPlan === tier.slug
+						const tierRank = PLAN_RANK[tier.slug]
+						const loading = loadingSlug === tier.slug
 
-						let cta: string;
+						let cta: string
 						if (isCurrent) {
-							cta = "Your plan";
+							cta = "Your plan"
 						} else if (userRank === 0) {
-							cta = `Get ${tier.title}`;
+							cta = `Get ${tier.title}`
 						} else if (tierRank > userRank) {
-							cta = "Upgrade";
+							cta = "Upgrade"
 						} else {
-							cta = "Switch plan";
+							cta = "Switch plan"
 						}
 
 						return (
@@ -345,7 +345,7 @@ function BillingPage() {
 									</Button>
 								</CardFooter>
 							</Card>
-						);
+						)
 					})}
 				</div>
 			</section>
@@ -448,7 +448,7 @@ function BillingPage() {
 				. All sales final — no refunds.
 			</p>
 		</div>
-	);
+	)
 }
 
 function CreditPackCard({
@@ -459,12 +459,12 @@ function CreditPackCard({
 	onPurchase,
 	emphasis,
 }: {
-	label: string;
-	amount: number;
-	loading: boolean;
-	disabled: boolean;
-	onPurchase: () => void;
-	emphasis?: boolean;
+	label: string
+	amount: number
+	loading: boolean
+	disabled: boolean
+	onPurchase: () => void
+	emphasis?: boolean
 }) {
 	return (
 		<div
@@ -513,5 +513,5 @@ function CreditPackCard({
 				)}
 			</Button>
 		</div>
-	);
+	)
 }

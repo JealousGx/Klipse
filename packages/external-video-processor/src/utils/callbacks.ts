@@ -4,14 +4,14 @@ import type {
 	ProcessorKeyFailurePayload,
 	ProcessorKeyFailureProvider,
 	ProcessorProgressPayload,
-} from "@klipse/video-assembly-shared";
+} from "@klipse/video-assembly-shared"
 
-import { logger } from "./logger";
-import { NonRetriableError, withRetries } from "./retry";
+import { logger } from "./logger"
+import { NonRetriableError, withRetries } from "./retry"
 
-const PROGRESS_ATTEMPTS = 3;
-const FAILURE_ATTEMPTS = 5;
-const COMPLETE_ATTEMPTS = 8;
+const PROGRESS_ATTEMPTS = 3
+const FAILURE_ATTEMPTS = 5
+const COMPLETE_ATTEMPTS = 8
 
 async function postCallback(
 	baseUrl: string,
@@ -29,17 +29,17 @@ async function postCallback(
 			},
 			body: JSON.stringify(body),
 			signal: AbortSignal.timeout(30_000),
-		});
+		})
 		if (!res.ok) {
-			const t = await res.text().catch(() => "");
-			const msg = `callback_${res.status}:${t.slice(0, 300)}`;
+			const t = await res.text().catch(() => "")
+			const msg = `callback_${res.status}:${t.slice(0, 300)}`
 			// 4xx = deterministic app-level rejection — retrying won't change outcome.
 			if (res.status >= 400 && res.status < 500) {
-				throw new NonRetriableError(msg);
+				throw new NonRetriableError(msg)
 			}
-			throw new Error(msg);
+			throw new Error(msg)
 		}
-	});
+	})
 }
 
 export async function reportProgress(
@@ -47,7 +47,7 @@ export async function reportProgress(
 	stage: ProcessorProgressPayload["stage"],
 	progress: number,
 ): Promise<void> {
-	const body: ProcessorProgressPayload = { jobId: spec.jobId, stage, progress };
+	const body: ProcessorProgressPayload = { jobId: spec.jobId, stage, progress }
 	await postCallback(
 		spec.callbackBaseUrl,
 		spec.callbackSecret,
@@ -60,7 +60,7 @@ export async function reportProgress(
 			stage,
 			error: e instanceof Error ? e.message : String(e),
 		}),
-	);
+	)
 }
 
 export async function reportKeyFailure(
@@ -78,7 +78,7 @@ export async function reportKeyFailure(
 		httpStatus,
 		bodySnippet,
 		retryAfterHeader,
-	};
+	}
 	await postCallback(
 		spec.callbackBaseUrl,
 		spec.callbackSecret,
@@ -91,7 +91,7 @@ export async function reportKeyFailure(
 			provider,
 			error: e instanceof Error ? e.message : String(e),
 		}),
-	);
+	)
 }
 
 export async function reportComplete(
@@ -114,12 +114,12 @@ export async function reportComplete(
 		description,
 		tags,
 		durationSec,
-	};
+	}
 	await postCallback(
 		spec.callbackBaseUrl,
 		spec.callbackSecret,
 		"/api/internal/video-processor/assembly-complete",
 		body,
 		COMPLETE_ATTEMPTS,
-	);
+	)
 }

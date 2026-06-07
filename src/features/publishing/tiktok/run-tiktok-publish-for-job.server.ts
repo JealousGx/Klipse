@@ -231,7 +231,7 @@ export async function runTiktokPublishForJob(input: {
 			jobPrivacy && creator.privacyLevelOptions.includes(jobPrivacy)
 				? jobPrivacy
 				: channelDefaultPrivacy &&
-					  creator.privacyLevelOptions.includes(channelDefaultPrivacy)
+						creator.privacyLevelOptions.includes(channelDefaultPrivacy)
 					? channelDefaultPrivacy
 					: pickBestPrivacyLevel(creator.privacyLevelOptions)
 		commentDisabled = creator.commentDisabled

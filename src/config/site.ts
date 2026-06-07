@@ -1,11 +1,11 @@
-import { env } from "@/env";
+import { env } from "@/env"
 
 /** Hostnames where search indexing is allowed (production marketing domain). */
-export const DOMAINS_ALLOWED_TO_INDEX = ["klipse.app"] as const;
+export const DOMAINS_ALLOWED_TO_INDEX = ["klipse.app"] as const
 
 export function getSiteUrl() {
-	const url = env.VITE_APP_URL ?? "http://localhost:3000";
-	return url.replace(/\/$/, "");
+	const url = env.VITE_APP_URL ?? "http://localhost:3000"
+	return url.replace(/\/$/, "")
 }
 
 export const siteConfig = {
@@ -45,8 +45,8 @@ export const siteConfig = {
 		card: "summary_large_image",
 		creator: "@khiljimateenn",
 	},
-} as const;
+} as const
 
 export const isAllowedToIndex = (hostname: string) => {
-	return (DOMAINS_ALLOWED_TO_INDEX as readonly string[]).includes(hostname);
-};
+	return (DOMAINS_ALLOWED_TO_INDEX as readonly string[]).includes(hostname)
+}

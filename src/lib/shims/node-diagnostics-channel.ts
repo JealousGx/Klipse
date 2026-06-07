@@ -2,37 +2,37 @@
 // and causes "Failed to publish diagnostics channel message" errors from Better Auth.
 
 class Channel {
-	readonly name: string | symbol;
-	readonly hasSubscribers = false;
+	readonly name: string | symbol
+	readonly hasSubscribers = false
 	constructor(name: string | symbol) {
-		this.name = name;
+		this.name = name
 	}
 	publish(_message: unknown): void {}
 	subscribe(_fn: (...args: unknown[]) => void): void {}
 	unsubscribe(_fn: (...args: unknown[]) => void): boolean {
-		return false;
+		return false
 	}
 	bindStore(_store: unknown, _transform?: unknown): void {}
 	unbindStore(_store: unknown): boolean {
-		return false;
+		return false
 	}
 	runStores(_context: unknown, _fn: () => void): void {
-		_fn();
+		_fn()
 	}
 }
 
-const channels = new Map<string | symbol, Channel>();
+const channels = new Map<string | symbol, Channel>()
 
 export function channel(name: string | symbol): Channel {
-	if (!channels.has(name)) channels.set(name, new Channel(name));
-	return channels.get(name)!;
+	if (!channels.has(name)) channels.set(name, new Channel(name))
+	return channels.get(name)!
 }
 export function subscribe(_name: string | symbol, _fn: unknown): void {}
 export function unsubscribe(_name: string | symbol, _fn: unknown): boolean {
-	return false;
+	return false
 }
 export function hasSubscribers(_name: string | symbol): boolean {
-	return false;
+	return false
 }
 export function tracingChannel(_name: string | symbol) {
 	return {
@@ -45,7 +45,13 @@ export function tracingChannel(_name: string | symbol) {
 		tracePromise: async (_fn: () => Promise<unknown>) => _fn(),
 		traceCallback: (_fn: (...args: unknown[]) => void, ...args: unknown[]) =>
 			_fn(...args),
-	};
+	}
 }
 
-export default { channel, subscribe, unsubscribe, hasSubscribers, tracingChannel };
+export default {
+	channel,
+	subscribe,
+	unsubscribe,
+	hasSubscribers,
+	tracingChannel,
+}

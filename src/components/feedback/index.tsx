@@ -1,31 +1,31 @@
-import { Bug, Lightbulb, MessageSquare, Users } from "lucide-react";
-import React, { useEffect, useRef, useState } from "react";
+import { Bug, Lightbulb, MessageSquare, Users } from "lucide-react"
+import React, { useEffect, useRef, useState } from "react"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@/config/site"
 
-import { env } from "@/env";
+import { env } from "@/env"
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-import { BugReportDialog } from "./BugReportDialog";
+import { BugReportDialog } from "./BugReportDialog"
 
 export function FeedbackButton({ className }: { className?: string }) {
-	const [menuOpen, setMenuOpen] = useState(false);
-	const [bugDialogOpen, setBugDialogOpen] = useState(false);
+	const [menuOpen, setMenuOpen] = useState(false)
+	const [bugDialogOpen, setBugDialogOpen] = useState(false)
 
-	const ref = useRef<HTMLDivElement>(null);
+	const ref = useRef<HTMLDivElement>(null)
 
 	useEffect(() => {
 		function onClickOutside(e: MouseEvent) {
 			if (ref.current && !ref.current.contains(e.target as Node)) {
-				setMenuOpen(false);
+				setMenuOpen(false)
 			}
 		}
-		if (menuOpen) document.addEventListener("mousedown", onClickOutside);
-		return () => document.removeEventListener("mousedown", onClickOutside);
-	}, [menuOpen]);
+		if (menuOpen) document.addEventListener("mousedown", onClickOutside)
+		return () => document.removeEventListener("mousedown", onClickOutside)
+	}, [menuOpen])
 
 	return (
 		<React.Fragment>
@@ -47,8 +47,8 @@ export function FeedbackButton({ className }: { className?: string }) {
 							type="button"
 							className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted/60"
 							onClick={() => {
-								setMenuOpen(false);
-								setBugDialogOpen(true);
+								setMenuOpen(false)
+								setBugDialogOpen(true)
 							}}
 							aria-label="Report a bug or describe an issue"
 						>
@@ -100,5 +100,5 @@ export function FeedbackButton({ className }: { className?: string }) {
 				<BugReportDialog open={bugDialogOpen} onOpenChange={setBugDialogOpen} />
 			)}
 		</React.Fragment>
-	);
+	)
 }

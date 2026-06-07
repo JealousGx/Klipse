@@ -1,14 +1,14 @@
 import type {
 	ProcessorJobSpec,
 	ProcessorProviderKey,
-} from "@klipse/video-assembly-shared";
+} from "@klipse/video-assembly-shared"
 
-import { reportKeyFailure } from "../utils/callbacks";
-import { withTiming } from "../utils/logger";
+import { reportKeyFailure } from "../utils/callbacks"
+import { withTiming } from "../utils/logger"
 
-const OPENROUTER_BASE = "https://openrouter.ai/api/v1";
-const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta";
-const GEMINI_DEFAULT_MODEL = "gemini-2.5-flash-lite";
+const OPENROUTER_BASE = "https://openrouter.ai/api/v1"
+const GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta"
+const GEMINI_DEFAULT_MODEL = "gemini-2.5-flash-lite"
 
 async function callOpenRouterText(
 	key: ProcessorProviderKey,
@@ -35,41 +35,41 @@ async function callOpenRouterText(
 			],
 		}),
 		signal: AbortSignal.timeout(120_000),
-	});
+	})
 
 	if (!res.ok) {
-		const t = await res.text().catch(() => "");
-		const err = new Error(`openrouter_${res.status}:${t.slice(0, 500)}`);
-		(
+		const t = await res.text().catch(() => "")
+		const err = new Error(`openrouter_${res.status}:${t.slice(0, 500)}`)
+		;(
 			err as Error & {
-				httpStatus: number;
-				bodySnippet: string;
-				retryAfterHeader: string | null;
+				httpStatus: number
+				bodySnippet: string
+				retryAfterHeader: string | null
 			}
-		).httpStatus = res.status;
-		(err as Error & { bodySnippet: string }).bodySnippet = t.slice(0, 800);
-		(err as Error & { retryAfterHeader: string | null }).retryAfterHeader =
-			res.headers.get("retry-after");
-		throw err;
+		).httpStatus = res.status
+		;(err as Error & { bodySnippet: string }).bodySnippet = t.slice(0, 800)
+		;(err as Error & { retryAfterHeader: string | null }).retryAfterHeader =
+			res.headers.get("retry-after")
+		throw err
 	}
 
 	const json = (await res.json()) as {
-		choices?: { message?: { content?: string } }[];
-		error?: { message?: string };
-	};
+		choices?: { message?: { content?: string } }[]
+		error?: { message?: string }
+	}
 	if (json.error?.message)
-		throw new Error(`openrouter_api_error: ${json.error.message}`);
-	const content = json.choices?.[0]?.message?.content?.trim();
-	if (!content) throw new Error("openrouter_empty_response");
-	return content;
+		throw new Error(`openrouter_api_error: ${json.error.message}`)
+	const content = json.choices?.[0]?.message?.content?.trim()
+	if (!content) throw new Error("openrouter_empty_response")
+	return content
 }
 
 function isHttpErr(e: unknown): e is Error & {
-	httpStatus: number;
-	bodySnippet: string;
-	retryAfterHeader: string | null;
+	httpStatus: number
+	bodySnippet: string
+	retryAfterHeader: string | null
 } {
-	return e instanceof Error && "httpStatus" in e;
+	return e instanceof Error && "httpStatus" in e
 }
 
 function shouldRotate(status: number): boolean {
@@ -80,7 +80,7 @@ function shouldRotate(status: number): boolean {
 		status === 408 ||
 		status === 503 ||
 		(status >= 500 && status < 600)
-	);
+	)
 }
 
 async function callGeminiText(
@@ -88,7 +88,7 @@ async function callGeminiText(
 	system: string,
 	user: string,
 ): Promise<string> {
-	const modelId = key.modelId?.trim() || GEMINI_DEFAULT_MODEL;
+	const modelId = key.modelId?.trim() || GEMINI_DEFAULT_MODEL
 	const res = await fetch(
 		`${GEMINI_BASE}/models/${modelId}:generateContent?key=${key.secret}`,
 		{
@@ -105,22 +105,22 @@ async function callGeminiText(
 			}),
 			signal: AbortSignal.timeout(120_000),
 		},
-	);
+	)
 
 	if (!res.ok) {
-		const t = await res.text().catch(() => "");
-		throw new Error(`gemini_${res.status}:${t.slice(0, 500)}`);
+		const t = await res.text().catch(() => "")
+		throw new Error(`gemini_${res.status}:${t.slice(0, 500)}`)
 	}
 
 	const json = (await res.json()) as {
-		candidates?: { content?: { parts?: { text?: string }[] } }[];
-		error?: { message?: string };
-	};
+		candidates?: { content?: { parts?: { text?: string }[] } }[]
+		error?: { message?: string }
+	}
 	if (json.error?.message)
-		throw new Error(`gemini_api_error: ${json.error.message}`);
-	const content = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim();
-	if (!content) throw new Error("gemini_empty_response");
-	return content;
+		throw new Error(`gemini_api_error: ${json.error.message}`)
+	const content = json.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+	if (!content) throw new Error("gemini_empty_response")
+	return content
 }
 
 /**
@@ -132,18 +132,18 @@ export async function generateScript(spec: ProcessorJobSpec): Promise<string> {
 		openrouterScriptModels: models,
 		scriptSystemPrompt: system,
 		scriptUserPrompt: user,
-	} = spec;
+	} = spec
 
-	let lastError: unknown;
+	let lastError: unknown
 
 	// Primary: OpenRouter — rotate keys, OpenRouter handles model fallback internally.
 	for (const key of spec.providerKeys.openrouter) {
 		try {
 			return await withTiming("script-gen", "openrouter.call", () =>
 				callOpenRouterText(key, models, system, user),
-			);
+			)
 		} catch (e) {
-			lastError = e;
+			lastError = e
 			if (isHttpErr(e) && shouldRotate(e.httpStatus)) {
 				await reportKeyFailure(
 					spec,
@@ -152,7 +152,7 @@ export async function generateScript(spec: ProcessorJobSpec): Promise<string> {
 					e.httpStatus,
 					e.bodySnippet,
 					e.retryAfterHeader,
-				);
+				)
 			}
 			// Continue to next key regardless — fall through to Gemini when exhausted.
 		}
@@ -163,11 +163,11 @@ export async function generateScript(spec: ProcessorJobSpec): Promise<string> {
 		try {
 			return await withTiming("script-gen", "gemini.call", () =>
 				callGeminiText(key, system, user),
-			);
+			)
 		} catch (e) {
-			lastError = e;
+			lastError = e
 		}
 	}
 
-	throw lastError ?? new Error("script_generation_all_failed");
+	throw lastError ?? new Error("script_generation_all_failed")
 }

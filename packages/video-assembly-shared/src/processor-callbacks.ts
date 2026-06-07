@@ -1,48 +1,48 @@
 /** Processor → main app: pipeline stage progress update. */
 export type ProcessorProgressPayload = {
-	jobId: string;
-	stage: "script" | "prepare" | "assemble";
+	jobId: string
+	stage: "script" | "prepare" | "assemble"
 	/** Progress percentage 0–100 within this stage. */
-	progress: number;
-};
+	progress: number
+}
 
 export type ProcessorKeyFailureProvider =
 	| "openrouter"
 	| "google_tts"
 	| "replicate"
 	| "unreal_speech"
-	| "elevenlabs";
+	| "elevenlabs"
 
 /**
  * Processor → main app: a provider key failed.
  * Main app looks up the key by `keyId`, runs failure classification, and updates DB cooldown.
  */
 export type ProcessorKeyFailurePayload = {
-	jobId: string;
-	provider: ProcessorKeyFailureProvider;
+	jobId: string
+	provider: ProcessorKeyFailureProvider
 	/** DB row ID from `provider_api_keys` — used to update cooldown on the correct row. */
-	keyId: string;
-	httpStatus: number;
+	keyId: string
+	httpStatus: number
 	/** First 800 chars of response body — for quota/billing detection. */
-	bodySnippet: string;
+	bodySnippet: string
 	/** Raw `retry-after` header value (may be seconds or HTTP date); null if absent. */
-	retryAfterHeader: string | null;
-};
+	retryAfterHeader: string | null
+}
 
 /** Processor → main app: terminal result for the job. */
 export type ProcessorCompletePayload = {
-	jobId: string;
-	userId: string;
-	status: "completed" | "failed";
-	error?: string;
+	jobId: string
+	userId: string
+	status: "completed" | "failed"
+	error?: string
 	/** Generated script text — present on success, absent on failure. */
-	scriptText?: string;
+	scriptText?: string
 	/** AI-generated video title (60–100 chars). */
-	title?: string;
+	title?: string
 	/** AI-generated short caption — suitable for YouTube description, TikTok, Instagram. */
-	description?: string;
+	description?: string
 	/** AI-generated tags (lowercase strings, no # prefix). */
-	tags?: string[];
+	tags?: string[]
 	/** Actual encoded video duration in whole seconds — probed from the final output file. */
-	durationSec?: number;
-};
+	durationSec?: number
+}

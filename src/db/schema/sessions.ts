@@ -1,13 +1,13 @@
-import { relations, sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm"
 import {
 	index,
 	mysqlTable,
 	text,
 	timestamp,
 	varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/mysql-core"
 
-import { users } from "./users";
+import { users } from "./users"
 
 export const sessions = mysqlTable(
 	"sessions",
@@ -30,11 +30,11 @@ export const sessions = mysqlTable(
 		impersonatedBy: varchar("impersonated_by", { length: 64 }),
 	},
 	(table) => [index("sessions_userId_idx").on(table.userId)],
-);
+)
 
 export const sessionsRelations = relations(sessions, ({ one }) => ({
 	users: one(users, {
 		fields: [sessions.userId],
 		references: [users.id],
 	}),
-}));
+}))

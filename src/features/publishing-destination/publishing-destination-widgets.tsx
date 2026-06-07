@@ -1,23 +1,23 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from "react"
 
-import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
+import { DashboardPanel } from "@/components/dashboard/dashboard-panel"
 
-import { DestinationInternalIdFields } from "./destination-internal-id-card";
-import { DestinationRemoveFields } from "./destination-remove-card";
+import { DestinationInternalIdFields } from "./destination-internal-id-card"
+import { DestinationRemoveFields } from "./destination-remove-card"
 
 type Props = {
-	destinationId: string;
-	oauthConnected: boolean;
-	onRemoveClick: () => void;
-	isRemovePending: boolean;
-};
+	destinationId: string
+	oauthConnected: boolean
+	onRemoveClick: () => void
+	isRemovePending: boolean
+}
 
 function WidgetLabel({ children }: { children: ReactNode }) {
 	return (
 		<p className="mb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
 			{children}
 		</p>
-	);
+	)
 }
 
 /**
@@ -92,5 +92,5 @@ export function PublishingDestinationWidgets({
 				</DashboardPanel>
 			</div>
 		</div>
-	);
+	)
 }

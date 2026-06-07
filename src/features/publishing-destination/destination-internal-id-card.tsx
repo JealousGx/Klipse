@@ -1,11 +1,11 @@
-import { Copy } from "lucide-react";
-import { toast } from "sonner";
+import { Copy } from "lucide-react"
+import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 
 type Props = {
-	destinationId: string;
-};
+	destinationId: string
+}
 
 export function DestinationInternalIdFields({ destinationId }: Props) {
 	return (
@@ -22,12 +22,12 @@ export function DestinationInternalIdFields({ destinationId }: Props) {
 					void navigator.clipboard.writeText(destinationId).then(
 						() => toast.success("Destination id copied"),
 						() => toast.error("Could not copy"),
-					);
+					)
 				}}
 			>
 				<Copy className="size-3.5" />
 				Copy
 			</Button>
 		</div>
-	);
+	)
 }

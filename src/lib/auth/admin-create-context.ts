@@ -1,4 +1,4 @@
-import { AsyncLocalStorage } from "node:async_hooks";
+import { AsyncLocalStorage } from "node:async_hooks"
 
 /**
  * Propagates the admin-create bypass flag through the async call chain.
@@ -11,11 +11,11 @@ import { AsyncLocalStorage } from "node:async_hooks";
  * Thread-safe: each request's async context is fully isolated by AsyncLocalStorage.
  * No global state is mutated; CF Workers concurrent requests never cross-contaminate.
  */
-const adminCreateCtx = new AsyncLocalStorage<true>();
+const adminCreateCtx = new AsyncLocalStorage<true>()
 
 /** Returns `true` when the current async context is an admin user-creation call. */
 export function isAdminCreate(): boolean {
-	return adminCreateCtx.getStore() === true;
+	return adminCreateCtx.getStore() === true
 }
 
 /**
@@ -24,5 +24,5 @@ export function isAdminCreate(): boolean {
  * will skip the registration kill switch for the duration of `fn`.
  */
 export function runAsAdminCreate<T>(fn: () => Promise<T>): Promise<T> {
-	return adminCreateCtx.run(true, fn);
+	return adminCreateCtx.run(true, fn)
 }

@@ -1,20 +1,20 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { eq } from "drizzle-orm";
+import { eq } from "drizzle-orm"
 
-import { getDb } from "@/db";
-import { videoJobs } from "@/db/schema/video-jobs";
+import { getDb } from "@/db"
+import { videoJobs } from "@/db/schema/video-jobs"
 
-import { logger } from "@/lib/logger";
-import { captureException } from "@/lib/sentry";
-import { PIPELINE_KIND } from "./pipeline-kind";
-import { processContentPipelineJob } from "./process-content-pipeline.server";
+import { logger } from "@/lib/logger"
+import { captureException } from "@/lib/sentry"
+import { PIPELINE_KIND } from "./pipeline-kind"
+import { processContentPipelineJob } from "./process-content-pipeline.server"
 
 export type DispatchVideoJobInput = {
-	jobId: string;
-	userId: string;
-	pipelineKind: string;
-};
+	jobId: string
+	userId: string
+	pipelineKind: string
+}
 
 /**
  * Cron dispatch calls this for each queued job. Verifies ownership + kind,
@@ -23,9 +23,9 @@ export type DispatchVideoJobInput = {
 export async function dispatchPipelineForJob(
 	input: DispatchVideoJobInput,
 ): Promise<void> {
-	const db = getDb();
-	const jobId = input.jobId.trim();
-	const userId = input.userId.trim();
+	const db = getDb()
+	const jobId = input.jobId.trim()
+	const userId = input.userId.trim()
 
 	const [row] = await db
 		.select({
@@ -35,16 +35,16 @@ export async function dispatchPipelineForJob(
 		})
 		.from(videoJobs)
 		.where(eq(videoJobs.id, jobId))
-		.limit(1);
+		.limit(1)
 
 	if (!row) {
-		throw new Error("video_job_not_found");
+		throw new Error("video_job_not_found")
 	}
 	if (row.userId !== userId) {
-		throw new Error("video_job_user_mismatch");
+		throw new Error("video_job_user_mismatch")
 	}
 	if (row.pipelineKind !== input.pipelineKind.trim()) {
-		throw new Error("video_job_pipeline_kind_mismatch");
+		throw new Error("video_job_pipeline_kind_mismatch")
 	}
 
 	if (row.status === "completed" || row.status === "failed") {
@@ -52,30 +52,30 @@ export async function dispatchPipelineForJob(
 			jobId,
 			userId,
 			jobStatus: row.status,
-		});
-		return;
+		})
+		return
 	}
 
 	logger.info("job_dispatch_start", {
 		jobId,
 		userId,
 		pipelineKind: row.pipelineKind,
-	});
+	})
 
 	switch (row.pipelineKind) {
 		case PIPELINE_KIND.CONTENT_PIPELINE_V1:
-			await processContentPipelineJob(jobId);
-			return;
+			await processContentPipelineJob(jobId)
+			return
 		default:
 			logger.error("unsupported_pipeline_kind", {
 				jobId,
 				userId,
 				pipelineKind: row.pipelineKind,
-			});
+			})
 			captureException(
 				new Error(`unsupported_pipeline_kind:${row.pipelineKind}`),
 				{ jobId, userId, pipelineKind: row.pipelineKind },
-			);
-			throw new Error(`unsupported_pipeline_kind:${row.pipelineKind}`);
+			)
+			throw new Error(`unsupported_pipeline_kind:${row.pipelineKind}`)
 	}
 }

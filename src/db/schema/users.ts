@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm"
 import {
 	boolean,
 	int,
@@ -7,7 +7,7 @@ import {
 	text,
 	timestamp,
 	varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/mysql-core"
 
 export const users = mysqlTable("users", {
 	id: varchar("id", { length: 64 }).primaryKey(),
@@ -56,4 +56,4 @@ export const users = mysqlTable("users", {
 	updatedAt: timestamp("updated_at", { fsp: 3 })
 		.default(sql`CURRENT_TIMESTAMP(3)`)
 		.notNull(),
-});
+})

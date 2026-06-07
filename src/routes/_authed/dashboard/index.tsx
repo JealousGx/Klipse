@@ -1,29 +1,29 @@
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
-import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import { useMemo } from "react"
 
-import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist";
-import { OverviewPipelineHero } from "@/components/dashboard/pipeline-story";
-import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
-import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types";
-import type { MeResponse } from "@/features/user/types/me";
+import { OnboardingChecklist } from "@/components/dashboard/onboarding-checklist"
+import { OverviewPipelineHero } from "@/components/dashboard/pipeline-story"
+import { useDashboardRouteContext } from "@/context/useDashboardRouteContext"
+import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types"
+import type { MeResponse } from "@/features/user/types/me"
 import {
 	channelsQueryOptions,
 	videoJobsQueryOptions,
-} from "@/lib/queries/dashboard-queries";
-import { cn } from "@/lib/utils";
+} from "@/lib/queries/dashboard-queries"
+import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_authed/dashboard/")({
 	staticData: { dashboardTitle: "Overview" },
 	component: DashboardPage,
-});
+})
 
 const planLabel: Record<MeResponse["plan"], string> = {
 	free: "Free",
 	starter: "Starter",
 	creator: "Creator",
 	empire: "Empire",
-};
+}
 
 /** Vertical accent bars + label tints from theme (`styles.css` tokens). */
 const metricAccents = [
@@ -31,20 +31,20 @@ const metricAccents = [
 	{ bar: "bg-chart-2", label: "text-chart-2" },
 	{ bar: "bg-chart-1", label: "text-chart-1" },
 	{ bar: "bg-muted-foreground/45", label: "text-muted-foreground" },
-] as const;
+] as const
 
 function DashboardPage() {
-	const { session } = useDashboardRouteContext();
-	const user = session.user;
+	const { session } = useDashboardRouteContext()
+	const user = session.user
 
-	const channelsQuery = useQuery(channelsQueryOptions);
-	const jobsQuery = useQuery(videoJobsQueryOptions());
+	const channelsQuery = useQuery(channelsQueryOptions)
+	const jobsQuery = useQuery(videoJobsQueryOptions())
 
-	const latestJob = jobsQuery.data?.jobs?.[0] ?? null;
+	const latestJob = jobsQuery.data?.jobs?.[0] ?? null
 
 	const activeChannel = useMemo((): ChannelSnapshot | null => {
-		const c = channelsQuery.data?.[0];
-		if (!c) return null;
+		const c = channelsQuery.data?.[0]
+		if (!c) return null
 		return {
 			id: c.id,
 			name: c.name,
@@ -52,12 +52,12 @@ function DashboardPage() {
 			platform: c.platform,
 			externalChannelId: c.externalChannelId,
 			oauthConnected: c.oauthConnected,
-		};
-	}, [channelsQuery.data]);
+		}
+	}, [channelsQuery.data])
 
 	const channelValue = channelsQuery.isPending
 		? "…"
-		: String(channelsQuery.data?.length ?? 0);
+		: String(channelsQuery.data?.length ?? 0)
 
 	const items = [
 		{
@@ -80,7 +80,7 @@ function DashboardPage() {
 			value: channelValue,
 			hint: "Connected destinations",
 		},
-	] as const;
+	] as const
 
 	return (
 		<div className="space-y-8">
@@ -115,7 +115,7 @@ function DashboardPage() {
 				a video right now.
 			</p>
 		</div>
-	);
+	)
 }
 
 function Metric({
@@ -124,10 +124,10 @@ function Metric({
 	hint,
 	accent,
 }: {
-	label: string;
-	value: string;
-	hint?: string;
-	accent: (typeof metricAccents)[number];
+	label: string
+	value: string
+	hint?: string
+	accent: (typeof metricAccents)[number]
 }) {
 	return (
 		<div className="flex min-w-0 gap-4 px-5 py-6 sm:px-6 sm:py-7">
@@ -152,5 +152,5 @@ function Metric({
 				) : null}
 			</div>
 		</div>
-	);
+	)
 }

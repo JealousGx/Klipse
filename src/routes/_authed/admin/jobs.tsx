@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
 import {
 	AlertCircle,
 	ChevronDown,
@@ -8,34 +8,34 @@ import {
 	RefreshCw,
 	StopCircle,
 	Video,
-} from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+} from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 import {
 	type AdminJobRow,
 	cancelAdminJobFn,
 	listAdminJobsFn,
-} from "@/features/admin/admin-jobs.functions";
+} from "@/features/admin/admin-jobs.functions"
 
 export const Route = createFileRoute("/_authed/admin/jobs")({
 	component: AdminJobsPage,
-});
+})
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const PAGE_SIZE = 50; // page size constant for cursor fetch
+const PAGE_SIZE = 50 // page size constant for cursor fetch
 
-type AdminJobCursor = { createdAt: string; id: string };
+type AdminJobCursor = { createdAt: string; id: string }
 
 type StatusFilter =
 	| "all"
@@ -43,7 +43,7 @@ type StatusFilter =
 	| "dispatched"
 	| "processing"
 	| "completed"
-	| "failed";
+	| "failed"
 
 const TABS: { label: string; value: StatusFilter }[] = [
 	{ label: "All", value: "all" },
@@ -52,9 +52,9 @@ const TABS: { label: string; value: StatusFilter }[] = [
 	{ label: "Processing", value: "processing" },
 	{ label: "Completed", value: "completed" },
 	{ label: "Failed", value: "failed" },
-];
+]
 
-const ACTIVE_STATUSES = new Set(["queued", "dispatched", "processing"]);
+const ACTIVE_STATUSES = new Set(["queued", "dispatched", "processing"])
 
 // ---------------------------------------------------------------------------
 // Status Badge
@@ -66,14 +66,14 @@ function StatusBadge({ status }: { status: string }) {
 			<span className="inline-flex items-center gap-1.5 rounded-full border border-blue-500/30 bg-blue-500/15 px-2.5 py-0.5 text-xs font-medium text-blue-400">
 				Queued
 			</span>
-		);
+		)
 	}
 	if (status === "dispatched") {
 		return (
 			<span className="inline-flex items-center gap-1.5 rounded-full border border-sky-500/30 bg-sky-500/15 px-2.5 py-0.5 text-xs font-medium text-sky-400">
 				Dispatched
 			</span>
-		);
+		)
 	}
 	if (status === "processing") {
 		return (
@@ -81,14 +81,14 @@ function StatusBadge({ status }: { status: string }) {
 				<span className="size-1.5 animate-pulse rounded-full bg-amber-400" />
 				Processing
 			</span>
-		);
+		)
 	}
 	if (status === "completed") {
 		return (
 			<span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-2.5 py-0.5 text-xs font-medium text-emerald-400">
 				Completed
 			</span>
-		);
+		)
 	}
 	if (status === "failed") {
 		return (
@@ -96,13 +96,13 @@ function StatusBadge({ status }: { status: string }) {
 				<AlertCircle className="size-3" />
 				Failed
 			</span>
-		);
+		)
 	}
 	return (
 		<span className="inline-flex items-center rounded-full border border-zinc-700 bg-zinc-800 px-2.5 py-0.5 text-xs text-zinc-400">
 			{status}
 		</span>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -114,9 +114,9 @@ function StatCard({
 	value,
 	accent,
 }: {
-	label: string;
-	value: number;
-	accent?: "amber" | "green" | "red" | "blue";
+	label: string
+	value: number
+	accent?: "amber" | "green" | "red" | "blue"
 }) {
 	const valueClass =
 		accent === "amber"
@@ -127,7 +127,7 @@ function StatCard({
 					? "text-red-400"
 					: accent === "blue"
 						? "text-blue-400"
-						: "text-zinc-100";
+						: "text-zinc-100"
 
 	return (
 		<div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
@@ -136,7 +136,7 @@ function StatCard({
 			</p>
 			<p className={`mt-1 text-3xl font-bold ${valueClass}`}>{value}</p>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -148,12 +148,12 @@ function JobRow({
 	onCancel,
 	isCancelling,
 }: {
-	job: AdminJobRow;
-	onCancel: (id: string) => void;
-	isCancelling: boolean;
+	job: AdminJobRow
+	onCancel: (id: string) => void
+	isCancelling: boolean
 }) {
-	const [expanded, setExpanded] = useState(false);
-	const isActive = ACTIVE_STATUSES.has(job.status);
+	const [expanded, setExpanded] = useState(false)
+	const isActive = ACTIVE_STATUSES.has(job.status)
 
 	return (
 		<>
@@ -231,7 +231,7 @@ function JobRow({
 									variant="destructive"
 									onClick={() => {
 										if (window.confirm(`Cancel job ${job.id}?`)) {
-											onCancel(job.id);
+											onCancel(job.id)
 										}
 									}}
 									disabled={isCancelling}
@@ -254,7 +254,7 @@ function JobRow({
 				</tr>
 			)}
 		</>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -262,14 +262,14 @@ function JobRow({
 // ---------------------------------------------------------------------------
 
 function AdminJobsPage() {
-	const queryClient = useQueryClient();
-	const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-	const [cursorStack, setCursorStack] = useState<AdminJobCursor[]>([]);
-	const [cancellingId, setCancellingId] = useState<string | null>(null);
+	const queryClient = useQueryClient()
+	const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+	const [cursorStack, setCursorStack] = useState<AdminJobCursor[]>([])
+	const [cancellingId, setCancellingId] = useState<string | null>(null)
 
 	const currentCursor =
-		cursorStack.length > 0 ? cursorStack[cursorStack.length - 1] : undefined;
-	const currentPage = cursorStack.length + 1;
+		cursorStack.length > 0 ? cursorStack[cursorStack.length - 1] : undefined
+	const currentPage = cursorStack.length + 1
 
 	const { data, isLoading, isError, isFetching, refetch } = useQuery({
 		queryKey: ["admin-jobs", statusFilter, currentCursor ?? null],
@@ -283,45 +283,45 @@ function AdminJobsPage() {
 			}),
 		staleTime: 5_000,
 		refetchInterval: (query) => {
-			const jobs = query.state.data?.ok ? query.state.data.jobs : [];
-			const hasActive = jobs.some((j) => ACTIVE_STATUSES.has(j.status));
-			return hasActive ? 10_000 : false;
+			const jobs = query.state.data?.ok ? query.state.data.jobs : []
+			const hasActive = jobs.some((j) => ACTIVE_STATUSES.has(j.status))
+			return hasActive ? 10_000 : false
 		},
-	});
+	})
 
-	const jobs: AdminJobRow[] = data?.ok ? data.jobs : [];
-	const nextCursor = data?.ok ? data.nextCursor : null;
-	const hasPrev = cursorStack.length > 0;
-	const hasNext = !!nextCursor;
+	const jobs: AdminJobRow[] = data?.ok ? data.jobs : []
+	const nextCursor = data?.ok ? data.nextCursor : null
+	const hasPrev = cursorStack.length > 0
+	const hasNext = !!nextCursor
 
 	// Derived counts from current page
-	const queuedCount = jobs.filter((j) => j.status === "queued").length;
-	const processingCount = jobs.filter((j) => j.status === "processing").length;
-	const completedCount = jobs.filter((j) => j.status === "completed").length;
-	const failedCount = jobs.filter((j) => j.status === "failed").length;
+	const queuedCount = jobs.filter((j) => j.status === "queued").length
+	const processingCount = jobs.filter((j) => j.status === "processing").length
+	const completedCount = jobs.filter((j) => j.status === "completed").length
+	const failedCount = jobs.filter((j) => j.status === "failed").length
 
 	const cancelMutation = useMutation({
 		mutationFn: (jobId: string) => cancelAdminJobFn({ data: { jobId } }),
 		onSuccess: (result, _jobId) => {
-			setCancellingId(null);
+			setCancellingId(null)
 			if (result.ok) {
-				toast.success("Job cancelled.");
-				queryClient.invalidateQueries({ queryKey: ["admin-jobs"] });
+				toast.success("Job cancelled.")
+				queryClient.invalidateQueries({ queryKey: ["admin-jobs"] })
 			} else if (result.code === "already_terminal") {
-				toast.error("Job is already in a terminal state.");
+				toast.error("Job is already in a terminal state.")
 			} else {
-				toast.error("Failed to cancel job.");
+				toast.error("Failed to cancel job.")
 			}
 		},
 		onError: () => {
-			setCancellingId(null);
-			toast.error("Failed to cancel job.");
+			setCancellingId(null)
+			toast.error("Failed to cancel job.")
 		},
-	});
+	})
 
 	function handleCancel(jobId: string) {
-		setCancellingId(jobId);
-		cancelMutation.mutate(jobId);
+		setCancellingId(jobId)
+		cancelMutation.mutate(jobId)
 	}
 
 	return (
@@ -355,8 +355,8 @@ function AdminJobsPage() {
 						type="button"
 						key={tab.value}
 						onClick={() => {
-							setStatusFilter(tab.value);
-							setCursorStack([]);
+							setStatusFilter(tab.value)
+							setCursorStack([])
 						}}
 						className={[
 							"shrink-0 rounded-lg px-3.5 py-2 text-sm font-medium transition-all",
@@ -477,5 +477,5 @@ function AdminJobsPage() {
 				</>
 			)}
 		</div>
-	);
+	)
 }

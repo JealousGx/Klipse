@@ -1,8 +1,8 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { InsufficientCreditsError } from "@/features/billing/credit-usage.server";
+import { InsufficientCreditsError } from "@/features/billing/credit-usage.server"
 
-import type { UserEntitlementSnapshot } from "./snapshot.server";
+import type { UserEntitlementSnapshot } from "./snapshot.server"
 
 /**
  * Throws {@link InsufficientCreditsError} when the locked snapshot cannot cover `requiredCredits`.
@@ -14,12 +14,12 @@ export function assertCreditsSufficientForCharge(
 	requiredCredits: number,
 ): void {
 	if (requiredCredits <= 0) {
-		throw new Error("requiredCredits must be positive");
+		throw new Error("requiredCredits must be positive")
 	}
 	if (snapshot.creditsRemaining < requiredCredits) {
 		throw new InsufficientCreditsError(
 			requiredCredits,
 			snapshot.creditsRemaining,
-		);
+		)
 	}
 }

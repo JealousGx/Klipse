@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm"
 import {
 	boolean,
 	index,
@@ -9,7 +9,7 @@ import {
 	timestamp,
 	uniqueIndex,
 	varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/mysql-core"
 
 /** Which upstream API the secret authenticates to. */
 export const providerApiKeyProviderEnum = mysqlEnum("provider", [
@@ -26,7 +26,7 @@ export const providerApiKeyProviderEnum = mysqlEnum("provider", [
 	"openai",
 	"kling",
 	"luma",
-]);
+])
 
 /**
  * Which pipeline task(s) this key is authorised for.
@@ -39,7 +39,7 @@ export const providerApiKeyTaskEnum = mysqlEnum("task_type", [
 	"tts",
 	"voice",
 	"sound",
-]);
+])
 
 export type ProviderApiKeyTask =
 	| "any"
@@ -47,7 +47,7 @@ export type ProviderApiKeyTask =
 	| "image"
 	| "tts"
 	| "voice"
-	| "sound";
+	| "sound"
 
 /**
  * API keys per provider: manually inserted or **materialized from env** when a provider
@@ -103,6 +103,6 @@ export const providerApiKeys = mysqlTable(
 			table.secretFingerprint,
 		),
 	],
-);
+)
 
-export type ProviderApiKeyRow = typeof providerApiKeys.$inferSelect;
+export type ProviderApiKeyRow = typeof providerApiKeys.$inferSelect

@@ -1,15 +1,15 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import type { ProcessorProviderKeys } from "@klipse/video-assembly-shared";
+import type { ProcessorProviderKeys } from "@klipse/video-assembly-shared"
 
-import { listAllProcessorProviderKeyCredentials } from "./provider-api-keys.server";
+import { listAllProcessorProviderKeyCredentials } from "./provider-api-keys.server"
 
 /**
  * Fetches all active provider keys from DB in two queries (grouped count + bulk SELECT)
  * and bundles them for `ProcessorJobSpec`. Previously made five parallel DB calls.
  */
 export async function bundleProviderKeysForProcessor(): Promise<ProcessorProviderKeys> {
-	const all = await listAllProcessorProviderKeyCredentials();
+	const all = await listAllProcessorProviderKeyCredentials()
 
 	return {
 		openrouter: all.openrouter.map((k) => ({
@@ -42,5 +42,5 @@ export async function bundleProviderKeysForProcessor(): Promise<ProcessorProvide
 			secret: k.secret,
 			modelId: k.modelId,
 		})),
-	};
+	}
 }

@@ -4,13 +4,13 @@
  */
 export function readBetterAuthActionError(
 	result: {
-		error?: { message?: string; status?: number } | null;
-		data?: unknown;
+		error?: { message?: string; status?: number } | null
+		data?: unknown
 	},
 	fallback: string,
 ): string | null {
 	if (result.error) {
-		return result.error.message?.trim() || fallback;
+		return result.error.message?.trim() || fallback
 	}
-	return null;
+	return null
 }

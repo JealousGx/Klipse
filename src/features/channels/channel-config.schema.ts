@@ -1,19 +1,19 @@
-import { z } from "zod";
+import { z } from "zod"
 
 /**
  * Platform-specific terms a user must confirm before publishing.
  * Add new literals here as new integrations land — no DB migration needed.
  */
-export type PlatformConfirmedTerm = "tiktok_music_usage";
+export type PlatformConfirmedTerm = "tiktok_music_usage"
 
 /** Required term keys per platform. Publish is blocked until all are confirmed. */
 export const PLATFORM_REQUIRED_TERMS: Partial<
 	Record<string, PlatformConfirmedTerm[]>
 > = {
 	tiktok: ["tiktok_music_usage"],
-};
+}
 
-const platformConfirmedTermSchema = z.enum(["tiktok_music_usage"]);
+const platformConfirmedTermSchema = z.enum(["tiktok_music_usage"])
 
 /** Stored JSON for `channels.config` — MVP subset of FEATURE_DOC §2.2. */
 export const channelConfigSchema = z
@@ -92,15 +92,15 @@ export const channelConfigSchema = z
 				caption_style: "bold" as const,
 			})),
 	})
-	.strict();
+	.strict()
 
-export type ChannelConfig = z.infer<typeof channelConfigSchema>;
+export type ChannelConfig = z.infer<typeof channelConfigSchema>
 
 export function defaultChannelConfig(): ChannelConfig {
-	return channelConfigSchema.parse({});
+	return channelConfigSchema.parse({})
 }
 
 export function parseChannelConfig(raw: unknown): ChannelConfig {
-	const parsed = channelConfigSchema.safeParse(raw);
-	return parsed.success ? parsed.data : defaultChannelConfig();
+	const parsed = channelConfigSchema.safeParse(raw)
+	return parsed.success ? parsed.data : defaultChannelConfig()
 }

@@ -1,35 +1,36 @@
-import { Link } from "@tanstack/react-router";
-import { Check, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Link } from "@tanstack/react-router"
+import { Check, X } from "lucide-react"
+import { useEffect, useState } from "react"
 
-import { Button } from "@/components/ui/button";
-import type { ChannelRow } from "@/features/channels/channels.service.server";
+import { Button } from "@/components/ui/button"
+import type { ChannelRow } from "@/features/channels/channels.service.server"
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-const STORAGE_KEY = "klipse_onboarding_dismissed";
+const STORAGE_KEY = "klipse_onboarding_dismissed"
 
 type Step = {
-	label: string;
-	description: string;
-	done: boolean;
-	href: string;
-	cta: string;
-};
+	label: string
+	description: string
+	done: boolean
+	href: string
+	cta: string
+}
 
 type Props = {
-	channels: ChannelRow[];
-};
+	channels: ChannelRow[]
+}
 
 function getSteps(channels: ChannelRow[]): Step[] {
-	const hasChannel = channels.length > 0;
-	const hasOAuth = channels.some((c) => c.oauthConnected);
-	const hasNiche = channels.some((c) => c.niche.trim().length > 0);
+	const hasChannel = channels.length > 0
+	const hasOAuth = channels.some((c) => c.oauthConnected)
+	const hasNiche = channels.some((c) => c.niche.trim().length > 0)
 
 	return [
 		{
 			label: "Connect a platform account",
-			description: "Link your YouTube channel so Klipse can publish videos for you.",
+			description:
+				"Link your YouTube channel so Klipse can publish videos for you.",
 			done: hasOAuth,
 			href: "/dashboard/publishing",
 			cta: "Go to Publishing",
@@ -50,31 +51,31 @@ function getSteps(channels: ChannelRow[]): Step[] {
 			href: "/dashboard/generate",
 			cta: "Create a video now",
 		},
-	];
+	]
 }
 
 function isDismissed(): boolean {
-	if (typeof window === "undefined") return false;
-	return localStorage.getItem(STORAGE_KEY) === "1";
+	if (typeof window === "undefined") return false
+	return localStorage.getItem(STORAGE_KEY) === "1"
 }
 
 export function OnboardingChecklist({ channels }: Props) {
-	const [dismissed, setDismissed] = useState(true);
+	const [dismissed, setDismissed] = useState(true)
 
 	useEffect(() => {
-		setDismissed(isDismissed());
-	}, []);
+		setDismissed(isDismissed())
+	}, [])
 
-	const steps = getSteps(channels);
-	const completedCount = steps.filter((s) => s.done).length;
-	const allDone = completedCount === steps.length;
+	const steps = getSteps(channels)
+	const completedCount = steps.filter((s) => s.done).length
+	const allDone = completedCount === steps.length
 
 	const handleDismiss = () => {
-		localStorage.setItem(STORAGE_KEY, "1");
-		setDismissed(true);
-	};
+		localStorage.setItem(STORAGE_KEY, "1")
+		setDismissed(true)
+	}
 
-	if (dismissed) return null;
+	if (dismissed) return null
 
 	return (
 		<div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
@@ -144,7 +145,13 @@ export function OnboardingChecklist({ channels }: Props) {
 									className="mt-2 shrink-0 self-start text-xs sm:mt-0"
 									asChild
 								>
-									<Link to={step.href as "/dashboard/publishing" | "/dashboard/generate"}>
+									<Link
+										to={
+											step.href as
+												| "/dashboard/publishing"
+												| "/dashboard/generate"
+										}
+									>
 										{step.cta}
 									</Link>
 								</Button>
@@ -170,5 +177,5 @@ export function OnboardingChecklist({ channels }: Props) {
 				</div>
 			)}
 		</div>
-	);
+	)
 }

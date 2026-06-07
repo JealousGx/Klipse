@@ -1,16 +1,16 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { and, eq, lte } from "drizzle-orm";
+import { and, eq, lte } from "drizzle-orm"
 
-import { getDb } from "@/db";
-import { channels } from "@/db/schema/channels";
-import { schedules } from "@/db/schema/schedules";
-import { InsufficientCreditsError } from "@/features/billing/credit-usage.server";
-import { TiktokChannelConfigIncompleteError } from "@/features/channels/channel-errors";
-import type { ChannelConfig } from "@/features/channels/channel-config.schema";
-import { executeContentPipelineWithIdempotency } from "@/features/video/content-pipeline-execute.server";
-import { scheduleRowId } from "@/lib/id";
-import { logger } from "@/lib/logger";
+import { getDb } from "@/db"
+import { channels } from "@/db/schema/channels"
+import { schedules } from "@/db/schema/schedules"
+import { InsufficientCreditsError } from "@/features/billing/credit-usage.server"
+import { TiktokChannelConfigIncompleteError } from "@/features/channels/channel-errors"
+import type { ChannelConfig } from "@/features/channels/channel-config.schema"
+import { executeContentPipelineWithIdempotency } from "@/features/video/content-pipeline-execute.server"
+import { scheduleRowId } from "@/lib/id"
+import { logger } from "@/lib/logger"
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -27,17 +27,17 @@ const FREQUENCY_MS: Record<ChannelConfig["posting_frequency"], number> = {
 	every_2_weeks: 14 * 24 * 60 * 60 * 1_000,
 	every_3_weeks: 21 * 24 * 60 * 60 * 1_000,
 	monthly: 30 * 24 * 60 * 60 * 1_000,
-};
+}
 
-const DEFAULT_JITTER_MINUTES = 360;
+const DEFAULT_JITTER_MINUTES = 360
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function addJitter(base: Date, jitterMinutes: number): Date {
-	const jitterMs = Math.floor(Math.random() * jitterMinutes * 60_000);
-	return new Date(base.getTime() + jitterMs);
+	const jitterMs = Math.floor(Math.random() * jitterMinutes * 60_000)
+	return new Date(base.getTime() + jitterMs)
 }
 
 function computeNextRunAt(
@@ -48,7 +48,7 @@ function computeNextRunAt(
 	return addJitter(
 		new Date(from.getTime() + FREQUENCY_MS[frequency]),
 		jitterMinutes,
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -61,15 +61,15 @@ function computeNextRunAt(
  * One schedule per channel is enforced by the unique constraint on `channelId`.
  */
 export async function upsertChannelSchedule(input: {
-	userId: string;
-	channelId: string;
-	frequency: ChannelConfig["posting_frequency"];
-	jitterMinutes?: number;
-	enabled?: boolean;
+	userId: string
+	channelId: string
+	frequency: ChannelConfig["posting_frequency"]
+	jitterMinutes?: number
+	enabled?: boolean
 }): Promise<void> {
-	const db = getDb();
-	const now = new Date();
-	const jitter = input.jitterMinutes ?? DEFAULT_JITTER_MINUTES;
+	const db = getDb()
+	const now = new Date()
+	const jitter = input.jitterMinutes ?? DEFAULT_JITTER_MINUTES
 
 	const [existing] = await db
 		.select({
@@ -79,7 +79,7 @@ export async function upsertChannelSchedule(input: {
 		})
 		.from(schedules)
 		.where(eq(schedules.channelId, input.channelId))
-		.limit(1);
+		.limit(1)
 
 	if (!existing) {
 		// First schedule for this channel — set nextRunAt in the future with jitter
@@ -94,8 +94,8 @@ export async function upsertChannelSchedule(input: {
 			enabled: input.enabled ?? true,
 			createdAt: now,
 			updatedAt: now,
-		});
-		return;
+		})
+		return
 	}
 
 	// Only recalculate nextRunAt if the frequency changed — preserves the existing
@@ -107,15 +107,15 @@ export async function upsertChannelSchedule(input: {
 				: true,
 		jitterMinutes: jitter,
 		updatedAt: now,
-	};
-
-	if (existing.frequency !== input.frequency) {
-		patch.frequency = input.frequency;
-		patch.nextRunAt = computeNextRunAt(input.frequency, jitter, now);
-		patch.enabled = input.enabled ?? true;
 	}
 
-	await db.update(schedules).set(patch).where(eq(schedules.id, existing.id));
+	if (existing.frequency !== input.frequency) {
+		patch.frequency = input.frequency
+		patch.nextRunAt = computeNextRunAt(input.frequency, jitter, now)
+		patch.enabled = input.enabled ?? true
+	}
+
+	await db.update(schedules).set(patch).where(eq(schedules.id, existing.id))
 }
 
 // ---------------------------------------------------------------------------
@@ -126,41 +126,41 @@ export async function pauseScheduleForChannel(
 	userId: string,
 	channelId: string,
 ): Promise<void> {
-	const db = getDb();
+	const db = getDb()
 	await db
 		.update(schedules)
 		.set({ enabled: false, updatedAt: new Date() })
 		.where(
 			and(eq(schedules.channelId, channelId), eq(schedules.userId, userId)),
-		);
+		)
 }
 
 export async function resumeScheduleForChannel(
 	userId: string,
 	channelId: string,
 ): Promise<void> {
-	const db = getDb();
+	const db = getDb()
 	await db
 		.update(schedules)
 		.set({ enabled: true, updatedAt: new Date() })
 		.where(
 			and(eq(schedules.channelId, channelId), eq(schedules.userId, userId)),
-		);
+		)
 }
 
 export async function getScheduleForChannel(
 	userId: string,
 	channelId: string,
 ): Promise<typeof schedules.$inferSelect | null> {
-	const db = getDb();
+	const db = getDb()
 	const [row] = await db
 		.select()
 		.from(schedules)
 		.where(
 			and(eq(schedules.channelId, channelId), eq(schedules.userId, userId)),
 		)
-		.limit(1);
-	return row ?? null;
+		.limit(1)
+	return row ?? null
 }
 
 // ---------------------------------------------------------------------------
@@ -169,7 +169,7 @@ export async function getScheduleForChannel(
 
 export type TriggerNowResult =
 	| { ok: true }
-	| { ok: false; code: "no_schedule" | "insufficient_credits" | "error" };
+	| { ok: false; code: "no_schedule" | "insufficient_credits" | "error" }
 
 /**
  * Fires the content pipeline immediately for a channel's schedule, then advances
@@ -183,8 +183,8 @@ export async function triggerScheduleNowForChannel(
 	userId: string,
 	channelId: string,
 ): Promise<TriggerNowResult> {
-	const db = getDb();
-	const now = new Date();
+	const db = getDb()
+	const now = new Date()
 
 	const [row] = await db
 		.select({
@@ -198,14 +198,14 @@ export async function triggerScheduleNowForChannel(
 		.where(
 			and(eq(schedules.channelId, channelId), eq(schedules.userId, userId)),
 		)
-		.limit(1);
+		.limit(1)
 
 	if (!row) {
-		return { ok: false, code: "no_schedule" };
+		return { ok: false, code: "no_schedule" }
 	}
 
-	const idempotencyKey = `schedule-now:${row.id}:${now.toISOString()}`;
-	const nextRunAt = computeNextRunAt(row.frequency, row.jitterMinutes, now);
+	const idempotencyKey = `schedule-now:${row.id}:${now.toISOString()}`
+	const nextRunAt = computeNextRunAt(row.frequency, row.jitterMinutes, now)
 
 	try {
 		await executeContentPipelineWithIdempotency({
@@ -213,23 +213,23 @@ export async function triggerScheduleNowForChannel(
 			channelId,
 			idempotencyKey,
 			idea: row.channelNiche.trim() || "Create an engaging video.",
-		});
+		})
 
 		await db
 			.update(schedules)
 			.set({ lastRunAt: now, nextRunAt, updatedAt: now })
-			.where(eq(schedules.id, row.id));
+			.where(eq(schedules.id, row.id))
 
-		return { ok: true };
+		return { ok: true }
 	} catch (e) {
 		if (e instanceof InsufficientCreditsError) {
-			return { ok: false, code: "insufficient_credits" };
+			return { ok: false, code: "insufficient_credits" }
 		}
 		logger.error("[scheduling] triggerScheduleNow failed", {
 			channelId,
 			error: e instanceof Error ? e.message : String(e),
-		});
-		return { ok: false, code: "error" };
+		})
+		return { ok: false, code: "error" }
 	}
 }
 
@@ -238,10 +238,10 @@ export async function triggerScheduleNowForChannel(
 // ---------------------------------------------------------------------------
 
 export type TriggerSchedulesResult = {
-	triggered: number;
-	skipped: number;
-	errors: number;
-};
+	triggered: number
+	skipped: number
+	errors: number
+}
 
 /**
  * Called by the cron endpoint every 15 minutes.
@@ -255,8 +255,8 @@ export type TriggerSchedulesResult = {
  * even if the cron fires twice within a window, only one pipeline job is created.
  */
 export async function triggerDueSchedules(): Promise<TriggerSchedulesResult> {
-	const db = getDb();
-	const now = new Date();
+	const db = getDb()
+	const now = new Date()
 
 	const due = await db
 		.select({
@@ -270,19 +270,19 @@ export async function triggerDueSchedules(): Promise<TriggerSchedulesResult> {
 		})
 		.from(schedules)
 		.innerJoin(channels, eq(schedules.channelId, channels.id))
-		.where(and(eq(schedules.enabled, true), lte(schedules.nextRunAt, now)));
+		.where(and(eq(schedules.enabled, true), lte(schedules.nextRunAt, now)))
 
-	let triggered = 0;
-	let skipped = 0;
-	let errors = 0;
+	let triggered = 0
+	let skipped = 0
+	let errors = 0
 
 	for (const schedule of due) {
-		const idempotencyKey = `schedule:${schedule.id}:${schedule.nextRunAt.toISOString()}`;
+		const idempotencyKey = `schedule:${schedule.id}:${schedule.nextRunAt.toISOString()}`
 		const nextRunAt = computeNextRunAt(
 			schedule.frequency,
 			schedule.jitterMinutes,
 			now,
-		);
+		)
 
 		try {
 			const outcome = await executeContentPipelineWithIdempotency({
@@ -291,17 +291,17 @@ export async function triggerDueSchedules(): Promise<TriggerSchedulesResult> {
 				idempotencyKey,
 				// Channel niche drives the video topic for each scheduled run.
 				idea: schedule.channelNiche.trim() || "Create an engaging video.",
-			});
+			})
 
 			await db
 				.update(schedules)
 				.set({ lastRunAt: now, nextRunAt, updatedAt: now })
-				.where(eq(schedules.id, schedule.id));
+				.where(eq(schedules.id, schedule.id))
 
 			if (outcome.kind === "replay") {
-				skipped++;
+				skipped++
 			} else {
-				triggered++;
+				triggered++
 			}
 		} catch (e) {
 			if (e instanceof InsufficientCreditsError) {
@@ -309,29 +309,32 @@ export async function triggerDueSchedules(): Promise<TriggerSchedulesResult> {
 				logger.warn("[scheduling] insufficient credits for schedule", {
 					scheduleId: schedule.id,
 					userId: schedule.userId,
-				});
+				})
 			} else if (e instanceof TiktokChannelConfigIncompleteError) {
 				// TikTok destination missing required config — skip silently until user fixes it.
-				logger.warn("[scheduling] tiktok config incomplete, skipping schedule", {
-					scheduleId: schedule.id,
-					userId: schedule.userId,
-					reason: e.reason,
-				});
+				logger.warn(
+					"[scheduling] tiktok config incomplete, skipping schedule",
+					{
+						scheduleId: schedule.id,
+						userId: schedule.userId,
+						reason: e.reason,
+					},
+				)
 			} else {
 				logger.error("[scheduling] pipeline failed for schedule", {
 					scheduleId: schedule.id,
 					userId: schedule.userId,
 					error: e instanceof Error ? e.message : String(e),
-				});
+				})
 			}
 			// Always advance nextRunAt to avoid accumulation of past-due slots.
 			await db
 				.update(schedules)
 				.set({ nextRunAt, updatedAt: now })
-				.where(eq(schedules.id, schedule.id));
-			errors++;
+				.where(eq(schedules.id, schedule.id))
+			errors++
 		}
 	}
 
-	return { triggered, skipped, errors };
+	return { triggered, skipped, errors }
 }

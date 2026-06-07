@@ -1,6 +1,6 @@
-import { siteConfig } from "@/config/site";
-import { getTransactionEmailFrom, sendEmail } from ".";
-import { brandEmailHtml, escapeHtml } from "./brand-layout";
+import { siteConfig } from "@/config/site"
+import { getTransactionEmailFrom, sendEmail } from "."
+import { brandEmailHtml, escapeHtml } from "./brand-layout"
 
 /**
  * Sends an invite email to a user created by an admin.
@@ -8,12 +8,12 @@ import { brandEmailHtml, escapeHtml } from "./brand-layout";
  * from that point on, no password required.
  */
 export async function sendAdminInviteEmail(data: {
-	email: string;
-	name: string;
-	invitedBy: string;
+	email: string
+	name: string
+	invitedBy: string
 }): Promise<void> {
-	const appName = siteConfig.name || "Klipse";
-	const signInUrl = `${siteConfig.origin}?auth=signup`;
+	const appName = siteConfig.name || "Klipse"
+	const signInUrl = `${siteConfig.origin}?auth=signup`
 
 	const content = `
 <h2 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#111827;text-align:center;line-height:1.3;">
@@ -38,7 +38,7 @@ export async function sendAdminInviteEmail(data: {
 <p style="margin:0;font-size:13px;line-height:1.5;color:#9ca3af;text-align:center;">
   Use <strong style="color:#6b7280;">${escapeHtml(data.email)}</strong> &mdash; you&rsquo;ll receive a one-time code to verify your identity.
 </p>
-`.trim();
+`.trim()
 
 	const text = [
 		`You're invited to ${appName}`,
@@ -47,7 +47,7 @@ export async function sendAdminInviteEmail(data: {
 		`Sign in at: ${signInUrl}`,
 		"",
 		`Use ${data.email} — you'll receive a one-time code to verify.`,
-	].join("\n");
+	].join("\n")
 
 	await sendEmail({
 		from: getTransactionEmailFrom(),
@@ -58,5 +58,5 @@ export async function sendAdminInviteEmail(data: {
 			content,
 		}),
 		text,
-	});
+	})
 }

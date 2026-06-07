@@ -1,10 +1,10 @@
-import { execFile } from "node:child_process";
-import { writeFile } from "node:fs/promises";
-import { promisify } from "node:util";
+import { execFile } from "node:child_process"
+import { writeFile } from "node:fs/promises"
+import { promisify } from "node:util"
 
-import { ffmpegBin } from "./probe";
+import { ffmpegBin } from "./probe"
 
-const execFileAsync = promisify(execFile);
+const execFileAsync = promisify(execFile)
 
 /**
  * Concatenates multiple silent video segments into one using the concat demuxer.
@@ -17,8 +17,8 @@ export async function concatSegments(
 ): Promise<void> {
 	const body = segPaths
 		.map((p) => `file '${p.replace(/'/g, "'\\''")}'`)
-		.join("\n");
-	await writeFile(listPath, body, "utf8");
+		.join("\n")
+	await writeFile(listPath, body, "utf8")
 
 	await execFileAsync(
 		ffmpegBin(),
@@ -35,5 +35,5 @@ export async function concatSegments(
 			outputPath,
 		],
 		{ timeout: 600_000, maxBuffer: 80 * 1024 * 1024 },
-	);
+	)
 }

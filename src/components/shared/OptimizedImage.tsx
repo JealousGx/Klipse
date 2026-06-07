@@ -1,6 +1,6 @@
-import type { ImgHTMLAttributes } from "react";
+import type { ImgHTMLAttributes } from "react"
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
 export type OptimizedImageProps = Omit<
 	ImgHTMLAttributes<HTMLImageElement>,
@@ -10,14 +10,14 @@ export type OptimizedImageProps = Omit<
 	 * Above-the-fold / LCP — `loading="eager"` and `fetchPriority="high"`.
 	 * Omit for below-fold or decorative chrome where defaults apply.
 	 */
-	priority?: boolean;
+	priority?: boolean
 	/** Defaults to `async` (non-blocking decode). */
-	decoding?: "async" | "sync" | "auto";
+	decoding?: "async" | "sync" | "auto"
 	/**
 	 * Explicit loading hint. If omitted: `lazy` unless `priority` is true (then `eager`).
 	 */
-	loading?: "lazy" | "eager";
-};
+	loading?: "lazy" | "eager"
+}
 
 /**
  * Standard `<img>` defaults for performance: async decode, lazy load unless
@@ -31,7 +31,7 @@ export function OptimizedImage({
 	alt,
 	...rest
 }: OptimizedImageProps) {
-	const loading = loadingProp ?? (priority ? "eager" : "lazy");
+	const loading = loadingProp ?? (priority ? "eager" : "lazy")
 
 	return (
 		<img
@@ -42,5 +42,5 @@ export function OptimizedImage({
 			fetchPriority={priority ? "high" : undefined}
 			loading={loading}
 		/>
-	);
+	)
 }

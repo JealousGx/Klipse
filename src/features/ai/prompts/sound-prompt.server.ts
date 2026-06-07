@@ -1,14 +1,14 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import type { ChannelCreativeBrief } from "./creative-brief.types";
+import type { ChannelCreativeBrief } from "./creative-brief.types"
 
 export type SoundBedPromptParams = {
-	brief: ChannelCreativeBrief;
+	brief: ChannelCreativeBrief
 	/** e.g. "tension", "uplift", "focus", "calm" */
-	mood?: string;
+	mood?: string
 	/** Seconds — Pollinations music models may use duration param when wired. */
-	targetDurationSec?: number;
-};
+	targetDurationSec?: number
+}
 
 /**
  * Prompt for **background music / instrumental bed** (under voiceover),
@@ -16,14 +16,14 @@ export type SoundBedPromptParams = {
  * Instrumental, loop-friendly, niche-appropriate; avoids vocal clutter that fights VO.
  */
 export function buildSoundBedPrompt(input: SoundBedPromptParams): string {
-	const { brief, mood = "supportive", targetDurationSec = 30 } = input;
+	const { brief, mood = "supportive", targetDurationSec = 30 } = input
 
 	const moodLine =
 		brief.tone === "dark"
 			? "subtle tension, low-mid drive, not horror unless niche requires"
 			: brief.tone === "fun"
 				? "light, bouncy rhythm, upbeat but not gimmicky"
-				: "neutral, positive, modern production bed";
+				: "neutral, positive, modern production bed"
 
 	const lines = [
 		`Instrumental background music only, no lead vocals, no spoken words.`,
@@ -32,7 +32,7 @@ export function buildSoundBedPrompt(input: SoundBedPromptParams): string {
 		`Genre and instrumentation must match the niche: "${brief.niche}" — sound like content that performs well as ${brief.publishingSurfaceLabel ?? "video for this audience"}.`,
 		`Channel: ${brief.channelName}. Destination: ${brief.destinationDisplayName ?? "connected publishing"}.`,
 		`Dynamics: leave headroom for voiceover; avoid busy melodies in the speech frequency range.`,
-	];
+	]
 
-	return lines.join(" ");
+	return lines.join(" ")
 }

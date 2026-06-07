@@ -1,6 +1,6 @@
-import { createServerFn } from "@tanstack/react-start";
+import { createServerFn } from "@tanstack/react-start"
 
-import { maybePromoteToAdmin } from "@/features/admin/admin.guard.server";
+import { maybePromoteToAdmin } from "@/features/admin/admin.guard.server"
 
 /**
  * Server function wrapper around `maybePromoteToAdmin` so that route modules
@@ -13,5 +13,5 @@ export const checkAndPromoteAdminFn = createServerFn({ method: "GET" })
 			data,
 	)
 	.handler(async ({ data }) => {
-		return maybePromoteToAdmin(data.userId, data.email, data.currentRole);
-	});
+		return maybePromoteToAdmin(data.userId, data.email, data.currentRole)
+	})

@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router"
 import {
 	CalendarClock,
 	Check,
@@ -12,14 +12,14 @@ import {
 	Sparkles,
 	Target,
 	Video,
-} from "lucide-react";
-import { GetStartedButton } from "@/components/get-started-button";
+} from "lucide-react"
+import { GetStartedButton } from "@/components/get-started-button"
 import {
 	PipelineObservabilityPanel,
 	ProductStoryMock,
-} from "@/components/landing";
-import { PricingTierCta } from "@/components/landing/pricing-tier-cta";
-import { Badge } from "@/components/ui/badge";
+} from "@/components/landing"
+import { PricingTierCta } from "@/components/landing/pricing-tier-cta"
+import { Badge } from "@/components/ui/badge"
 import {
 	Card,
 	CardContent,
@@ -27,17 +27,17 @@ import {
 	CardFooter,
 	CardHeader,
 	CardTitle,
-} from "@/components/ui/card";
-import { Link } from "@/components/ui/link";
-import { Separator } from "@/components/ui/separator";
-import { siteConfig } from "@/config/site";
-import type { PolarCheckoutSlug } from "@/lib/billing/polar-checkout-slugs";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/card"
+import { Link } from "@/components/ui/link"
+import { Separator } from "@/components/ui/separator"
+import { siteConfig } from "@/config/site"
+import type { PolarCheckoutSlug } from "@/lib/billing/polar-checkout-slugs"
+import { cn } from "@/lib/utils"
 
-const PAGE_TITLE = `${siteConfig.name} — AI Video Pipeline for Content Operators`;
-const PAGE_DESC = siteConfig.description;
-const PAGE_URL = siteConfig.origin;
-const OG_IMAGE = `${siteConfig.origin}${siteConfig.og.image}`;
+const PAGE_TITLE = `${siteConfig.name} — AI Video Pipeline for Content Operators`
+const PAGE_DESC = siteConfig.description
+const PAGE_URL = siteConfig.origin
+const OG_IMAGE = `${siteConfig.origin}${siteConfig.og.image}`
 
 export const Route = createFileRoute("/")({
 	head: () => ({
@@ -79,7 +79,7 @@ export const Route = createFileRoute("/")({
 		],
 	}),
 	component: LandingPage,
-});
+})
 
 const outcomes = [
 	{
@@ -102,7 +102,7 @@ const outcomes = [
 		body: "See every stage, every run, every failure—then retry without starting over.",
 		icon: Eye,
 	},
-] as const;
+] as const
 
 const differentiation = [
 	{
@@ -125,7 +125,7 @@ const differentiation = [
 		body: "Subscription for the system; credits for burst usage—predictable as you scale.",
 		icon: Coins,
 	},
-] as const;
+] as const
 
 const pipeline = [
 	{
@@ -152,18 +152,18 @@ const pipeline = [
 		body: "Schedule or push live with destination-specific metadata and disclosure hooks.",
 		status: "Done or retry publish",
 	},
-] as const;
+] as const
 
 const pricingTiers: readonly {
-	name: string;
-	price: string;
-	period: string;
-	highlight: string;
-	features: readonly string[];
-	cta: string;
-	emphasis: boolean;
+	name: string
+	price: string
+	period: string
+	highlight: string
+	features: readonly string[]
+	cta: string
+	emphasis: boolean
 	/** Polar checkout slug — omit for Free */
-	checkoutSlug?: PolarCheckoutSlug;
+	checkoutSlug?: PolarCheckoutSlug
 }[] = [
 	{
 		name: "Free",
@@ -237,7 +237,7 @@ const pricingTiers: readonly {
 		emphasis: false,
 		checkoutSlug: "empire",
 	},
-];
+]
 
 function LandingPage() {
 	return (
@@ -316,7 +316,7 @@ function LandingPage() {
 					</Card>
 					<ul className="grid list-none gap-6 p-0 sm:grid-cols-2 lg:gap-8">
 						{outcomes.map((item) => {
-							const Icon = item.icon;
+							const Icon = item.icon
 							return (
 								<li key={item.title} className="h-full">
 									<Card className="group flex h-full flex-col border-border/70 bg-card/80 shadow-sm ring-1 ring-border/40 transition-[box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:shadow-md dark:bg-card/60">
@@ -335,7 +335,7 @@ function LandingPage() {
 										</CardContent>
 									</Card>
 								</li>
-							);
+							)
 						})}
 					</ul>
 				</div>
@@ -418,7 +418,7 @@ function LandingPage() {
 					</Card>
 					<div className="mt-12 grid gap-6 md:grid-cols-2 lg:gap-8">
 						{differentiation.map((item) => {
-							const Icon = item.icon;
+							const Icon = item.icon
 							return (
 								<Card
 									key={item.title}
@@ -436,7 +436,7 @@ function LandingPage() {
 										</CardDescription>
 									</CardHeader>
 								</Card>
-							);
+							)
 						})}
 					</div>
 				</div>
@@ -587,5 +587,5 @@ function LandingPage() {
 				</div>
 			</section>
 		</main>
-	);
+	)
 }

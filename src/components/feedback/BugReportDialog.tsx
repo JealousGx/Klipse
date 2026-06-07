@@ -1,4 +1,4 @@
-import { useLocation } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router"
 import {
 	AlertTriangle,
 	ArrowLeft,
@@ -9,36 +9,36 @@ import {
 	Info,
 	Loader2,
 	Send,
-} from "lucide-react";
-import { useCallback, useState } from "react";
-import { toast } from "sonner";
+} from "lucide-react"
+import { useCallback, useState } from "react"
+import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
 	Dialog,
 	DialogContent,
 	DialogDescription,
 	DialogHeader,
 	DialogTitle,
-} from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { submitBug } from "@/features/feedback/post.functions";
-import { cn } from "@/lib/utils";
+} from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
+import { submitBug } from "@/features/feedback/post.functions"
+import { cn } from "@/lib/utils"
 
 interface BugReportDialogProps {
-	open: boolean;
-	onOpenChange: (open: boolean) => void;
+	open: boolean
+	onOpenChange: (open: boolean) => void
 }
 
-type Severity = "low" | "medium" | "high" | "critical";
+type Severity = "low" | "medium" | "high" | "critical"
 
 interface FormState {
-	title: string;
-	what: string;
-	steps: string;
-	expected: string;
-	severity: Severity;
+	title: string
+	what: string
+	steps: string
+	expected: string
+	severity: Severity
 }
 
 const INITIAL_FORM: FormState = {
@@ -47,13 +47,13 @@ const INITIAL_FORM: FormState = {
 	steps: "",
 	expected: "",
 	severity: "medium",
-};
+}
 
 const SEVERITY_OPTIONS: {
-	value: Severity;
-	label: string;
-	icon: typeof Info;
-	color: string;
+	value: Severity
+	label: string
+	icon: typeof Info
+	color: string
 }[] = [
 	{
 		value: "low",
@@ -79,7 +79,7 @@ const SEVERITY_OPTIONS: {
 		icon: Bug,
 		color: "text-red-900 dark:text-red-300 bg-red-900/10 border-red-900/30",
 	},
-];
+]
 
 const STEPS = [
 	{ title: "What happened?", description: "A short title and description" },
@@ -88,31 +88,31 @@ const STEPS = [
 		description: "Optional steps & expected behavior",
 	},
 	{ title: "Severity", description: "How badly does this affect you?" },
-] as const;
+] as const
 
 export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
-	const [step, setStep] = useState(0);
-	const [form, setForm] = useState<FormState>(INITIAL_FORM);
-	const [submitting, setSubmitting] = useState(false);
-	const [submitted, setSubmitted] = useState(false);
-	const pathname = useLocation().pathname;
+	const [step, setStep] = useState(0)
+	const [form, setForm] = useState<FormState>(INITIAL_FORM)
+	const [submitting, setSubmitting] = useState(false)
+	const [submitted, setSubmitted] = useState(false)
+	const pathname = useLocation().pathname
 
 	const resetAndClose = useCallback(() => {
-		onOpenChange(false);
+		onOpenChange(false)
 		setTimeout(() => {
-			setStep(0);
-			setForm(INITIAL_FORM);
-			setSubmitted(false);
-		}, 200);
-	}, [onOpenChange]);
+			setStep(0)
+			setForm(INITIAL_FORM)
+			setSubmitted(false)
+		}, 200)
+	}, [onOpenChange])
 
 	const canAdvance =
 		step === 0
 			? form.title.trim().length >= 5 && form.what.trim().length >= 10
-			: true;
+			: true
 
 	const handleSubmit = async () => {
-		setSubmitting(true);
+		setSubmitting(true)
 
 		try {
 			const res = await submitBug({
@@ -124,22 +124,22 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
 					severity: form.severity,
 					page: pathname,
 				},
-			});
+			})
 
 			if ("error" in res) {
-				throw new Error(res.error || "Failed to submit report");
+				throw new Error(res.error || "Failed to submit report")
 			}
 
-			setSubmitted(true);
-			toast.success("Bug report sent! Thank you for your feedback.");
+			setSubmitted(true)
+			toast.success("Bug report sent! Thank you for your feedback.")
 		} catch (err) {
 			toast.error(
 				err instanceof Error ? err.message : "Failed to submit report",
-			);
+			)
 		} finally {
-			setSubmitting(false);
+			setSubmitting(false)
 		}
-	};
+	}
 
 	return (
 		<Dialog open={open} onOpenChange={resetAndClose}>
@@ -270,8 +270,8 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
 								<Label>How severe is this bug?</Label>
 								<div className="grid grid-cols-2 gap-2">
 									{SEVERITY_OPTIONS.map((opt) => {
-										const Icon = opt.icon;
-										const selected = form.severity === opt.value;
+										const Icon = opt.icon
+										const selected = form.severity === opt.value
 										return (
 											<button
 												key={opt.value}
@@ -289,7 +289,7 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
 												<Icon size={16} />
 												{opt.label}
 											</button>
-										);
+										)
 									})}
 								</div>
 								<p className="text-xs text-muted-foreground">
@@ -344,5 +344,5 @@ export function BugReportDialog({ open, onOpenChange }: BugReportDialogProps) {
 				)}
 			</DialogContent>
 		</Dialog>
-	);
+	)
 }

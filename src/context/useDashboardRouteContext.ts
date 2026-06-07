@@ -1,9 +1,9 @@
-import { useRouteContext } from "@tanstack/react-router";
+import { useRouteContext } from "@tanstack/react-router"
 
 /**
  *
  * @returns
  */
 export function useDashboardRouteContext() {
-	return useRouteContext({ from: "/_authed/dashboard" });
+	return useRouteContext({ from: "/_authed/dashboard" })
 }

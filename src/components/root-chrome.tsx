@@ -1,11 +1,11 @@
-import { useRouterState } from "@tanstack/react-router";
+import { useRouterState } from "@tanstack/react-router"
 
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
+import Footer from "@/components/Footer"
+import Header from "@/components/Header"
 
 type RootChromeProps = {
-	children: React.ReactNode;
-};
+	children: React.ReactNode
+}
 
 /**
  * Marketing site uses header + footer; app routes (`/dashboard`, `/admin`) use their own shell.
@@ -13,13 +13,13 @@ type RootChromeProps = {
 export function RootChrome({ children }: RootChromeProps) {
 	const pathname = useRouterState({
 		select: (s) => s.location.pathname,
-	});
+	})
 	const isApp = ["/dashboard", "/admin"].some((prefix) =>
 		pathname.startsWith(prefix),
-	);
+	)
 
 	if (isApp) {
-		return <>{children}</>;
+		return <>{children}</>
 	}
 
 	return (
@@ -28,5 +28,5 @@ export function RootChrome({ children }: RootChromeProps) {
 			{children}
 			<Footer />
 		</>
-	);
+	)
 }

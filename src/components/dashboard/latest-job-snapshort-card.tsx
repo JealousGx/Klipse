@@ -1,28 +1,28 @@
-import { Link } from "@tanstack/react-router";
-import { Download } from "lucide-react";
+import { Link } from "@tanstack/react-router"
+import { Download } from "lucide-react"
 
 import {
 	labelForPipelineKind,
 	labelForPipelineStage,
-} from "@/features/video/pipeline/pipeline-kind";
-import type { VideoJobListRow } from "@/features/video/video-job-list.types";
+} from "@/features/video/pipeline/pipeline-kind"
+import type { VideoJobListRow } from "@/features/video/video-job-list.types"
 
-import { Button } from "../ui/button";
-import { JobStatusPill } from "./job-status-pill";
-import { statusLabel, tagFromNiche } from "./utils";
+import { Button } from "../ui/button"
+import { JobStatusPill } from "./job-status-pill"
+import { statusLabel, tagFromNiche } from "./utils"
 
 export function shortJobId(id: string): string {
-	const t = id.trim();
-	if (t.length <= 10) return t;
-	return `${t.slice(0, 6)}…${t.slice(-4)}`;
+	const t = id.trim()
+	if (t.length <= 10) return t
+	return `${t.slice(0, 6)}…${t.slice(-4)}`
 }
 
 export function LatestJobSnapshotCard({
 	job,
 	isLoading,
 }: {
-	job: VideoJobListRow | null;
-	isLoading: boolean;
+	job: VideoJobListRow | null
+	isLoading: boolean
 }) {
 	if (isLoading) {
 		return (
@@ -37,7 +37,7 @@ export function LatestJobSnapshotCard({
 					<div className="h-3 w-full animate-pulse rounded bg-muted/40" />
 				</div>
 			</div>
-		);
+		)
 	}
 
 	if (!job) {
@@ -59,16 +59,16 @@ export function LatestJobSnapshotCard({
 					<Link to="/dashboard/generate">Go to Generate</Link>
 				</Button>
 			</section>
-		);
+		)
 	}
 
-	const title = `${job.channelName} · ${shortJobId(job.id)}`;
+	const title = `${job.channelName} · ${shortJobId(job.id)}`
 	const tags = [
 		...tagFromNiche(job.channelNiche).slice(0, 2),
 		labelForPipelineKind(job.pipelineKind),
 		statusLabel[job.status],
 		`${job.costCredits} credits`,
-	];
+	]
 
 	return (
 		<section
@@ -157,5 +157,5 @@ export function LatestJobSnapshotCard({
 				</div>
 			</div>
 		</section>
-	);
+	)
 }

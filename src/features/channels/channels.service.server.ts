@@ -1,52 +1,49 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { and, count, desc, eq, ne, or } from "drizzle-orm";
+import { and, count, desc, eq, ne, or } from "drizzle-orm"
 
-import { getDb } from "@/db";
-import type { LocalDb } from "@/db/local";
-import { channels } from "@/db/schema/channels";
-import { users } from "@/db/schema/users";
+import { getDb } from "@/db"
+import type { LocalDb } from "@/db/local"
+import { channels } from "@/db/schema/channels"
+import { users } from "@/db/schema/users"
 
-import { assertChannelCapacity } from "@/features/entitlements";
-import { upsertChannelSchedule } from "@/features/scheduling/scheduling.service.server";
-import type { MeResponse } from "@/features/user/types/me";
-import { channelRowId } from "@/lib/id";
-import { logger } from "@/lib/logger";
+import { assertChannelCapacity } from "@/features/entitlements"
+import { upsertChannelSchedule } from "@/features/scheduling/scheduling.service.server"
+import type { MeResponse } from "@/features/user/types/me"
+import { channelRowId } from "@/lib/id"
+import { logger } from "@/lib/logger"
 
-import {
-	type ChannelConfig,
-	parseChannelConfig,
-} from "./channel-config.schema";
-import { ChannelNotFoundError } from "./channel-errors";
+import { type ChannelConfig, parseChannelConfig } from "./channel-config.schema"
+import { ChannelNotFoundError } from "./channel-errors"
 
-export { ChannelLimitError, ChannelNotFoundError } from "./channel-errors";
+export { ChannelLimitError, ChannelNotFoundError } from "./channel-errors"
 
 export type ChannelRow = {
-	id: string;
-	userId: string;
-	name: string;
-	niche: string;
-	config: ChannelConfig;
-	platform: "unlinked" | "youtube" | "tiktok" | "instagram";
-	externalChannelId: string | null;
-	externalChannelTitle: string | null;
-	externalChannelHandle: string | null;
+	id: string
+	userId: string
+	name: string
+	niche: string
+	config: ChannelConfig
+	platform: "unlinked" | "youtube" | "tiktok" | "instagram"
+	externalChannelId: string | null
+	externalChannelTitle: string | null
+	externalChannelHandle: string | null
 	/** Channel/profile image URL from the platform API. */
-	externalChannelThumbnailUrl: string | null;
+	externalChannelThumbnailUrl: string | null
 	/** True when a platform OAuth refresh token is stored. Never includes the token. */
-	oauthConnected: boolean;
+	oauthConnected: boolean
 	/**
 	 * External account id locked to this destination after first OAuth; reconnect must match.
 	 * Null until first successful connect.
 	 */
-	boundExternalAccountId: string | null;
+	boundExternalAccountId: string | null
 	/** Whether to generate AI background sound for videos (Creator+ only). */
-	soundEnabled: boolean;
+	soundEnabled: boolean
 	/** Optional prompt hint for sound generation; null = auto-generate from channel brief. */
-	soundPromptHint: string | null;
-	createdAt: Date;
-	updatedAt: Date;
-};
+	soundPromptHint: string | null
+	createdAt: Date
+	updatedAt: Date
+}
 
 function toChannelRow(r: typeof channels.$inferSelect): ChannelRow {
 	return {
@@ -66,11 +63,11 @@ function toChannelRow(r: typeof channels.$inferSelect): ChannelRow {
 		soundPromptHint: r.soundPromptHint ?? null,
 		createdAt: r.createdAt,
 		updatedAt: r.updatedAt,
-	};
+	}
 }
 
 function parseConfig(raw: unknown): ChannelConfig {
-	return parseChannelConfig(raw);
+	return parseChannelConfig(raw)
 }
 
 /**
@@ -82,17 +79,17 @@ export async function ensureDefaultPublishingDestination(
 	userId: string,
 ): Promise<void> {
 	if (!import.meta.env.DEV) {
-		return;
+		return
 	}
 
-	const db = getDb();
+	const db = getDb()
 	const [countRow] = await db
 		.select({ c: count() })
 		.from(channels)
-		.where(eq(channels.userId, userId));
+		.where(eq(channels.userId, userId))
 
 	if (Number(countRow?.c ?? 0) > 0) {
-		return;
+		return
 	}
 
 	await createChannel({
@@ -100,37 +97,37 @@ export async function ensureDefaultPublishingDestination(
 		name: "Primary publishing destination",
 		niche:
 			"Link a social account to publish finished videos automatically. YouTube is first; additional platforms use the same destination model.",
-	});
+	})
 }
 
 export async function listChannelsForUser(
 	userId: string,
 ): Promise<ChannelRow[]> {
-	const db = getDb();
+	const db = getDb()
 	const rows = await db
 		.select()
 		.from(channels)
 		.where(eq(channels.userId, userId))
-		.orderBy(desc(channels.createdAt));
+		.orderBy(desc(channels.createdAt))
 
-	return rows.map((r) => toChannelRow(r));
+	return rows.map((r) => toChannelRow(r))
 }
 
 export async function getChannelForUser(
 	userId: string,
 	channelId: string,
 ): Promise<ChannelRow | null> {
-	const db = getDb();
+	const db = getDb()
 	const rows = await db
 		.select()
 		.from(channels)
 		.where(and(eq(channels.id, channelId), eq(channels.userId, userId)))
-		.limit(1);
-	const r = rows[0];
+		.limit(1)
+	const r = rows[0]
 	if (!r) {
-		return null;
+		return null
 	}
-	return toChannelRow(r);
+	return toChannelRow(r)
 }
 
 /**
@@ -138,14 +135,14 @@ export async function getChannelForUser(
  * account id (bound and/or external column), excluding `excludeChannelId`.
  */
 export async function userHasAnotherDestinationWithExternalChannelId(input: {
-	userId: string;
-	excludeChannelId: string;
-	externalChannelId: string;
+	userId: string
+	excludeChannelId: string
+	externalChannelId: string
 }): Promise<boolean> {
-	const db = getDb();
-	const yt = input.externalChannelId.trim();
+	const db = getDb()
+	const yt = input.externalChannelId.trim()
 	if (!yt) {
-		return false;
+		return false
 	}
 	const rows = await db
 		.select({ id: channels.id })
@@ -160,43 +157,43 @@ export async function userHasAnotherDestinationWithExternalChannelId(input: {
 				),
 			),
 		)
-		.limit(1);
-	return rows.length > 0;
+		.limit(1)
+	return rows.length > 0
 }
 
 export async function createChannel(input: {
-	userId: string;
-	name: string;
-	niche: string;
-	config?: unknown;
+	userId: string
+	name: string
+	niche: string
+	config?: unknown
 }): Promise<ChannelRow> {
-	const db = getDb();
+	const db = getDb()
 
 	const [u] = await db
 		.select({ plan: users.plan })
 		.from(users)
 		.where(eq(users.id, input.userId))
-		.limit(1);
+		.limit(1)
 	if (!u) {
-		throw new Error("User not found.");
+		throw new Error("User not found.")
 	}
 
-	const plan = u.plan as MeResponse["plan"];
+	const plan = u.plan as MeResponse["plan"]
 
 	const [countRow] = await db
 		.select({ c: count() })
 		.from(channels)
-		.where(eq(channels.userId, input.userId));
+		.where(eq(channels.userId, input.userId))
 
 	assertChannelCapacity({
 		plan,
 		currentChannelCount: Number(countRow?.c ?? 0),
-	});
+	})
 
-	const config = parseChannelConfig(input.config ?? {});
+	const config = parseChannelConfig(input.config ?? {})
 
-	const id = channelRowId();
-	const now = new Date();
+	const id = channelRowId()
+	const now = new Date()
 
 	await db.insert(channels).values({
 		id,
@@ -213,106 +210,106 @@ export async function createChannel(input: {
 		boundExternalAccountId: null,
 		createdAt: now,
 		updatedAt: now,
-	});
+	})
 
-	const created = await getChannelForUser(input.userId, id);
+	const created = await getChannelForUser(input.userId, id)
 	if (!created) {
-		throw new Error("Channel insert failed.");
+		throw new Error("Channel insert failed.")
 	}
 
 	await upsertChannelSchedule({
 		userId: input.userId,
 		channelId: created.id,
 		frequency: config.posting_frequency,
-	});
+	})
 
 	logger.info("channel_created", {
 		userId: input.userId,
 		channelId: created.id,
 		platform: "unlinked",
 		plan,
-	});
+	})
 
-	return created;
+	return created
 }
 
 export async function updateChannel(input: {
-	userId: string;
-	channelId: string;
-	name?: string;
-	niche?: string;
-	config?: unknown;
-	platform?: "unlinked" | "youtube" | "tiktok" | "instagram";
+	userId: string
+	channelId: string
+	name?: string
+	niche?: string
+	config?: unknown
+	platform?: "unlinked" | "youtube" | "tiktok" | "instagram"
 	/** YouTube: `UC…` channel id from the platform (not Klipse’s row id). */
-	externalChannelId?: string | null;
-	externalChannelTitle?: string | null;
-	externalChannelHandle?: string | null;
-	externalChannelThumbnailUrl?: string | null;
-	soundEnabled?: boolean;
-	soundPromptHint?: string | null;
+	externalChannelId?: string | null
+	externalChannelTitle?: string | null
+	externalChannelHandle?: string | null
+	externalChannelThumbnailUrl?: string | null
+	soundEnabled?: boolean
+	soundPromptHint?: string | null
 }): Promise<ChannelRow> {
-	const db = getDb();
-	const existing = await getChannelForUser(input.userId, input.channelId);
+	const db = getDb()
+	const existing = await getChannelForUser(input.userId, input.channelId)
 	if (!existing) {
-		throw new ChannelNotFoundError();
+		throw new ChannelNotFoundError()
 	}
 
 	const patch: Partial<typeof channels.$inferInsert> = {
 		updatedAt: new Date(),
-	};
+	}
 	if (input.name !== undefined) {
-		patch.name = input.name.trim();
+		patch.name = input.name.trim()
 	}
 	if (input.niche !== undefined) {
-		patch.niche = input.niche.trim();
+		patch.niche = input.niche.trim()
 	}
 	if (input.config !== undefined) {
-		patch.config = parseChannelConfig(input.config);
+		patch.config = parseChannelConfig(input.config)
 	}
 	if (input.platform !== undefined) {
-		patch.platform = input.platform;
+		patch.platform = input.platform
 	}
 	if (input.externalChannelId !== undefined) {
-		const raw = input.externalChannelId;
-		const cleared = raw === null || raw === "";
-		patch.externalChannelId = cleared ? null : raw.trim();
+		const raw = input.externalChannelId
+		const cleared = raw === null || raw === ""
+		patch.externalChannelId = cleared ? null : raw.trim()
 		if (cleared) {
-			patch.externalChannelThumbnailUrl = null;
+			patch.externalChannelThumbnailUrl = null
 		}
 	}
 	if (input.externalChannelTitle !== undefined) {
 		patch.externalChannelTitle =
 			input.externalChannelTitle === null || input.externalChannelTitle === ""
 				? null
-				: input.externalChannelTitle.trim();
+				: input.externalChannelTitle.trim()
 	}
 	if (input.externalChannelHandle !== undefined) {
 		patch.externalChannelHandle =
 			input.externalChannelHandle === null || input.externalChannelHandle === ""
 				? null
-				: input.externalChannelHandle.trim();
+				: input.externalChannelHandle.trim()
 	}
 	if (input.externalChannelThumbnailUrl !== undefined) {
 		patch.externalChannelThumbnailUrl =
 			input.externalChannelThumbnailUrl === null ||
 			input.externalChannelThumbnailUrl === ""
 				? null
-				: input.externalChannelThumbnailUrl.trim();
+				: input.externalChannelThumbnailUrl.trim()
 	}
 	if (input.platform === "unlinked") {
-		patch.oauthRefreshToken = null;
+		patch.oauthRefreshToken = null
 		if (!existing.boundExternalAccountId && existing.externalChannelId) {
-			patch.boundExternalAccountId = existing.externalChannelId.trim();
+			patch.boundExternalAccountId = existing.externalChannelId.trim()
 		}
 	}
 	if (input.soundEnabled !== undefined) {
-		patch.soundEnabled = input.soundEnabled;
+		patch.soundEnabled = input.soundEnabled
 	}
 	if (input.soundPromptHint !== undefined) {
 		patch.soundPromptHint =
 			input.soundPromptHint === null || input.soundPromptHint === ""
 				? null
-				: input.soundPromptHint.trim();
+				: input.soundPromptHint.trim()
 	}
 
 	await db
@@ -320,11 +317,11 @@ export async function updateChannel(input: {
 		.set(patch)
 		.where(
 			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
-		);
+		)
 
-	const next = await getChannelForUser(input.userId, input.channelId);
+	const next = await getChannelForUser(input.userId, input.channelId)
 	if (!next) {
-		throw new ChannelNotFoundError();
+		throw new ChannelNotFoundError()
 	}
 
 	// Sync schedule when posting_frequency changes (or create one if it doesn't exist yet).
@@ -336,7 +333,7 @@ export async function updateChannel(input: {
 			userId: input.userId,
 			channelId: next.id,
 			frequency: next.config.posting_frequency,
-		});
+		})
 	}
 
 	logger.info("channel_updated", {
@@ -344,9 +341,9 @@ export async function updateChannel(input: {
 		channelId: input.channelId,
 		platform: next.platform,
 		oauthConnected: next.oauthConnected,
-	});
+	})
 
-	return next;
+	return next
 }
 
 /** Server-only: read the stored platform OAuth refresh token for validation / refresh flows. */
@@ -354,14 +351,14 @@ export async function getOAuthRefreshTokenForChannel(
 	userId: string,
 	channelId: string,
 ): Promise<string | null> {
-	const db = getDb();
+	const db = getDb()
 	const rows = await db
 		.select({ t: channels.oauthRefreshToken })
 		.from(channels)
 		.where(and(eq(channels.id, channelId), eq(channels.userId, userId)))
-		.limit(1);
-	const t = rows[0]?.t;
-	return t?.trim() ? t : null;
+		.limit(1)
+	const t = rows[0]?.t
+	return t?.trim() ? t : null
 }
 
 /**
@@ -370,10 +367,10 @@ export async function getOAuthRefreshTokenForChannel(
  * so the user can reconnect to the same account.
  */
 export async function clearOAuthRefreshTokenOnly(input: {
-	userId: string;
-	channelId: string;
+	userId: string
+	channelId: string
 }): Promise<void> {
-	const db = getDb();
+	const db = getDb()
 	await db
 		.update(channels)
 		.set({
@@ -382,11 +379,11 @@ export async function clearOAuthRefreshTokenOnly(input: {
 		})
 		.where(
 			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
-		);
+		)
 	logger.warn("channel_oauth_token_cleared", {
 		userId: input.userId,
 		channelId: input.channelId,
-	});
+	})
 }
 
 /**
@@ -396,14 +393,14 @@ export async function clearOAuthRefreshTokenOnly(input: {
  * `platform`** so the UI knows which reconnect button to show.
  */
 export async function disconnectChannelOAuth(input: {
-	userId: string;
-	channelId: string;
+	userId: string
+	channelId: string
 }): Promise<void> {
-	const db = getDb();
+	const db = getDb()
 
-	const existing = await getChannelForUser(input.userId, input.channelId);
+	const existing = await getChannelForUser(input.userId, input.channelId)
 	if (!existing) {
-		throw new ChannelNotFoundError();
+		throw new ChannelNotFoundError()
 	}
 
 	const patch: Partial<typeof channels.$inferInsert> = {
@@ -414,11 +411,11 @@ export async function disconnectChannelOAuth(input: {
 		// externalChannelTitle intentionally kept — used as readable label in
 		// the "Same {platform} channel only" reconnect notice.
 		updatedAt: new Date(),
-	};
+	}
 
 	// Lock the bound account id so reconnect must use the same channel.
 	if (!existing.boundExternalAccountId && existing.externalChannelId) {
-		patch.boundExternalAccountId = existing.externalChannelId.trim();
+		patch.boundExternalAccountId = existing.externalChannelId.trim()
 	}
 
 	// NOTE: platform is intentionally NOT cleared — keeps "tiktok" / "youtube"
@@ -429,13 +426,13 @@ export async function disconnectChannelOAuth(input: {
 		.set(patch)
 		.where(
 			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
-		);
+		)
 
 	logger.info("channel_oauth_disconnected", {
 		userId: input.userId,
 		channelId: input.channelId,
 		platform: existing.platform,
-	});
+	})
 }
 
 /**
@@ -445,11 +442,11 @@ export async function disconnectChannelOAuth(input: {
  * is consumed and discarded by the platform.
  */
 export async function updateChannelOAuthRefreshToken(input: {
-	userId: string;
-	channelId: string;
-	refreshToken: string;
+	userId: string
+	channelId: string
+	refreshToken: string
 }): Promise<void> {
-	const db = getDb();
+	const db = getDb()
 	await db
 		.update(channels)
 		.set({
@@ -458,25 +455,25 @@ export async function updateChannelOAuthRefreshToken(input: {
 		})
 		.where(
 			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
-		);
+		)
 	logger.info("channel_oauth_token_rotated", {
 		userId: input.userId,
 		channelId: input.channelId,
-	});
+	})
 }
 
 export async function setChannelOAuthConnection(input: {
-	userId: string;
-	channelId: string;
-	platform: "youtube" | "tiktok" | "instagram";
-	refreshToken: string;
-	externalChannelId: string;
-	externalChannelTitle: string | null;
-	externalChannelHandle: string | null;
-	externalChannelThumbnailUrl: string | null;
+	userId: string
+	channelId: string
+	platform: "youtube" | "tiktok" | "instagram"
+	refreshToken: string
+	externalChannelId: string
+	externalChannelTitle: string | null
+	externalChannelHandle: string | null
+	externalChannelThumbnailUrl: string | null
 }): Promise<void> {
-	const db = getDb();
-	await setChannelOAuthConnectionTx(db, input);
+	const db = getDb()
+	await setChannelOAuthConnectionTx(db, input)
 }
 
 /**
@@ -486,14 +483,14 @@ export async function setChannelOAuthConnection(input: {
 export async function setChannelOAuthConnectionTx(
 	tx: LocalDb,
 	input: {
-		userId: string;
-		channelId: string;
-		platform: "youtube" | "tiktok" | "instagram";
-		refreshToken: string;
-		externalChannelId: string;
-		externalChannelTitle: string | null;
-		externalChannelHandle: string | null;
-		externalChannelThumbnailUrl: string | null;
+		userId: string
+		channelId: string
+		platform: "youtube" | "tiktok" | "instagram"
+		refreshToken: string
+		externalChannelId: string
+		externalChannelTitle: string | null
+		externalChannelHandle: string | null
+		externalChannelThumbnailUrl: string | null
 	},
 ): Promise<void> {
 	const rows = await tx
@@ -502,12 +499,12 @@ export async function setChannelOAuthConnectionTx(
 		.where(
 			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
 		)
-		.limit(1);
-	const existing = rows[0];
+		.limit(1)
+	const existing = rows[0]
 	if (!existing) {
-		throw new ChannelNotFoundError();
+		throw new ChannelNotFoundError()
 	}
-	const trimmedId = input.externalChannelId.trim();
+	const trimmedId = input.externalChannelId.trim()
 	await tx
 		.update(channels)
 		.set({
@@ -523,34 +520,34 @@ export async function setChannelOAuthConnectionTx(
 		})
 		.where(
 			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
-		);
+		)
 	logger.info("channel_oauth_connected", {
 		userId: input.userId,
 		channelId: input.channelId,
 		platform: input.platform,
 		externalChannelId: trimmedId,
 		externalChannelTitle: input.externalChannelTitle ?? null,
-	});
+	})
 }
 
 export async function deleteChannel(input: {
-	userId: string;
-	channelId: string;
+	userId: string
+	channelId: string
 }): Promise<void> {
-	const existing = await getChannelForUser(input.userId, input.channelId);
+	const existing = await getChannelForUser(input.userId, input.channelId)
 	if (!existing) {
-		throw new ChannelNotFoundError();
+		throw new ChannelNotFoundError()
 	}
-	const db = getDb();
+	const db = getDb()
 	await db
 		.delete(channels)
 		.where(
 			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
-		);
+		)
 	logger.info("channel_deleted", {
 		userId: input.userId,
 		channelId: input.channelId,
 		platform: existing.platform,
 		oauthConnected: existing.oauthConnected,
-	});
+	})
 }

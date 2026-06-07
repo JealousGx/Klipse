@@ -4,7 +4,7 @@ import {
 	notFound,
 	Outlet,
 	useRouterState,
-} from "@tanstack/react-router";
+} from "@tanstack/react-router"
 import {
 	Activity,
 	BarChart3,
@@ -16,13 +16,13 @@ import {
 	Shield,
 	Users,
 	Video,
-} from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+} from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
 
-import { BrandLogo } from "@/components/shared/BrandLogo";
-import { checkAndPromoteAdminFn } from "@/features/admin/admin-promote.functions";
-import { authClient } from "@/lib/auth/client";
+import { BrandLogo } from "@/components/shared/BrandLogo"
+import { checkAndPromoteAdminFn } from "@/features/admin/admin-promote.functions"
+import { authClient } from "@/lib/auth/client"
 
 export const Route = createFileRoute("/_authed/admin")({
 	// Security: any visitor who is not an authenticated admin gets a 404 —
@@ -30,9 +30,9 @@ export const Route = createFileRoute("/_authed/admin")({
 	// linked from the main application. In production, additionally restrict
 	// this path via Cloudflare Access or an IP allowlist at the edge.
 	beforeLoad: async ({ context }) => {
-		const session = context.session;
+		const session = context.session
 
-		const currentRole = (session.user as { role?: string }).role ?? "user";
+		const currentRole = (session.user as { role?: string }).role ?? "user"
 
 		// If not already admin, check if their email qualifies for auto-promotion
 		// (ADMIN_EMAILS env var — bootstrap-only mechanism).
@@ -43,14 +43,14 @@ export const Route = createFileRoute("/_authed/admin")({
 					email: session.user.email,
 					currentRole,
 				},
-			});
-			if (!promoted) throw notFound();
+			})
+			if (!promoted) throw notFound()
 		}
 
-		return { session };
+		return { session }
 	},
 	component: AdminLayout,
-});
+})
 
 // ---------------------------------------------------------------------------
 // Nav config
@@ -62,30 +62,30 @@ const nav = [
 	{ to: "/admin/jobs", label: "Jobs", icon: Video },
 	{ to: "/admin/system", label: "System", icon: BarChart3 },
 	{ to: "/admin/settings", label: "Settings", icon: Settings },
-] as const;
+] as const
 
 // ---------------------------------------------------------------------------
 // Layout
 // ---------------------------------------------------------------------------
 
 function AdminLayout() {
-	const { session } = Route.useRouteContext();
-	const pathname = useRouterState({ select: (s) => s.location.pathname });
-	const [isSigningOut, setIsSigningOut] = useState(false);
-	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+	const { session } = Route.useRouteContext()
+	const pathname = useRouterState({ select: (s) => s.location.pathname })
+	const [isSigningOut, setIsSigningOut] = useState(false)
+	const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
 
 	const handleSignOut = async () => {
-		setIsSigningOut(true);
+		setIsSigningOut(true)
 		try {
-			await authClient.signOut();
-			window.location.href = "/";
+			await authClient.signOut()
+			window.location.href = "/"
 		} catch {
-			toast.error("Sign out failed.");
-			setIsSigningOut(false);
+			toast.error("Sign out failed.")
+			setIsSigningOut(false)
 		}
-	};
+	}
 
-	const userName = session.user.name || session.user.email;
+	const userName = session.user.name || session.user.email
 
 	return (
 		<div className="dark flex min-h-dvh bg-zinc-950 text-zinc-100">
@@ -114,7 +114,7 @@ function AdminLayout() {
 					</p>
 					<ul className="space-y-0.5">
 						{nav.map(({ to, label, icon: Icon }) => {
-							const isActive = pathname === to || pathname.startsWith(`${to}/`);
+							const isActive = pathname === to || pathname.startsWith(`${to}/`)
 							return (
 								<li key={to}>
 									<Link
@@ -141,7 +141,7 @@ function AdminLayout() {
 										)}
 									</Link>
 								</li>
-							);
+							)
 						})}
 					</ul>
 				</nav>
@@ -210,5 +210,5 @@ function AdminLayout() {
 				</main>
 			</div>
 		</div>
-	);
+	)
 }

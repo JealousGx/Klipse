@@ -1,48 +1,48 @@
-import type { VideoProcessorHandoffPayload } from "@klipse/video-assembly-shared";
+import type { VideoProcessorHandoffPayload } from "@klipse/video-assembly-shared"
 
-import { BoundedSet } from "../utils/bounded-set";
-import { logger } from "../utils/logger";
-import { runAssemblyJob } from "./assembly";
+import { BoundedSet } from "../utils/bounded-set"
+import { logger } from "../utils/logger"
+import { runAssemblyJob } from "./assembly"
 
 /** Assembly-only jobs (video_assemble_v1): active/finished tracking for idempotency. */
-const activeJobIds = new Set<string>();
+const activeJobIds = new Set<string>()
 /**
  * Finished jobs — prevents duplicate processing on replayed requests.
  * BoundedSet caps at 2000 entries to avoid memory growth on long-lived instances.
  */
-const finishedJobIds = new BoundedSet(2_000);
+const finishedJobIds = new BoundedSet(2_000)
 
-const queue: VideoProcessorHandoffPayload[] = [];
-let pumpScheduled = false;
+const queue: VideoProcessorHandoffPayload[] = []
+let pumpScheduled = false
 
 function finalizeJob(jobId: string): void {
-	activeJobIds.delete(jobId);
-	finishedJobIds.add(jobId);
+	activeJobIds.delete(jobId)
+	finishedJobIds.add(jobId)
 }
 
 async function pumpQueue(webhookSecret: string): Promise<void> {
 	while (queue.length > 0) {
-		const payload = queue.shift();
-		if (!payload) break;
+		const payload = queue.shift()
+		if (!payload) break
 		try {
-			await runAssemblyJob(payload);
-			await notifyApp(webhookSecret, payload, "completed");
+			await runAssemblyJob(payload)
+			await notifyApp(webhookSecret, payload, "completed")
 		} catch (e) {
-			const msg = e instanceof Error ? e.message.slice(0, 4000) : String(e);
+			const msg = e instanceof Error ? e.message.slice(0, 4000) : String(e)
 			logger.warn("assembly_runner_job_failed", {
 				jobId: payload.jobId,
 				error: msg,
-			});
+			})
 			try {
-				await notifyApp(webhookSecret, payload, "failed", msg);
+				await notifyApp(webhookSecret, payload, "failed", msg)
 			} catch (ne) {
 				logger.error("assembly_runner_webhook_failed", {
 					jobId: payload.jobId,
 					error: ne instanceof Error ? ne.message : String(ne),
-				});
+				})
 			}
 		} finally {
-			finalizeJob(payload.jobId);
+			finalizeJob(payload.jobId)
 		}
 	}
 }
@@ -53,7 +53,7 @@ async function notifyApp(
 	status: "completed" | "failed",
 	error?: string,
 ): Promise<void> {
-	const body = { jobId: payload.jobId, userId: payload.userId, status, error };
+	const body = { jobId: payload.jobId, userId: payload.userId, status, error }
 	const res = await fetch(payload.completeWebhookUrl, {
 		method: "POST",
 		headers: {
@@ -62,24 +62,24 @@ async function notifyApp(
 		},
 		body: JSON.stringify(body),
 		signal: AbortSignal.timeout(60_000),
-	});
+	})
 	if (!res.ok) {
-		const t = await res.text().catch(() => "");
-		throw new Error(`webhook_${res.status}:${t.slice(0, 300)}`);
+		const t = await res.text().catch(() => "")
+		throw new Error(`webhook_${res.status}:${t.slice(0, 300)}`)
 	}
 }
 
 function schedulePump(webhookSecret: string): void {
-	if (pumpScheduled) return;
-	pumpScheduled = true;
+	if (pumpScheduled) return
+	pumpScheduled = true
 	void (async () => {
 		try {
-			await pumpQueue(webhookSecret);
+			await pumpQueue(webhookSecret)
 		} finally {
-			pumpScheduled = false;
-			if (queue.length > 0) schedulePump(webhookSecret);
+			pumpScheduled = false
+			if (queue.length > 0) schedulePump(webhookSecret)
 		}
-	})();
+	})()
 }
 
 /** Idempotent: returns false if job is already active/finished. */
@@ -87,14 +87,14 @@ export function enqueueAssemblyJob(
 	payload: VideoProcessorHandoffPayload,
 	webhookSecret: string,
 ): boolean {
-	if (finishedJobIds.has(payload.jobId)) return false;
-	if (activeJobIds.has(payload.jobId)) return false;
-	activeJobIds.add(payload.jobId);
-	queue.push(payload);
-	schedulePump(webhookSecret);
-	return true;
+	if (finishedJobIds.has(payload.jobId)) return false
+	if (activeJobIds.has(payload.jobId)) return false
+	activeJobIds.add(payload.jobId)
+	queue.push(payload)
+	schedulePump(webhookSecret)
+	return true
 }
 
 export function isAssemblyJobKnown(jobId: string): boolean {
-	return activeJobIds.has(jobId) || finishedJobIds.has(jobId);
+	return activeJobIds.has(jobId) || finishedJobIds.has(jobId)
 }

@@ -1,10 +1,10 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { Polar } from "@polar-sh/sdk";
+import { Polar } from "@polar-sh/sdk"
 
-import { env } from "@/env";
+import { env } from "@/env"
 
-let _polar: Polar | undefined;
+let _polar: Polar | undefined
 
 /** Shared Polar SDK client (checkout, webhooks, usage, and raw `events.ingest`). */
 export function getPolarSdk(): Polar {
@@ -12,7 +12,7 @@ export function getPolarSdk(): Polar {
 		_polar = new Polar({
 			accessToken: env.POLAR_ACCESS_TOKEN,
 			server: env.POLAR_SERVER,
-		});
+		})
 	}
-	return _polar;
+	return _polar
 }

@@ -6,7 +6,7 @@
 export const PUBLISHING_CONNECTION_DENIAL_REASONS = {
 	/** OAuth / destination linking for paid publishing surfaces requires a paid plan. */
 	PAID_PLAN_REQUIRED: "publishing_connection_requires_paid_plan",
-} as const;
+} as const
 
 export type PublishingConnectionDenialReason =
-	(typeof PUBLISHING_CONNECTION_DENIAL_REASONS)[keyof typeof PUBLISHING_CONNECTION_DENIAL_REASONS];
+	(typeof PUBLISHING_CONNECTION_DENIAL_REASONS)[keyof typeof PUBLISHING_CONNECTION_DENIAL_REASONS]

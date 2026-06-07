@@ -1,28 +1,28 @@
-import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
 import {
 	BarChart2,
 	CheckCircle2,
 	CreditCard,
 	TrendingUp,
 	Video,
-} from "lucide-react";
-import type { ReactNode } from "react";
+} from "lucide-react"
+import type { ReactNode } from "react"
 
-import { analyticsQueryOptions } from "@/lib/queries/dashboard-queries";
-import { cn } from "@/lib/utils";
+import { analyticsQueryOptions } from "@/lib/queries/dashboard-queries"
+import { cn } from "@/lib/utils"
 
 export const Route = createFileRoute("/_authed/dashboard/analytics")({
 	staticData: { dashboardTitle: "Analytics" },
 	beforeLoad: ({ context }) => {
-		void context.queryClient.ensureQueryData(analyticsQueryOptions);
+		void context.queryClient.ensureQueryData(analyticsQueryOptions)
 	},
 	component: AnalyticsPage,
-});
+})
 
 function AnalyticsPage() {
-	const query = useQuery(analyticsQueryOptions);
-	const data = query.data;
+	const query = useQuery(analyticsQueryOptions)
+	const data = query.data
 
 	const currentMonth = new Date().toLocaleString(undefined, {
 		month: "long",
@@ -103,9 +103,9 @@ function AnalyticsPage() {
 							</thead>
 							<tbody className="divide-y divide-border">
 								{data.byChannel.map((ch) => {
-									const total = ch.completed + ch.failed;
+									const total = ch.completed + ch.failed
 									const rate =
-										total > 0 ? Math.round((ch.completed / total) * 100) : 0;
+										total > 0 ? Math.round((ch.completed / total) * 100) : 0
 									return (
 										<tr
 											key={ch.channelId}
@@ -175,9 +175,9 @@ function GlassMetric({
 	label,
 	value,
 }: {
-	icon: ReactNode;
-	label: string;
-	value: string;
+	icon: ReactNode
+	label: string
+	value: string
 }) {
 	return (
 		<div className="flex min-w-36 items-start gap-3 rounded-xl border border-border/60 bg-background/80 px-4 py-3.5 shadow-sm backdrop-blur-sm">
@@ -193,7 +193,7 @@ function GlassMetric({
 }
 
 function MiniBarChart({ rows }: { rows: { date: string; count: number }[] }) {
-	const max = Math.max(...rows.map((r) => r.count), 1);
+	const max = Math.max(...rows.map((r) => r.count), 1)
 
 	return (
 		<div className="overflow-hidden rounded-xl border border-border bg-card p-4 shadow-sm">

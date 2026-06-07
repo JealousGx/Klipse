@@ -1,11 +1,11 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { eq } from "drizzle-orm";
+import { eq } from "drizzle-orm"
 
-import { getDb } from "@/db";
-import { users } from "@/db/schema/users";
-import { env } from "@/env";
-import { auth } from "@/lib/auth";
+import { getDb } from "@/db"
+import { users } from "@/db/schema/users"
+import { env } from "@/env"
+import { auth } from "@/lib/auth"
 
 // ---------------------------------------------------------------------------
 // Errors
@@ -13,8 +13,8 @@ import { auth } from "@/lib/auth";
 
 export class AdminAuthError extends Error {
 	constructor(message = "Admin access required") {
-		super(message);
-		this.name = "AdminAuthError";
+		super(message)
+		this.name = "AdminAuthError"
 	}
 }
 
@@ -33,23 +33,23 @@ export class AdminAuthError extends Error {
 export async function requireAdmin(
 	request: Request,
 ): Promise<{ userId: string; email: string; name: string }> {
-	const session = await auth.api.getSession({ headers: request.headers });
-	if (!session?.user) throw new AdminAuthError();
+	const session = await auth.api.getSession({ headers: request.headers })
+	if (!session?.user) throw new AdminAuthError()
 
-	const db = getDb();
+	const db = getDb()
 	const [row] = await db
 		.select({ role: users.role })
 		.from(users)
 		.where(eq(users.id, session.user.id))
-		.limit(1);
+		.limit(1)
 
-	if (!row || row.role !== "admin") throw new AdminAuthError();
+	if (!row || row.role !== "admin") throw new AdminAuthError()
 
 	return {
 		userId: session.user.id,
 		email: session.user.email,
 		name: session.user.name,
-	};
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -69,20 +69,20 @@ export async function maybePromoteToAdmin(
 	userEmail: string,
 	currentRole: string | null,
 ): Promise<boolean> {
-	if (currentRole === "admin") return true;
+	if (currentRole === "admin") return true
 
 	const adminEmails = (env.ADMIN_EMAILS ?? "")
 		.split(",")
 		.map((e) => e.trim().toLowerCase())
-		.filter(Boolean);
+		.filter(Boolean)
 
-	if (!adminEmails.includes(userEmail.toLowerCase())) return false;
+	if (!adminEmails.includes(userEmail.toLowerCase())) return false
 
-	const db = getDb();
+	const db = getDb()
 	await db
 		.update(users)
 		.set({ role: "admin", updatedAt: new Date() })
-		.where(eq(users.id, userId));
+		.where(eq(users.id, userId))
 
-	return true;
+	return true
 }

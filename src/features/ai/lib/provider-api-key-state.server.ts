@@ -1,26 +1,26 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { and, eq, isNotNull, or, sql } from "drizzle-orm";
+import { and, eq, isNotNull, or, sql } from "drizzle-orm"
 
-import { getDb } from "@/db";
-import { providerApiKeys } from "@/db/schema/provider-api-keys";
-import { logger } from "@/lib/logger";
+import { getDb } from "@/db"
+import { providerApiKeys } from "@/db/schema/provider-api-keys"
+import { logger } from "@/lib/logger"
 
-import type { ProviderApiKeyCredential } from "./provider-api-keys.server";
+import type { ProviderApiKeyCredential } from "./provider-api-keys.server"
 
 export async function isProviderKeyInCooldown(
 	credential: ProviderApiKeyCredential,
 ): Promise<boolean> {
-	const now = new Date();
-	const db = getDb();
+	const now = new Date()
+	const db = getDb()
 
 	const [row] = await db
 		.select({ cooldownUntil: providerApiKeys.cooldownUntil })
 		.from(providerApiKeys)
 		.where(eq(providerApiKeys.id, credential.id))
-		.limit(1);
-	const cu = row?.cooldownUntil;
-	return cu != null && cu > now;
+		.limit(1)
+	const cu = row?.cooldownUntil
+	return cu != null && cu > now
 }
 
 /**
@@ -30,14 +30,14 @@ export async function isProviderKeyInCooldown(
 export async function recordProviderKeyFailure(
 	credential: ProviderApiKeyCredential,
 	input: {
-		cooldownUntil: Date;
-		errorType: string | null;
+		cooldownUntil: Date
+		errorType: string | null
 		/** Long / quota-class failures: store next reset on the row for later fallbacks. */
-		persistQuotaResetAt?: boolean;
+		persistQuotaResetAt?: boolean
 	},
 ): Promise<void> {
-	const now = new Date();
-	const db = getDb();
+	const now = new Date()
+	const db = getDb()
 
 	await db
 		.update(providerApiKeys)
@@ -51,13 +51,13 @@ export async function recordProviderKeyFailure(
 				? { quotaResetAt: input.cooldownUntil }
 				: {}),
 		})
-		.where(eq(providerApiKeys.id, credential.id));
+		.where(eq(providerApiKeys.id, credential.id))
 	logger.warn("provider_key_cooldown_set", {
 		keyId: credential.id,
 		provider: credential.provider,
 		errorType: input.errorType,
 		cooldownUntil: input.cooldownUntil.toISOString(),
-	});
+	})
 }
 
 /**
@@ -67,8 +67,8 @@ export async function recordProviderKeyFailure(
 export async function clearCooldownAfterSuccessfulUse(
 	credential: ProviderApiKeyCredential,
 ): Promise<void> {
-	const now = new Date();
-	const db = getDb();
+	const now = new Date()
+	const db = getDb()
 
 	await db
 		.update(providerApiKeys)
@@ -85,9 +85,9 @@ export async function clearCooldownAfterSuccessfulUse(
 					isNotNull(providerApiKeys.errorType),
 				),
 			),
-		);
+		)
 	logger.info("provider_key_cooldown_cleared", {
 		keyId: credential.id,
 		provider: credential.provider,
-	});
+	})
 }

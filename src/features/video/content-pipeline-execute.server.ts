@@ -1,47 +1,47 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { and, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm"
 
-import { getDb } from "@/db";
-import { usageIdempotency } from "@/db/schema";
-import type { StubGenerateIdempotencyResult } from "@/db/schema/usage-idempotency";
-import type { VideoJobInputPayload } from "@/db/schema/video-jobs";
-import { videoJobs } from "@/db/schema/video-jobs";
-import { env } from "@/env";
+import { getDb } from "@/db"
+import { usageIdempotency } from "@/db/schema"
+import type { StubGenerateIdempotencyResult } from "@/db/schema/usage-idempotency"
+import type { VideoJobInputPayload } from "@/db/schema/video-jobs"
+import { videoJobs } from "@/db/schema/video-jobs"
+import { env } from "@/env"
 import {
 	applyUsageDeduction,
 	firePolarUsageIngestAfterDeduction,
 	InsufficientCreditsError,
-} from "@/features/billing/credit-usage.server";
-import { POLAR_USAGE_STAGES } from "@/features/billing/meter-events";
+} from "@/features/billing/credit-usage.server"
+import { POLAR_USAGE_STAGES } from "@/features/billing/meter-events"
 import {
 	ChannelNotFoundError,
 	TiktokChannelConfigIncompleteError,
-} from "@/features/channels/channel-errors";
-import { getChannelForUser } from "@/features/channels/channels.service.server";
+} from "@/features/channels/channel-errors"
+import { getChannelForUser } from "@/features/channels/channels.service.server"
 import {
 	assertFreeTierAssemblyQuotaAllowed,
 	selectUserEntitlementSnapshotForUpdate,
-} from "@/features/entitlements";
-import { jobRowId, usageIdempotencyRowId } from "@/lib/id";
-import { logger } from "@/lib/logger";
-import { estimateContentPipelineCredits } from "./content-pipeline-estimate";
-import { dispatchContentJob } from "./pipeline/dispatch-content-job.server";
-import { PIPELINE_KIND, PIPELINE_STAGE } from "./pipeline/pipeline-kind";
+} from "@/features/entitlements"
+import { jobRowId, usageIdempotencyRowId } from "@/lib/id"
+import { logger } from "@/lib/logger"
+import { estimateContentPipelineCredits } from "./content-pipeline-estimate"
+import { dispatchContentJob } from "./pipeline/dispatch-content-job.server"
+import { PIPELINE_KIND, PIPELINE_STAGE } from "./pipeline/pipeline-kind"
 
-export const CONTENT_PIPELINE_IDEMPOTENCY_SCOPE = "content_pipeline";
+export const CONTENT_PIPELINE_IDEMPOTENCY_SCOPE = "content_pipeline"
 
 function isMysqlDuplicateKeyError(e: unknown): boolean {
 	if (typeof e !== "object" || e === null) {
-		return false;
+		return false
 	}
-	const err = e as { code?: string; errno?: number };
-	return err.code === "ER_DUP_ENTRY" || err.errno === 1062;
+	const err = e as { code?: string; errno?: number }
+	return err.code === "ER_DUP_ENTRY" || err.errno === 1062
 }
 
 export type ExecuteContentPipelineOutcome =
 	| { kind: "fresh"; payload: StubGenerateIdempotencyResult }
-	| { kind: "replay"; payload: StubGenerateIdempotencyResult };
+	| { kind: "replay"; payload: StubGenerateIdempotencyResult }
 
 /**
  * Idempotent billing + `video_jobs` row (script → prepare → assembly).
@@ -49,59 +49,59 @@ export type ExecuteContentPipelineOutcome =
  * Reuses free-tier single-assembly quota with standalone assembly jobs.
  */
 export async function executeContentPipelineWithIdempotency(input: {
-	userId: string;
-	channelId: string;
-	idempotencyKey: string;
-	idea: string;
+	userId: string
+	channelId: string
+	idempotencyKey: string
+	idea: string
 }): Promise<ExecuteContentPipelineOutcome> {
-	const clientKey = input.idempotencyKey.trim();
-	const channelId = input.channelId.trim();
-	const idea = input.idea.trim();
+	const clientKey = input.idempotencyKey.trim()
+	const channelId = input.channelId.trim()
+	const idea = input.idea.trim()
 
-	const credits = estimateContentPipelineCredits({ idea });
+	const credits = estimateContentPipelineCredits({ idea })
 
-	const db = getDb();
+	const db = getDb()
 
-	const channel = await getChannelForUser(input.userId, channelId);
+	const channel = await getChannelForUser(input.userId, channelId)
 	if (!channel) {
-		throw new ChannelNotFoundError();
+		throw new ChannelNotFoundError()
 	}
 
 	// TikTok channels must have all required posting defaults configured before
 	// a job is created — prevents wasting credits on videos that can't publish.
 	if (channel.platform === "tiktok") {
-		const cfg = channel.config;
+		const cfg = channel.config
 		if (!cfg.confirmed_terms.includes("tiktok_music_usage")) {
-			throw new TiktokChannelConfigIncompleteError("music_usage_not_confirmed");
+			throw new TiktokChannelConfigIncompleteError("music_usage_not_confirmed")
 		}
 		if (!cfg.tiktok_default_privacy_level?.trim()) {
-			throw new TiktokChannelConfigIncompleteError("privacy_level_not_set");
+			throw new TiktokChannelConfigIncompleteError("privacy_level_not_set")
 		}
-		const disc = cfg.tiktok_disclosure;
+		const disc = cfg.tiktok_disclosure
 		if (disc?.enabled && !disc.brand_organic && !disc.branded_content) {
 			throw new TiktokChannelConfigIncompleteError(
 				"disclosure_enabled_but_incomplete",
-			);
+			)
 		}
 	}
 
-	const inputPayload: VideoJobInputPayload = { idea };
+	const inputPayload: VideoJobInputPayload = { idea }
 
 	const outcome = await db.transaction(async (tx) => {
 		const snapshot = await selectUserEntitlementSnapshotForUpdate(
 			tx,
 			input.userId,
-		);
+		)
 		if (!snapshot) {
-			throw new Error("USER_NOT_FOUND");
+			throw new Error("USER_NOT_FOUND")
 		}
-		assertFreeTierAssemblyQuotaAllowed(snapshot);
+		assertFreeTierAssemblyQuotaAllowed(snapshot)
 
 		// Free plan: first video is complimentary — bypass credit deduction entirely.
 		const isFreeTrialVideo =
-			snapshot.plan === "free" && !snapshot.freeVideoConsumed;
+			snapshot.plan === "free" && !snapshot.freeVideoConsumed
 
-		const maxIterations = 12;
+		const maxIterations = 12
 		for (let i = 0; i < maxIterations; i++) {
 			const rows = await tx
 				.select()
@@ -113,20 +113,20 @@ export async function executeContentPipelineWithIdempotency(input: {
 						eq(usageIdempotency.clientKey, clientKey),
 					),
 				)
-				.for("update");
+				.for("update")
 
-			const existing = rows[0];
+			const existing = rows[0]
 			if (existing?.status === "completed" && existing.result) {
 				logger.info("content_pipeline_idempotency_replay", {
 					userId: input.userId,
 					channelId,
 					idempotencyKey: clientKey,
 					ref: existing.result.ref,
-				});
+				})
 				return {
 					kind: "replay" as const,
 					payload: existing.result,
-				};
+				}
 			}
 
 			if (!existing) {
@@ -139,12 +139,12 @@ export async function executeContentPipelineWithIdempotency(input: {
 						status: "processing",
 						ref: jobRowId(),
 						result: null,
-					});
+					})
 				} catch (e) {
 					if (!isMysqlDuplicateKeyError(e)) {
-						throw e;
+						throw e
 					}
-					continue;
+					continue
 				}
 			}
 
@@ -158,28 +158,28 @@ export async function executeContentPipelineWithIdempotency(input: {
 						eq(usageIdempotency.clientKey, clientKey),
 					),
 				)
-				.for("update");
+				.for("update")
 
-			const row = locked[0];
+			const row = locked[0]
 			if (!row) {
-				continue;
+				continue
 			}
 
 			if (row.status === "completed" && row.result) {
-				return { kind: "replay" as const, payload: row.result };
+				return { kind: "replay" as const, payload: row.result }
 			}
 
-			const ref = row.ref;
+			const ref = row.ref
 			if (!ref) {
-				throw new Error("usage_idempotency_missing_ref");
+				throw new Error("usage_idempotency_missing_ref")
 			}
 
 			try {
-				const creditsCharged = isFreeTrialVideo ? 0 : credits;
-				let creditsRemaining: number;
+				const creditsCharged = isFreeTrialVideo ? 0 : credits
+				let creditsRemaining: number
 
 				if (isFreeTrialVideo) {
-					creditsRemaining = snapshot.creditsRemaining;
+					creditsRemaining = snapshot.creditsRemaining
 				} else {
 					const result = await applyUsageDeduction(tx, {
 						userId: input.userId,
@@ -190,11 +190,11 @@ export async function executeContentPipelineWithIdempotency(input: {
 							creditsRemaining: snapshot.creditsRemaining,
 							creditsUsed: snapshot.creditsUsed,
 						},
-					});
-					creditsRemaining = result.creditsRemaining;
+					})
+					creditsRemaining = result.creditsRemaining
 				}
 
-				const now = new Date();
+				const now = new Date()
 				await tx.insert(videoJobs).values({
 					id: ref,
 					userId: input.userId,
@@ -210,13 +210,13 @@ export async function executeContentPipelineWithIdempotency(input: {
 					errorMessage: null,
 					createdAt: now,
 					updatedAt: now,
-				});
+				})
 
 				const payload: StubGenerateIdempotencyResult = {
 					creditsRemaining,
 					ref,
 					creditsCharged,
-				};
+				}
 
 				await tx
 					.update(usageIdempotency)
@@ -225,7 +225,7 @@ export async function executeContentPipelineWithIdempotency(input: {
 						result: payload,
 						updatedAt: new Date(),
 					})
-					.where(eq(usageIdempotency.id, row.id));
+					.where(eq(usageIdempotency.id, row.id))
 
 				logger.info("content_pipeline_job_created", {
 					userId: input.userId,
@@ -234,9 +234,9 @@ export async function executeContentPipelineWithIdempotency(input: {
 					credits: creditsCharged,
 					creditsRemaining,
 					isFreeTrialVideo,
-				});
+				})
 
-				return { kind: "fresh" as const, payload };
+				return { kind: "fresh" as const, payload }
 			} catch (e) {
 				if (e instanceof InsufficientCreditsError) {
 					logger.warn("content_pipeline_insufficient_credits", {
@@ -244,12 +244,12 @@ export async function executeContentPipelineWithIdempotency(input: {
 						channelId,
 						credits,
 						creditsRemaining: snapshot.creditsRemaining,
-					});
+					})
 					await tx
 						.delete(usageIdempotency)
-						.where(eq(usageIdempotency.id, row.id));
+						.where(eq(usageIdempotency.id, row.id))
 				}
-				throw e;
+				throw e
 			}
 		}
 
@@ -257,9 +257,9 @@ export async function executeContentPipelineWithIdempotency(input: {
 			userId: input.userId,
 			channelId,
 			idempotencyKey: clientKey,
-		});
-		throw new Error("usage_idempotency_claim_exhausted");
-	});
+		})
+		throw new Error("usage_idempotency_claim_exhausted")
+	})
 
 	if (outcome.kind === "fresh") {
 		// Skip Polar metering for free trial (0 credits charged).
@@ -269,7 +269,7 @@ export async function executeContentPipelineWithIdempotency(input: {
 				credits: outcome.payload.creditsCharged,
 				stage: POLAR_USAGE_STAGES.contentPipeline,
 				ref: outcome.payload.ref,
-			});
+			})
 		}
 
 		if (env.ENVIRONMENT !== "production") {
@@ -279,10 +279,10 @@ export async function executeContentPipelineWithIdempotency(input: {
 					jobId: outcome.payload.ref,
 					error: err instanceof Error ? err.message : String(err),
 				}),
-			);
+			)
 		}
 		// Production: status="queued" — cron dispatch picks it up within 1 minute.
 	}
 
-	return outcome;
+	return outcome
 }

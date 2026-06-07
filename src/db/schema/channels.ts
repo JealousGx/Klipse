@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm"
 import {
 	boolean,
 	index,
@@ -8,9 +8,9 @@ import {
 	text,
 	timestamp,
 	varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/mysql-core"
 
-import { users } from "./users";
+import { users } from "./users"
 
 /** Platform account linked to this publishing destination (OAuth / API). */
 export const channelPlatformEnum = mysqlEnum("platform", [
@@ -18,7 +18,7 @@ export const channelPlatformEnum = mysqlEnum("platform", [
 	"youtube",
 	"tiktok",
 	"instagram",
-]);
+])
 
 export const channels = mysqlTable(
 	"channels",
@@ -81,4 +81,4 @@ export const channels = mysqlTable(
 		index("channels_userId_idx").on(table.userId),
 		index("channels_createdAt_idx").on(table.createdAt),
 	],
-);
+)

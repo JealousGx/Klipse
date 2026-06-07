@@ -1,12 +1,12 @@
-import { relations } from "drizzle-orm";
+import { relations } from "drizzle-orm"
 
-import { accounts } from "./accounts";
-import { channels } from "./channels";
-import { creditTransactions } from "./credit-transactions";
-import { sessions } from "./sessions";
-import { usageIdempotency } from "./usage-idempotency";
-import { users } from "./users";
-import { videoJobs } from "./video-jobs";
+import { accounts } from "./accounts"
+import { channels } from "./channels"
+import { creditTransactions } from "./credit-transactions"
+import { sessions } from "./sessions"
+import { usageIdempotency } from "./usage-idempotency"
+import { users } from "./users"
+import { videoJobs } from "./video-jobs"
 
 export const usersRelations = relations(users, ({ many }) => ({
 	sessions: many(sessions),
@@ -15,4 +15,4 @@ export const usersRelations = relations(users, ({ many }) => ({
 	videoJobs: many(videoJobs),
 	creditTransactions: many(creditTransactions),
 	usageIdempotencyRows: many(usageIdempotency),
-}));
+}))

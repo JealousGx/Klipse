@@ -122,7 +122,9 @@ export function JobApprovalSection({
 	const declarationNode = isTiktok ? (
 		<p className="mt-2 text-xs leading-relaxed text-muted-foreground">
 			By posting, you agree to TikTok&rsquo;s{" "}
-			{TIKTOK_PER_VIDEO_CONTROLS_ENABLED && brandedContent && disclosureEnabled ? (
+			{TIKTOK_PER_VIDEO_CONTROLS_ENABLED &&
+			brandedContent &&
+			disclosureEnabled ? (
 				<>
 					<a
 						href="https://www.tiktok.com/legal/page/global/bc-policy/en"

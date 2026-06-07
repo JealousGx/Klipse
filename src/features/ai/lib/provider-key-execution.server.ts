@@ -1,23 +1,23 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import type { ProviderApiKeyTask } from "@/db/schema/provider-api-keys";
+import type { ProviderApiKeyTask } from "@/db/schema/provider-api-keys"
 
-import { RoundRobinPool } from "./api-key-pool.server";
+import { RoundRobinPool } from "./api-key-pool.server"
 import {
 	clearCooldownAfterSuccessfulUse,
 	recordProviderKeyFailure,
-} from "./provider-api-key-state.server";
+} from "./provider-api-key-state.server"
 import {
 	type AiProviderKind,
 	listProviderApiKeyCredentials,
 	type ProviderApiKeyCredential,
-} from "./provider-api-keys.server";
-import { parseRetryAfterHeader } from "./provider-quota-reset-parse.server";
-import { ProviderHttpError } from "./provider-http-error.server";
-import { classifyProviderHttpFailure } from "./provider-key-failure-classify.server";
+} from "./provider-api-keys.server"
+import { parseRetryAfterHeader } from "./provider-quota-reset-parse.server"
+import { ProviderHttpError } from "./provider-http-error.server"
+import { classifyProviderHttpFailure } from "./provider-key-failure-classify.server"
 
 function sleep(ms: number): Promise<void> {
-	return new Promise((r) => setTimeout(r, ms));
+	return new Promise((r) => setTimeout(r, ms))
 }
 
 /**
@@ -32,54 +32,54 @@ export async function executeWithProviderKeyRotation<T>(
 	executeOne: (credential: ProviderApiKeyCredential) => Promise<T>,
 	options?: { providerLabel?: string; taskType?: ProviderApiKeyTask },
 ): Promise<T> {
-	const label = options?.providerLabel ?? provider;
+	const label = options?.providerLabel ?? provider
 	const credentials = await listProviderApiKeyCredentials(
 		provider,
 		options?.taskType,
-	);
+	)
 	if (credentials.length === 0) {
-		throw new Error(`${label}_no_api_keys`);
+		throw new Error(`${label}_no_api_keys`)
 	}
 
-	const pool = new RoundRobinPool(credentials);
-	const ordered: ProviderApiKeyCredential[] = [];
+	const pool = new RoundRobinPool(credentials)
+	const ordered: ProviderApiKeyCredential[] = []
 	for (let i = 0; i < credentials.length; i++) {
-		const c = pool.next();
-		if (c) ordered.push(c);
+		const c = pool.next()
+		if (c) ordered.push(c)
 	}
 
-	let lastError: unknown;
+	let lastError: unknown
 	for (let i = 0; i < ordered.length; i++) {
-		const credential = ordered[i];
-		if (!credential) continue;
+		const credential = ordered[i]
+		if (!credential) continue
 
 		// Cooldown filtering is done at DB query level in listProviderApiKeyCredentials.
-		const backoffMs = Math.min(100 * 2 ** i, 8000);
-		if (backoffMs > 0) await sleep(backoffMs);
+		const backoffMs = Math.min(100 * 2 ** i, 8000)
+		if (backoffMs > 0) await sleep(backoffMs)
 
 		try {
-			const result = await executeOne(credential);
-			await clearCooldownAfterSuccessfulUse(credential);
-			return result;
+			const result = await executeOne(credential)
+			await clearCooldownAfterSuccessfulUse(credential)
+			return result
 		} catch (e) {
-			lastError = e;
+			lastError = e
 			const classified = classifyProviderHttpFailure(e, {
 				quotaResetAt: credential.quotaResetAt,
-			});
+			})
 			if (classified.rotate) {
 				await recordProviderKeyFailure(credential, {
 					cooldownUntil: classified.cooldownUntil,
 					errorType: classified.errorType,
 					persistQuotaResetAt: classified.persistQuotaResetAt,
-				});
-				continue;
+				})
+				continue
 			}
-			throw e;
+			throw e
 		}
 	}
 
-	if (lastError instanceof Error) throw lastError;
-	throw new Error(`${label}_all_keys_exhausted`);
+	if (lastError instanceof Error) throw lastError
+	throw new Error(`${label}_all_keys_exhausted`)
 }
 
 export function throwProviderHttpError(
@@ -88,12 +88,12 @@ export function throwProviderHttpError(
 	bodyText: string,
 	retryAfterHeader?: string | null,
 ): never {
-	const retryAfterAt = parseRetryAfterHeader(retryAfterHeader);
+	const retryAfterAt = parseRetryAfterHeader(retryAfterHeader)
 	throw new ProviderHttpError(
 		status,
 		bodyText.slice(0, 800),
 		providerLabel,
 		undefined,
 		retryAfterAt ?? undefined,
-	);
+	)
 }

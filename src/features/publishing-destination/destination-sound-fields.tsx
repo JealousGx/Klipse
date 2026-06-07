@@ -1,18 +1,18 @@
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
 
 type DestinationSoundFieldsProps = {
-	soundEnabled: boolean;
-	onSoundEnabledChange: (next: boolean) => void;
-	soundPromptHint: string;
-	onSoundPromptHintChange: (next: string) => void;
-	onSavePromptHint: () => void;
-	isSavingEnabled: boolean;
-	isSavingHint: boolean;
+	soundEnabled: boolean
+	onSoundEnabledChange: (next: boolean) => void
+	soundPromptHint: string
+	onSoundPromptHintChange: (next: string) => void
+	onSavePromptHint: () => void
+	isSavingEnabled: boolean
+	isSavingHint: boolean
 	/** Creator+ required — when false, controls are disabled with a reason. */
-	canUseSoundGeneration: boolean;
-};
+	canUseSoundGeneration: boolean
+}
 
 export function DestinationSoundFields({
 	soundEnabled,
@@ -32,8 +32,8 @@ export function DestinationSoundFields({
 				</p>
 				<p className="mt-1 text-sm text-muted-foreground">
 					Generate a short ambient sound effect that plays under the voiceover
-					at 30% volume. Requires Creator plan or higher and ElevenLabs API
-					keys configured by an admin.
+					at 30% volume. Requires Creator plan or higher and ElevenLabs API keys
+					configured by an admin.
 				</p>
 			</div>
 
@@ -74,12 +74,17 @@ export function DestinationSoundFields({
 				<div className="space-y-2">
 					<Label htmlFor="sound-prompt-hint">
 						Sound prompt hint{" "}
-						<span className="font-normal text-muted-foreground">(optional)</span>
+						<span className="font-normal text-muted-foreground">
+							(optional)
+						</span>
 					</Label>
-					<p id="sound-prompt-hint-desc" className="text-xs text-muted-foreground">
+					<p
+						id="sound-prompt-hint-desc"
+						className="text-xs text-muted-foreground"
+					>
 						Describe the sound style, e.g. "calm ambient piano" or "upbeat
-						electronic". Leave blank to auto-generate from your channel niche and
-						tone.
+						electronic". Leave blank to auto-generate from your channel niche
+						and tone.
 					</p>
 					<div className="flex gap-2">
 						<Input
@@ -105,5 +110,5 @@ export function DestinationSoundFields({
 				</div>
 			) : null}
 		</div>
-	);
+	)
 }

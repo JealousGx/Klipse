@@ -18,15 +18,15 @@
  * - Unreal Speech: https://docs.unrealspeech.com
  */
 
-import { env } from "@/env";
+import { env } from "@/env"
 
 export const AI_TASK = {
 	script: "script",
 	image: "image",
 	tts: "tts",
-} as const;
+} as const
 
-export type AiTask = (typeof AI_TASK)[keyof typeof AI_TASK];
+export type AiTask = (typeof AI_TASK)[keyof typeof AI_TASK]
 
 /** Defaults — all overridable via env vars. */
 export const DEFAULT_MODEL_IDS = {
@@ -38,7 +38,7 @@ export const DEFAULT_MODEL_IDS = {
 	googleTtsVoice: "en-US-Wavenet-G",
 	/** Unreal Speech default voice. Options: Scarlett | Dan | Liv | Will | Amy */
 	unrealSpeechVoice: "Scarlett",
-} as const;
+} as const
 
 /**
  * Builds the OpenRouter `models[]` array for script generation:
@@ -55,29 +55,29 @@ export function buildOpenRouterModelChain(
 	const primary =
 		overridePrimary?.trim() ||
 		env.OPENROUTER_SCRIPT_MODEL?.trim() ||
-		DEFAULT_MODEL_IDS.openRouterScript;
+		DEFAULT_MODEL_IDS.openRouterScript
 
 	const fallbacks = (env.OPENROUTER_SCRIPT_FALLBACK_MODELS ?? "")
 		.split(",")
 		.map((m) => m.trim())
 		.filter(Boolean)
-		.filter((m) => m !== primary);
+		.filter((m) => m !== primary)
 
-	return [primary, ...fallbacks];
+	return [primary, ...fallbacks]
 }
 
 /** Injected into system prompts so the LLM knows what stack generated it. */
 export function pipelineModelContextBlock(): string {
 	const primary =
-		env.OPENROUTER_SCRIPT_MODEL?.trim() || DEFAULT_MODEL_IDS.openRouterScript;
+		env.OPENROUTER_SCRIPT_MODEL?.trim() || DEFAULT_MODEL_IDS.openRouterScript
 	const fallbacks =
 		env.OPENROUTER_SCRIPT_FALLBACK_MODELS?.trim() ||
-		"google/gemini-2.5-flash,meta-llama/llama-4-scout:free";
+		"google/gemini-2.5-flash,meta-llama/llama-4-scout:free"
 
 	return [
 		"## AI routing (do not claim a different vendor stack)",
 		`- Script: OpenRouter (${primary} → ${fallbacks}).`,
 		`- Images: OpenRouter FLUX.2 → Replicate FLUX Schnell.`,
 		`- TTS: Google Cloud TTS → Unreal Speech.`,
-	].join("\n");
+	].join("\n")
 }

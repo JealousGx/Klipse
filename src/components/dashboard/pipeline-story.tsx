@@ -1,28 +1,28 @@
-import { RefreshCw } from "lucide-react";
-import { useMemo, useState } from "react";
+import { RefreshCw } from "lucide-react"
+import { useMemo, useState } from "react"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 
-import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types";
-import { labelForPipelineKind } from "@/features/video/pipeline/pipeline-kind";
-import type { VideoJobListRow } from "@/features/video/video-job-list.types";
+import type { ChannelSnapshot } from "@/features/channels/channel-snapshot.types"
+import { labelForPipelineKind } from "@/features/video/pipeline/pipeline-kind"
+import type { VideoJobListRow } from "@/features/video/video-job-list.types"
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
-import { ActiveDestinationSnapshotCard } from "./active-destination-snapshot-card";
-import { JobDetailPane } from "./job-detail-pane";
-import { LatestJobSnapshotCard } from "./latest-job-snapshort-card";
-import { statusLabel, tagFromNiche } from "./utils";
+import { ActiveDestinationSnapshotCard } from "./active-destination-snapshot-card"
+import { JobDetailPane } from "./job-detail-pane"
+import { LatestJobSnapshotCard } from "./latest-job-snapshort-card"
+import { statusLabel, tagFromNiche } from "./utils"
 
 export function shortJobId(id: string): string {
-	const t = id.trim();
-	if (t.length <= 10) return t;
-	return `${t.slice(0, 6)}…${t.slice(-4)}`;
+	const t = id.trim()
+	if (t.length <= 10) return t
+	return `${t.slice(0, 6)}…${t.slice(-4)}`
 }
 
 function JobStatusPill({ status }: { status: VideoJobListRow["status"] }) {
 	const base =
-		"rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide";
+		"rounded border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide"
 	const styles: Record<VideoJobListRow["status"], string> = {
 		queued: "border-border text-muted-foreground",
 		dispatched:
@@ -30,18 +30,16 @@ function JobStatusPill({ status }: { status: VideoJobListRow["status"] }) {
 		processing: "border-primary/40 bg-primary/10 text-primary",
 		completed: "border-border bg-muted text-foreground",
 		failed: "border-destructive/40 bg-destructive/10 text-destructive",
-	};
-	return (
-		<span className={cn(base, styles[status])}>{statusLabel[status]}</span>
-	);
+	}
+	return <span className={cn(base, styles[status])}>{statusLabel[status]}</span>
 }
 
 type JobQueueStoryCardProps = {
-	jobs: VideoJobListRow[];
-	isLoading: boolean;
-	onRefetch: () => void;
-	isRefetching: boolean;
-};
+	jobs: VideoJobListRow[]
+	isLoading: boolean
+	onRefetch: () => void
+	isRefetching: boolean
+}
 
 /** Full-width job queue + detail (Jobs page). */
 export function JobQueueStoryCard({
@@ -50,26 +48,26 @@ export function JobQueueStoryCard({
 	onRefetch,
 	isRefetching,
 }: JobQueueStoryCardProps) {
-	const [selectedId, setSelectedId] = useState<string | null>(null);
+	const [selectedId, setSelectedId] = useState<string | null>(null)
 
 	const selected = useMemo(() => {
-		if (jobs.length === 0) return null;
+		if (jobs.length === 0) return null
 		if (selectedId) {
-			const found = jobs.find((j) => j.id === selectedId);
-			if (found) return found;
+			const found = jobs.find((j) => j.id === selectedId)
+			if (found) return found
 		}
-		return jobs[0];
-	}, [jobs, selectedId]);
+		return jobs[0]
+	}, [jobs, selectedId])
 
 	if (isLoading) {
-		return <PipelineStoryChromeSkeleton />;
+		return <PipelineStoryChromeSkeleton />
 	}
 
 	if (jobs.length === 0) {
-		return null;
+		return null
 	}
 
-	const title = `${selected?.channelName ?? "Job"} · ${shortJobId(selected?.id ?? "")}`;
+	const title = `${selected?.channelName ?? "Job"} · ${shortJobId(selected?.id ?? "")}`
 	const tags = selected
 		? [
 				...(selected.artifacts?.tags?.length
@@ -78,7 +76,7 @@ export function JobQueueStoryCard({
 				labelForPipelineKind(selected.pipelineKind),
 				`${selected.costCredits} credits`,
 			]
-		: [];
+		: []
 
 	return (
 		<section
@@ -117,7 +115,7 @@ export function JobQueueStoryCard({
 					</div>
 					<ul className="max-h-[min(52vh,28rem)] divide-y divide-border overflow-y-auto">
 						{jobs.map((j) => {
-							const active = selected?.id === j.id;
+							const active = selected?.id === j.id
 							return (
 								<li key={j.id}>
 									<button
@@ -134,7 +132,7 @@ export function JobQueueStoryCard({
 										</span>
 									</button>
 								</li>
-							);
+							)
 						})}
 					</ul>
 				</div>
@@ -149,7 +147,7 @@ export function JobQueueStoryCard({
 				) : null}
 			</div>
 		</section>
-	);
+	)
 }
 
 function PipelineStoryChromeSkeleton() {
@@ -172,15 +170,15 @@ function PipelineStoryChromeSkeleton() {
 				<div className="aspect-video animate-pulse bg-muted/60 lg:aspect-auto lg:min-h-50" />
 			</div>
 		</section>
-	);
+	)
 }
 
 type OverviewHeroProps = {
-	latestJob: VideoJobListRow | null;
-	activeChannel: ChannelSnapshot | null;
-	jobsLoading: boolean;
-	channelsLoading: boolean;
-};
+	latestJob: VideoJobListRow | null
+	activeChannel: ChannelSnapshot | null
+	jobsLoading: boolean
+	channelsLoading: boolean
+}
 
 /** Hero strip: latest job + primary destination (Overview). */
 export function OverviewPipelineHero({
@@ -197,5 +195,5 @@ export function OverviewPipelineHero({
 				isLoading={channelsLoading}
 			/>
 		</div>
-	);
+	)
 }

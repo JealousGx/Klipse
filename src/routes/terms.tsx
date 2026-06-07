@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router"
 
-import { LegalArticle } from "@/components/LegalArticle";
-import { siteConfig } from "@/config/site";
+import { LegalArticle } from "@/components/LegalArticle"
+import { siteConfig } from "@/config/site"
 
 export const Route = createFileRoute("/terms")({
 	head: () => ({
@@ -15,9 +15,9 @@ export const Route = createFileRoute("/terms")({
 		links: [{ rel: "canonical", href: `${siteConfig.origin}/terms` }],
 	}),
 	component: TermsPage,
-});
+})
 
-const LAST_UPDATED = "April 16, 2026";
+const LAST_UPDATED = "April 16, 2026"
 
 function TermsPage() {
 	return (
@@ -443,5 +443,5 @@ function TermsPage() {
 				</LegalArticle>
 			</div>
 		</main>
-	);
+	)
 }

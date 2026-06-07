@@ -1,19 +1,19 @@
-import type { ReactNode } from "react";
+import type { ReactNode } from "react"
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
 type Props = {
-	id?: string;
+	id?: string
 	/** For `aria-labelledby` on landmark sections (e.g. `#connection`). */
-	titleId?: string;
-	title: string;
-	description?: ReactNode;
-	children: ReactNode;
-	className?: string;
+	titleId?: string
+	title: string
+	description?: ReactNode
+	children: ReactNode
+	className?: string
 	/** Omit top border / extra padding (first block on the page after the hero). */
-	isFirst?: boolean;
-	tabIndex?: number;
-};
+	isFirst?: boolean
+	tabIndex?: number
+}
 
 /**
  * Shared dashboard block: matches Settings (`border-t`, `pt-10`) and Jobs heading rhythm.
@@ -54,5 +54,5 @@ export function DashboardSection({
 			</div>
 			{children}
 		</section>
-	);
+	)
 }

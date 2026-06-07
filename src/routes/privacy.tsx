@@ -1,7 +1,7 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router"
 
-import { LegalArticle } from "@/components/LegalArticle";
-import { siteConfig } from "@/config/site";
+import { LegalArticle } from "@/components/LegalArticle"
+import { siteConfig } from "@/config/site"
 
 export const Route = createFileRoute("/privacy")({
 	head: () => ({
@@ -15,9 +15,9 @@ export const Route = createFileRoute("/privacy")({
 		links: [{ rel: "canonical", href: `${siteConfig.origin}/privacy` }],
 	}),
 	component: PrivacyPage,
-});
+})
 
-const LAST_UPDATED = "April 16, 2026";
+const LAST_UPDATED = "April 16, 2026"
 
 function PrivacyPage() {
 	return (
@@ -249,5 +249,5 @@ function PrivacyPage() {
 				</LegalArticle>
 			</div>
 		</main>
-	);
+	)
 }

@@ -15,45 +15,45 @@
 
 // ─── Level-based logger ─────────────────────────────────────────────────────
 
-export type LogLevel = "debug" | "info" | "warn" | "error";
+export type LogLevel = "debug" | "info" | "warn" | "error"
 
 export interface LogContext {
 	/** Video generation job ID */
-	jobId?: string;
+	jobId?: string
 	/** Stage name (script / prepare / assemble) */
-	stage?: string;
+	stage?: string
 	/** Duration in milliseconds */
-	durationMs?: number;
+	durationMs?: number
 	/** HTTP status code */
-	status?: number;
+	status?: number
 	/** Arbitrary extra fields */
-	[key: string]: unknown;
+	[key: string]: unknown
 }
 
 // ─── Axiom log drain ────────────────────────────────────────────────────────
 
 interface AxiomConfig {
-	token: string;
-	dataset: string;
+	token: string
+	dataset: string
 }
 
 function getAxiomConfig(): AxiomConfig | null {
-	const token = process.env.AXIOM_API_TOKEN;
-	if (!token) return null;
-	return { token, dataset: process.env.AXIOM_DATASET || "klipse" };
+	const token = process.env.AXIOM_API_TOKEN
+	if (!token) return null
+	return { token, dataset: process.env.AXIOM_DATASET || "klipse" }
 }
 
-const _axiomQueue: object[] = [];
-let _axiomFlushPending = false;
+const _axiomQueue: object[] = []
+let _axiomFlushPending = false
 
 function enqueueAxiom(event: object, config: AxiomConfig): void {
-	_axiomQueue.push(event);
-	if (_axiomFlushPending) return;
-	_axiomFlushPending = true;
+	_axiomQueue.push(event)
+	if (_axiomFlushPending) return
+	_axiomFlushPending = true
 	Promise.resolve().then(() => {
-		const batch = _axiomQueue.splice(0);
-		_axiomFlushPending = false;
-		if (!batch.length) return;
+		const batch = _axiomQueue.splice(0)
+		_axiomFlushPending = false
+		if (!batch.length) return
 		fetch(`https://api.axiom.co/v1/datasets/${config.dataset}/ingest`, {
 			method: "POST",
 			headers: {
@@ -61,24 +61,24 @@ function enqueueAxiom(event: object, config: AxiomConfig): void {
 				"Content-Type": "application/json",
 			},
 			body: JSON.stringify(batch),
-		}).catch(() => {});
-	});
+		}).catch(() => {})
+	})
 }
 
 // ─── Level-based logger ─────────────────────────────────────────────────────
 
 function shouldLog(level: LogLevel): boolean {
-	if (level === "error" || level === "warn") return true;
-	const perfLog = process.env.KLIPSE_PERF_LOG === "1";
-	const isDev = process.env.NODE_ENV !== "production";
-	if (level === "info") return perfLog || isDev;
-	return process.env.NODE_ENV === "development";
+	if (level === "error" || level === "warn") return true
+	const perfLog = process.env.KLIPSE_PERF_LOG === "1"
+	const isDev = process.env.NODE_ENV !== "production"
+	if (level === "info") return perfLog || isDev
+	return process.env.NODE_ENV === "development"
 }
 
 function emitLevel(level: LogLevel, message: string, ctx?: LogContext): void {
-	if (!shouldLog(level)) return;
+	if (!shouldLog(level)) return
 	try {
-		const now = Date.now();
+		const now = Date.now()
 		const fields = {
 			level,
 			message,
@@ -87,17 +87,17 @@ function emitLevel(level: LogLevel, message: string, ctx?: LogContext): void {
 			t: now,
 			_time: new Date(now).toISOString(),
 			...ctx,
-		};
-		const line = JSON.stringify(fields);
-		if (level === "error") {
-			console.error(line);
-		} else if (level === "warn") {
-			console.warn(line);
-		} else {
-			console.log(line);
 		}
-		const axiom = getAxiomConfig();
-		if (axiom) enqueueAxiom(fields, axiom);
+		const line = JSON.stringify(fields)
+		if (level === "error") {
+			console.error(line)
+		} else if (level === "warn") {
+			console.warn(line)
+		} else {
+			console.log(line)
+		}
+		const axiom = getAxiomConfig()
+		if (axiom) enqueueAxiom(fields, axiom)
 	} catch {
 		// Never throw from logger
 	}
@@ -110,28 +110,28 @@ export const logger = {
 	warn: (message: string, ctx?: LogContext) => emitLevel("warn", message, ctx),
 	error: (message: string, ctx?: LogContext) =>
 		emitLevel("error", message, ctx),
-} as const;
+} as const
 
 // ─── Legacy perf-timing API (kept for backward compat) ─────────────────────
 
-const LOG_TYPE = "klipse.perf";
+const LOG_TYPE = "klipse.perf"
 
 function perfEnabled(): boolean {
-	if (typeof process === "undefined" || !process.env) return false;
+	if (typeof process === "undefined" || !process.env) return false
 	return (
 		process.env.KLIPSE_PERF_LOG === "1" || process.env.NODE_ENV !== "production"
-	);
+	)
 }
 
-export type LogFields = Record<string, unknown>;
+export type LogFields = Record<string, unknown>
 
 /** Emit one structured JSON line. Never throws. */
 export function logEvent(tag: string, event: string, fields?: LogFields): void {
-	if (!perfEnabled()) return;
+	if (!perfEnabled()) return
 	try {
 		console.log(
 			JSON.stringify({ type: LOG_TYPE, tag, event, t: Date.now(), ...fields }),
-		);
+		)
 	} catch {}
 }
 
@@ -142,7 +142,7 @@ export function logTiming(
 	ms: number,
 	fields?: LogFields,
 ): void {
-	if (!perfEnabled()) return;
+	if (!perfEnabled()) return
 	try {
 		console.log(
 			JSON.stringify({
@@ -153,7 +153,7 @@ export function logTiming(
 				t: Date.now(),
 				...fields,
 			}),
-		);
+		)
 	} catch {}
 }
 
@@ -170,23 +170,23 @@ export async function withTiming<T>(
 	fn: () => Promise<T>,
 	fields?: LogFields,
 ): Promise<T> {
-	if (!perfEnabled()) return fn();
+	if (!perfEnabled()) return fn()
 
-	logEvent(tag, `${event}.start`, fields);
-	const start = Date.now();
+	logEvent(tag, `${event}.start`, fields)
+	const start = Date.now()
 	try {
-		const result = await fn();
+		const result = await fn()
 		logTiming(tag, `${event}.done`, Date.now() - start, {
 			...fields,
 			ok: true,
-		});
-		return result;
+		})
+		return result
 	} catch (e) {
 		logTiming(tag, `${event}.error`, Date.now() - start, {
 			...fields,
 			ok: false,
 			error: e instanceof Error ? e.message.slice(0, 200) : String(e),
-		});
-		throw e;
+		})
+		throw e
 	}
 }

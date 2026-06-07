@@ -7,15 +7,15 @@
  */
 export class TiktokChannelConfigIncompleteError extends Error {
 	constructor(public readonly reason: string) {
-		super(`TikTok channel config incomplete: ${reason}`);
-		this.name = "TiktokChannelConfigIncompleteError";
+		super(`TikTok channel config incomplete: ${reason}`)
+		this.name = "TiktokChannelConfigIncompleteError"
 	}
 }
 
 export class ChannelNotFoundError extends Error {
 	constructor() {
-		super("Channel not found.");
-		this.name = "ChannelNotFoundError";
+		super("Channel not found.")
+		this.name = "ChannelNotFoundError"
 	}
 }
 
@@ -24,7 +24,7 @@ export class ChannelLimitError extends Error {
 		public readonly max: number,
 		public readonly plan: string,
 	) {
-		super(`You can have up to ${max} channel(s) on the ${plan} plan.`);
-		this.name = "ChannelLimitError";
+		super(`You can have up to ${max} channel(s) on the ${plan} plan.`)
+		this.name = "ChannelLimitError"
 	}
 }

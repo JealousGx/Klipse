@@ -1,13 +1,13 @@
-import type { MeResponse } from "@/features/user/types/me";
+import type { MeResponse } from "@/features/user/types/me"
 
 /**
  * Minimal slice of a `channels` row used to resolve the previously linked
  * platform account id.
  */
 export type DestinationExternalIdentitySlice = {
-	boundExternalAccountId: string | null;
-	externalChannelId: string | null;
-};
+	boundExternalAccountId: string | null
+	externalChannelId: string | null
+}
 
 /**
  * Previously linked platform external id for this destination.
@@ -16,9 +16,9 @@ export type DestinationExternalIdentitySlice = {
 export function priorExternalChannelIdFromDestinationRow(
 	input: DestinationExternalIdentitySlice,
 ): string | null {
-	const b = input.boundExternalAccountId?.trim();
-	const e = input.externalChannelId?.trim();
-	return b || e || null;
+	const b = input.boundExternalAccountId?.trim()
+	const e = input.externalChannelId?.trim()
+	return b || e || null
 }
 
 /**
@@ -28,16 +28,16 @@ export function priorExternalChannelIdFromDestinationRow(
  * publishing platform.
  */
 export function consumesDestinationReplacementQuota(input: {
-	plan: MeResponse["plan"];
-	priorExternalChannelId: string | null;
-	newExternalChannelId: string;
+	plan: MeResponse["plan"]
+	priorExternalChannelId: string | null
+	newExternalChannelId: string
 }): boolean {
 	if (input.plan === "free") {
-		return false;
+		return false
 	}
-	const prior = input.priorExternalChannelId?.trim() || null;
+	const prior = input.priorExternalChannelId?.trim() || null
 	if (!prior) {
-		return false;
+		return false
 	}
-	return prior !== input.newExternalChannelId.trim();
+	return prior !== input.newExternalChannelId.trim()
 }

@@ -1,4 +1,4 @@
-import { createFileRoute, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Outlet } from "@tanstack/react-router"
 
 /**
  * Parent segment for `/dashboard/publishing` — must render `<Outlet />` so the
@@ -7,8 +7,8 @@ import { createFileRoute, Outlet } from "@tanstack/react-router";
  */
 export const Route = createFileRoute("/_authed/dashboard/publishing")({
 	component: PublishingLayout,
-});
+})
 
 function PublishingLayout() {
-	return <Outlet />;
+	return <Outlet />
 }

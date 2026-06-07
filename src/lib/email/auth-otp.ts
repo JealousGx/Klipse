@@ -1,9 +1,9 @@
-import { siteConfig } from "@/config/site";
-import { getTransactionEmailFrom, sendEmail } from ".";
-import { brandEmailHtml, escapeHtml } from "./brand-layout";
+import { siteConfig } from "@/config/site"
+import { getTransactionEmailFrom, sendEmail } from "."
+import { brandEmailHtml, escapeHtml } from "./brand-layout"
 
 export async function sendAuthOTPEmail(data: { email: string; otp: string }) {
-	const appName = siteConfig.name || "Klipse";
+	const appName = siteConfig.name || "Klipse"
 
 	const content = `
 <h2 style="margin:0 0 8px;font-size:20px;font-weight:700;color:#111827;text-align:center;line-height:1.3;">
@@ -27,14 +27,14 @@ export async function sendAuthOTPEmail(data: { email: string; otp: string }) {
 <p style="margin:0;font-size:13px;line-height:1.5;color:#9ca3af;text-align:center;">
   If you didn&rsquo;t request this, you can safely ignore this email.
 </p>
-`.trim();
+`.trim()
 
 	const text = [
 		`Your ${appName} verification code: ${data.otp}`,
 		"",
 		"This code expires in 10 minutes.",
 		"If you didn't request this, ignore this email.",
-	].join("\n");
+	].join("\n")
 
 	await sendEmail({
 		from: getTransactionEmailFrom(),
@@ -45,5 +45,5 @@ export async function sendAuthOTPEmail(data: { email: string; otp: string }) {
 			content,
 		}),
 		text,
-	});
+	})
 }

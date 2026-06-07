@@ -3,7 +3,7 @@ import {
 	useMatches,
 	useNavigate,
 	useRouterState,
-} from "@tanstack/react-router";
+} from "@tanstack/react-router"
 import {
 	BarChart3,
 	CreditCard,
@@ -14,22 +14,22 @@ import {
 	Settings,
 	Share2,
 	Sparkles,
-} from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+} from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 
-import { FeedbackButton } from "@/components/feedback";
-import { BrandLogo } from "@/components/shared/BrandLogo";
-import ThemeToggle from "@/components/ThemeToggle";
-import { Button } from "@/components/ui/button";
-import { Link } from "@/components/ui/link";
+import { FeedbackButton } from "@/components/feedback"
+import { BrandLogo } from "@/components/shared/BrandLogo"
+import ThemeToggle from "@/components/ThemeToggle"
+import { Button } from "@/components/ui/button"
+import { Link } from "@/components/ui/link"
 
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@/config/site"
 
-import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
-import type { MeResponse } from "@/features/user/types/me";
+import { useDashboardRouteContext } from "@/context/useDashboardRouteContext"
+import type { MeResponse } from "@/features/user/types/me"
 
-import { authClient } from "@/lib/auth/client";
-import { cn } from "@/lib/utils";
+import { authClient } from "@/lib/auth/client"
+import { cn } from "@/lib/utils"
 
 const nav = [
 	{ to: "/dashboard", label: "Overview", icon: LayoutDashboard },
@@ -39,40 +39,40 @@ const nav = [
 	{ to: "/dashboard/analytics", label: "Analytics", icon: BarChart3 },
 	{ to: "/dashboard/billing", label: "Billing", icon: CreditCard },
 	{ to: "/dashboard/settings", label: "Settings", icon: Settings },
-] as const;
+] as const
 
 const planLabel: Record<MeResponse["plan"], string> = {
 	free: "Free",
 	starter: "Starter",
 	creator: "Creator",
 	empire: "Empire",
-};
+}
 
 export function DashboardShell() {
-	const [mobileOpen, setMobileOpen] = useState(false);
+	const [mobileOpen, setMobileOpen] = useState(false)
 	const pathname = useRouterState({
 		select: (s) => s.location.pathname,
-	});
-	const matches = useMatches();
-	const navigate = useNavigate();
-	const { session } = useDashboardRouteContext();
-	const user = session.user;
+	})
+	const matches = useMatches()
+	const navigate = useNavigate()
+	const { session } = useDashboardRouteContext()
+	const user = session.user
 
 	const pageTitle = useMemo(() => {
-		const leaf = matches[matches.length - 1];
-		return leaf?.staticData?.dashboardTitle ?? "Dashboard";
-	}, [matches]);
+		const leaf = matches[matches.length - 1]
+		return leaf?.staticData?.dashboardTitle ?? "Dashboard"
+	}, [matches])
 
 	useEffect(() => {
-		setMobileOpen(false);
-	}, []);
+		setMobileOpen(false)
+	}, [])
 
 	const handleSignOut = async () => {
-		await authClient.signOut();
-		navigate({ to: "/" });
-	};
+		await authClient.signOut()
+		navigate({ to: "/" })
+	}
 
-	const email = user.email;
+	const email = user.email
 
 	return (
 		<div className="flex min-h-screen bg-background">
@@ -118,11 +118,11 @@ export function DashboardShell() {
 						Workspace
 					</p>
 					{nav.map((item) => {
-						const Icon = item.icon;
+						const Icon = item.icon
 						const active =
 							item.to === "/dashboard"
 								? pathname === "/dashboard" || pathname === "/dashboard/"
-								: pathname === item.to || pathname.startsWith(`${item.to}/`);
+								: pathname === item.to || pathname.startsWith(`${item.to}/`)
 						return (
 							<Link
 								key={item.to}
@@ -139,7 +139,7 @@ export function DashboardShell() {
 								<Icon className="size-4.5 shrink-0 opacity-90" />
 								{item.label}
 							</Link>
-						);
+						)
 					})}
 				</nav>
 
@@ -204,5 +204,5 @@ export function DashboardShell() {
 				</main>
 			</div>
 		</div>
-	);
+	)
 }

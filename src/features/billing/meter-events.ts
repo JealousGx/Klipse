@@ -7,25 +7,25 @@
  *
  * Optional `metadata.stage` (`POLAR_USAGE_STAGES`) helps dashboards; it does not change the Sum.
  */
-export const POLAR_USAGE_EVENT_NAME = "klipse.usage" as const;
+export const POLAR_USAGE_EVENT_NAME = "klipse.usage" as const
 
-export type PolarUsageEventName = typeof POLAR_USAGE_EVENT_NAME;
+export type PolarUsageEventName = typeof POLAR_USAGE_EVENT_NAME
 
 /** Metadata key Polar uses when the meter uses Sum — select this property in the dashboard. */
-export const POLAR_USAGE_CREDITS_METADATA_KEY = "credits" as const;
+export const POLAR_USAGE_CREDITS_METADATA_KEY = "credits" as const
 
 /** Optional labels for `metadata.stage`. */
 export const POLAR_USAGE_STAGES = {
 	/** Script + encode vertical slice (single credit line item). */
 	contentPipeline: "content_pipeline",
-} as const;
+} as const
 
 /**
  * Metadata for `klipse.usage` events. **`credits`** is summed by the Polar meter (Sum aggregation).
  */
 export type PolarUsageMetadata = {
-	credits: number;
-	stage?: (typeof POLAR_USAGE_STAGES)[keyof typeof POLAR_USAGE_STAGES];
+	credits: number
+	stage?: (typeof POLAR_USAGE_STAGES)[keyof typeof POLAR_USAGE_STAGES]
 	/** Correlation — job id, request id, etc. */
-	ref?: string;
-};
+	ref?: string
+}

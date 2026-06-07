@@ -1,12 +1,12 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config";
-import type { MeResponse } from "@/features/user/types/me";
+import { planAllowsPaidPublishingConnections } from "@/features/billing/tier-config"
+import type { MeResponse } from "@/features/user/types/me"
 
 import {
 	PUBLISHING_CONNECTION_DENIAL_REASONS,
 	type PublishingConnectionDenialReason,
-} from "./publishing-connection-reasons";
+} from "./publishing-connection-reasons"
 
 /**
  * Paid publishing integrations (any platform) are blocked on the free plan.
@@ -17,5 +17,5 @@ export function getPublishingConnectionDenialReason(
 ): PublishingConnectionDenialReason | null {
 	return planAllowsPaidPublishingConnections(plan)
 		? null
-		: PUBLISHING_CONNECTION_DENIAL_REASONS.PAID_PLAN_REQUIRED;
+		: PUBLISHING_CONNECTION_DENIAL_REASONS.PAID_PLAN_REQUIRED
 }

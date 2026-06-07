@@ -15,8 +15,8 @@
  *   3. Assign the role to the team member via the Users admin page.
  */
 
-import { createAccessControl } from "better-auth/plugins/access";
-import { adminAc, defaultStatements } from "better-auth/plugins/admin/access";
+import { createAccessControl } from "better-auth/plugins/access"
+import { adminAc, defaultStatements } from "better-auth/plugins/admin/access"
 
 // ── Resource + action definitions ────────────────────────────────────────────
 
@@ -28,9 +28,9 @@ const statement = {
 	adminJobs: ["read", "cancel"] as const,
 	systemStats: ["read"] as const,
 	billing: ["read", "adjustCredits", "changePlan"] as const,
-} as const;
+} as const
 
-export const ac = createAccessControl(statement);
+export const ac = createAccessControl(statement)
 
 // ── Role definitions ──────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ export const adminRole = ac.newRole({
 	adminJobs: ["read", "cancel"],
 	systemStats: ["read"],
 	billing: ["read", "adjustCredits", "changePlan"],
-});
+})
 
 /**
  * Regular user: no admin permissions.
@@ -57,12 +57,12 @@ export const userRole = ac.newRole({
 	adminJobs: [],
 	systemStats: [],
 	billing: [],
-});
+})
 
 // Export the roles map for registration in auth config
 export const adminRoles = {
 	admin: adminRole,
 	user: userRole,
-} as const;
+} as const
 
-export type AdminRole = keyof typeof adminRoles;
+export type AdminRole = keyof typeof adminRoles

@@ -1,13 +1,13 @@
-import { relations, sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm"
 import {
 	index,
 	mysqlTable,
 	text,
 	timestamp,
 	varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/mysql-core"
 
-import { users } from "./users";
+import { users } from "./users"
 
 export const accounts = mysqlTable(
 	"accounts",
@@ -33,11 +33,11 @@ export const accounts = mysqlTable(
 			.notNull(),
 	},
 	(table) => [index("accounts_userId_idx").on(table.userId)],
-);
+)
 
 export const accountsRelations = relations(accounts, ({ one }) => ({
 	users: one(users, {
 		fields: [accounts.userId],
 		references: [users.id],
 	}),
-}));
+}))

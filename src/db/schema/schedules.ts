@@ -1,4 +1,4 @@
-import { relations, sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm"
 import {
 	boolean,
 	index,
@@ -8,10 +8,10 @@ import {
 	timestamp,
 	unique,
 	varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/mysql-core"
 
-import { channels } from "./channels";
-import { users } from "./users";
+import { channels } from "./channels"
+import { users } from "./users"
 
 /**
  * One row per channel — drives the automated content generation loop (FEATURE_DOC §2.11).
@@ -31,17 +31,17 @@ export const schedules = mysqlTable(
 			.notNull()
 			.references(() => channels.id, { onDelete: "cascade" }),
 		frequency: mysqlEnum("frequency", [
-		"daily",
-		"every_2_days",
-		"every_3_days",
-		"every_4_days",
-		"every_5_days",
-		"every_6_days",
-		"weekly",
-		"every_2_weeks",
-		"every_3_weeks",
-		"monthly",
-	]).notNull(),
+			"daily",
+			"every_2_days",
+			"every_3_days",
+			"every_4_days",
+			"every_5_days",
+			"every_6_days",
+			"weekly",
+			"every_2_weeks",
+			"every_3_weeks",
+			"monthly",
+		]).notNull(),
 		/** When the next pipeline job should be triggered. */
 		nextRunAt: timestamp("next_run_at", { fsp: 3 }).notNull(),
 		/**
@@ -68,7 +68,7 @@ export const schedules = mysqlTable(
 		 */
 		index("schedules_enabled_nextRunAt_idx").on(t.enabled, t.nextRunAt),
 	],
-);
+)
 
 export const schedulesRelations = relations(schedules, ({ one }) => ({
 	user: one(users, {
@@ -79,4 +79,4 @@ export const schedulesRelations = relations(schedules, ({ one }) => ({
 		fields: [schedules.channelId],
 		references: [channels.id],
 	}),
-}));
+}))

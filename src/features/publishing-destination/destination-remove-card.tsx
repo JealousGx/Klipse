@@ -1,13 +1,13 @@
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react"
 
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
 type Props = {
-	isRemoving: boolean;
-	onRemove: () => void;
-	className?: string;
-};
+	isRemoving: boolean
+	onRemove: () => void
+	className?: string
+}
 
 export function DestinationRemoveFields({
 	isRemoving,
@@ -29,5 +29,5 @@ export function DestinationRemoveFields({
 			)}
 			Remove destination
 		</Button>
-	);
+	)
 }

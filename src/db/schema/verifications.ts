@@ -1,11 +1,11 @@
-import { sql } from "drizzle-orm";
+import { sql } from "drizzle-orm"
 import {
 	index,
 	mysqlTable,
 	text,
 	timestamp,
 	varchar,
-} from "drizzle-orm/mysql-core";
+} from "drizzle-orm/mysql-core"
 
 export const verifications = mysqlTable(
 	"verifications",
@@ -22,4 +22,4 @@ export const verifications = mysqlTable(
 			.notNull(),
 	},
 	(table) => [index("verifications_identifier_idx").on(table.identifier)],
-);
+)

@@ -1,19 +1,19 @@
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react"
 
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 
-import { publishingDestinationFieldClass } from "./publishing-destination-field-class";
+import { publishingDestinationFieldClass } from "./publishing-destination-field-class"
 
 type Props = {
-	oauthConnected: boolean;
-	displayName: string;
-	niche: string;
-	onDisplayNameChange: (value: string) => void;
-	onNicheChange: (value: string) => void;
-	onSave: () => void;
-	isSaving: boolean;
-};
+	oauthConnected: boolean
+	displayName: string
+	niche: string
+	onDisplayNameChange: (value: string) => void
+	onNicheChange: (value: string) => void
+	onSave: () => void
+	isSaving: boolean
+}
 
 export function DestinationDetailsFields({
 	oauthConnected,
@@ -29,8 +29,8 @@ export function DestinationDetailsFields({
 			<form
 				className="space-y-4"
 				onSubmit={(e) => {
-					e.preventDefault();
-					onSave();
+					e.preventDefault()
+					onSave()
 				}}
 			>
 				<div className="space-y-2">
@@ -82,5 +82,5 @@ export function DestinationDetailsFields({
 				</Button>
 			</form>
 		</div>
-	);
+	)
 }

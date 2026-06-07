@@ -1,6 +1,6 @@
-import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
-import { z } from "zod";
+import { createServerFn } from "@tanstack/react-start"
+import { getRequest } from "@tanstack/react-start/server"
+import { z } from "zod"
 
 import {
 	addAdminKey,
@@ -9,7 +9,7 @@ import {
 	resetAdminKeyCooldown,
 	toggleAdminKey,
 	updateAdminKey,
-} from "@/features/admin/admin-keys.server";
+} from "@/features/admin/admin-keys.server"
 
 // ---------------------------------------------------------------------------
 // Types
@@ -17,24 +17,24 @@ import {
 
 /** Safe projection — never includes the raw `secret`. */
 export type AdminKeyRow = {
-	id: string;
-	provider: string;
+	id: string
+	provider: string
 	/** Last 8 chars of the SHA-256 fingerprint — enough to identify, not enough to reconstruct. */
-	keyHint: string;
-	label: string | null;
-	modelId: string | null;
-	taskType: string;
-	sortOrder: number;
-	disabled: boolean;
-	cooldownUntil: Date | null;
-	failureCount: number;
-	errorType: string | null;
-	ownerEmail: string | null;
-	quotaResetAt: Date | null;
-	createdAt: Date;
+	keyHint: string
+	label: string | null
+	modelId: string | null
+	taskType: string
+	sortOrder: number
+	disabled: boolean
+	cooldownUntil: Date | null
+	failureCount: number
+	errorType: string | null
+	ownerEmail: string | null
+	quotaResetAt: Date | null
+	createdAt: Date
 	/** Derived status for display. */
-	status: "active" | "disabled" | "cooling";
-};
+	status: "active" | "disabled" | "cooling"
+}
 
 // ---------------------------------------------------------------------------
 // listAdminKeysFn
@@ -42,13 +42,13 @@ export type AdminKeyRow = {
 
 export type ListAdminKeysResult =
 	| { ok: true; keys: AdminKeyRow[] }
-	| { ok: false; code: "unauthorized" };
+	| { ok: false; code: "unauthorized" }
 
 export const listAdminKeysFn = createServerFn({ method: "GET" }).handler(
 	async (): Promise<ListAdminKeysResult> => {
-		return listAdminKeys(getRequest());
+		return listAdminKeys(getRequest())
 	},
-);
+)
 
 // ---------------------------------------------------------------------------
 // addAdminKeyFn
@@ -77,23 +77,23 @@ const addKeyInput = z.object({
 	taskType: z
 		.enum(["any", "script", "image", "tts", "voice", "sound"])
 		.default("any"),
-});
+})
 
-export type AddKeyInput = z.infer<typeof addKeyInput>;
+export type AddKeyInput = z.infer<typeof addKeyInput>
 
 export type AddAdminKeyResult =
 	| { ok: true; key: AdminKeyRow }
 	| {
-			ok: false;
-			code: "unauthorized" | "duplicate" | "validation";
-			message?: string;
-	  };
+			ok: false
+			code: "unauthorized" | "duplicate" | "validation"
+			message?: string
+	  }
 
 export const addAdminKeyFn = createServerFn({ method: "POST" })
 	.inputValidator((raw: unknown) => addKeyInput.parse(raw))
 	.handler(async ({ data }): Promise<AddAdminKeyResult> => {
-		return addAdminKey(getRequest(), data);
-	});
+		return addAdminKey(getRequest(), data)
+	})
 
 // ---------------------------------------------------------------------------
 // updateAdminKeyFn
@@ -106,23 +106,23 @@ const updateKeyInput = z.object({
 	taskType: z.enum(["any", "script", "image", "tts", "voice"]),
 	sortOrder: z.number().int().min(0),
 	ownerEmail: z.string().email().optional(),
-});
+})
 
-export type UpdateKeyInput = z.infer<typeof updateKeyInput>;
+export type UpdateKeyInput = z.infer<typeof updateKeyInput>
 
 export type UpdateAdminKeyResult =
 	| { ok: true; key: AdminKeyRow }
 	| {
-			ok: false;
-			code: "unauthorized" | "not_found" | "validation";
-			message?: string;
-	  };
+			ok: false
+			code: "unauthorized" | "not_found" | "validation"
+			message?: string
+	  }
 
 export const updateAdminKeyFn = createServerFn({ method: "POST" })
 	.inputValidator((raw: unknown) => updateKeyInput.parse(raw))
 	.handler(async ({ data }): Promise<UpdateAdminKeyResult> => {
-		return updateAdminKey(getRequest(), data);
-	});
+		return updateAdminKey(getRequest(), data)
+	})
 
 // ---------------------------------------------------------------------------
 // toggleAdminKeyFn
@@ -130,15 +130,15 @@ export const updateAdminKeyFn = createServerFn({ method: "POST" })
 
 export type ToggleAdminKeyResult =
 	| { ok: true }
-	| { ok: false; code: "unauthorized" | "not_found" };
+	| { ok: false; code: "unauthorized" | "not_found" }
 
 export const toggleAdminKeyFn = createServerFn({ method: "POST" })
 	.inputValidator((raw: unknown) =>
 		z.object({ id: z.string(), disabled: z.boolean() }).parse(raw),
 	)
 	.handler(async ({ data }): Promise<ToggleAdminKeyResult> => {
-		return toggleAdminKey(getRequest(), data.id, data.disabled);
-	});
+		return toggleAdminKey(getRequest(), data.id, data.disabled)
+	})
 
 // ---------------------------------------------------------------------------
 // resetAdminKeyCooldownFn
@@ -146,13 +146,13 @@ export const toggleAdminKeyFn = createServerFn({ method: "POST" })
 
 export type ResetAdminKeyCooldownResult =
 	| { ok: true }
-	| { ok: false; code: "unauthorized" | "not_found" };
+	| { ok: false; code: "unauthorized" | "not_found" }
 
 export const resetAdminKeyCooldownFn = createServerFn({ method: "POST" })
 	.inputValidator((raw: unknown) => z.object({ id: z.string() }).parse(raw))
 	.handler(async ({ data }): Promise<ResetAdminKeyCooldownResult> => {
-		return resetAdminKeyCooldown(getRequest(), data.id);
-	});
+		return resetAdminKeyCooldown(getRequest(), data.id)
+	})
 
 // ---------------------------------------------------------------------------
 // deleteAdminKeyFn
@@ -160,10 +160,10 @@ export const resetAdminKeyCooldownFn = createServerFn({ method: "POST" })
 
 export type DeleteAdminKeyResult =
 	| { ok: true }
-	| { ok: false; code: "unauthorized" | "not_found" };
+	| { ok: false; code: "unauthorized" | "not_found" }
 
 export const deleteAdminKeyFn = createServerFn({ method: "POST" })
 	.inputValidator((raw: unknown) => z.object({ id: z.string() }).parse(raw))
 	.handler(async ({ data }): Promise<DeleteAdminKeyResult> => {
-		return deleteAdminKey(getRequest(), data.id);
-	});
+		return deleteAdminKey(getRequest(), data.id)
+	})

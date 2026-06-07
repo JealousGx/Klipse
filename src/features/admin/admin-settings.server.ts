@@ -1,25 +1,25 @@
-import { getDb } from "@/db";
-import { SITE_SETTINGS_ID, siteSettings } from "@/db/schema/site-settings";
-import { env } from "@/env";
-import { requireAdmin } from "@/features/admin/admin.guard.server";
+import { getDb } from "@/db"
+import { SITE_SETTINGS_ID, siteSettings } from "@/db/schema/site-settings"
+import { env } from "@/env"
+import { requireAdmin } from "@/features/admin/admin.guard.server"
 
-import type { SiteSettingsData } from "@/features/admin/admin-settings.functions";
+import type { SiteSettingsData } from "@/features/admin/admin-settings.functions"
 
 // ---------------------------------------------------------------------------
 // readSettings — internal helper (no auth required)
 // ---------------------------------------------------------------------------
 
 export async function readSettings(): Promise<{
-	registrationEnabled: boolean;
-	registrationEnabledEnv: boolean;
+	registrationEnabled: boolean
+	registrationEnabledEnv: boolean
 }> {
-	const [row] = await getDb().select().from(siteSettings).limit(1);
+	const [row] = await getDb().select().from(siteSettings).limit(1)
 	return {
 		// DB flag; default true (open) when no row exists yet
 		registrationEnabled: row?.registrationEnabled ?? true,
 		// Env override — if env is false, registration is always blocked
 		registrationEnabledEnv: env.REGISTRATION_ENABLED,
-	};
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -27,12 +27,12 @@ export async function readSettings(): Promise<{
 // ---------------------------------------------------------------------------
 
 export async function getRegistrationStatus(): Promise<{
-	registrationEnabled: boolean;
+	registrationEnabled: boolean
 }> {
-	const { registrationEnabled, registrationEnabledEnv } = await readSettings();
+	const { registrationEnabled, registrationEnabledEnv } = await readSettings()
 	return {
 		registrationEnabled: registrationEnabledEnv && registrationEnabled,
-	};
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -45,12 +45,12 @@ export async function getAdminSettings(
 	{ ok: true; settings: SiteSettingsData } | { ok: false; code: "unauthorized" }
 > {
 	try {
-		await requireAdmin(request);
+		await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
-	const { registrationEnabled, registrationEnabledEnv } = await readSettings();
+	const { registrationEnabled, registrationEnabledEnv } = await readSettings()
 
 	return {
 		ok: true,
@@ -58,7 +58,7 @@ export async function getAdminSettings(
 			registrationEnabled,
 			envOverrideActive: !registrationEnabledEnv,
 		},
-	};
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -70,9 +70,9 @@ export async function updateAdminSettings(
 	registrationEnabled: boolean,
 ): Promise<{ ok: true } | { ok: false; code: "unauthorized" | "error" }> {
 	try {
-		await requireAdmin(request);
+		await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
 	try {
@@ -84,9 +84,9 @@ export async function updateAdminSettings(
 			})
 			.onDuplicateKeyUpdate({
 				set: { registrationEnabled },
-			});
-		return { ok: true };
+			})
+		return { ok: true }
 	} catch {
-		return { ok: false, code: "error" };
+		return { ok: false, code: "error" }
 	}
 }

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vitest"
 
-import { consumesDestinationReplacementQuota } from "./destination-replacement-policy";
+import { consumesDestinationReplacementQuota } from "./destination-replacement-policy"
 
 describe("consumesDestinationReplacementQuota", () => {
 	it("does not consume on first connect to a destination", () => {
@@ -10,8 +10,8 @@ describe("consumesDestinationReplacementQuota", () => {
 				priorExternalChannelId: null,
 				newExternalChannelId: "UC_new",
 			}),
-		).toBe(false);
-	});
+		).toBe(false)
+	})
 
 	it("does not consume when reconnecting the same channel", () => {
 		expect(
@@ -20,8 +20,8 @@ describe("consumesDestinationReplacementQuota", () => {
 				priorExternalChannelId: "UC_same",
 				newExternalChannelId: "UC_same",
 			}),
-		).toBe(false);
-	});
+		).toBe(false)
+	})
 
 	it("consumes when switching to a different channel on a linked slot", () => {
 		expect(
@@ -30,6 +30,6 @@ describe("consumesDestinationReplacementQuota", () => {
 				priorExternalChannelId: "UC_old",
 				newExternalChannelId: "UC_new",
 			}),
-		).toBe(true);
-	});
-});
+		).toBe(true)
+	})
+})

@@ -1,12 +1,12 @@
 import type {
 	ProcessorJobSpec,
 	ProcessorProviderKey,
-} from "@klipse/video-assembly-shared";
+} from "@klipse/video-assembly-shared"
 
-import { reportKeyFailure } from "../utils/callbacks";
-import { logger } from "../utils/logger";
+import { reportKeyFailure } from "../utils/callbacks"
+import { logger } from "../utils/logger"
 
-const ELEVENLABS_BASE = "https://api.elevenlabs.io/v1";
+const ELEVENLABS_BASE = "https://api.elevenlabs.io/v1"
 
 function makeHttpErr(
 	status: number,
@@ -14,22 +14,22 @@ function makeHttpErr(
 	retryAfter: string | null,
 ): Error {
 	const err = new Error(`http_${status}:${body.slice(0, 200)}`) as Error & {
-		httpStatus: number;
-		bodySnippet: string;
-		retryAfterHeader: string | null;
-	};
-	err.httpStatus = status;
-	err.bodySnippet = body.slice(0, 800);
-	err.retryAfterHeader = retryAfter;
-	return err;
+		httpStatus: number
+		bodySnippet: string
+		retryAfterHeader: string | null
+	}
+	err.httpStatus = status
+	err.bodySnippet = body.slice(0, 800)
+	err.retryAfterHeader = retryAfter
+	return err
 }
 
 function isHttpErr(e: unknown): e is Error & {
-	httpStatus: number;
-	bodySnippet: string;
-	retryAfterHeader: string | null;
+	httpStatus: number
+	bodySnippet: string
+	retryAfterHeader: string | null
 } {
-	return e instanceof Error && "httpStatus" in e;
+	return e instanceof Error && "httpStatus" in e
 }
 
 async function elevenLabsSound(
@@ -46,14 +46,14 @@ async function elevenLabsSound(
 			prompt_influence: 0.3,
 		}),
 		signal: AbortSignal.timeout(60_000),
-	});
+	})
 	if (!res.ok)
 		throw makeHttpErr(
 			res.status,
 			await res.text().catch(() => ""),
 			res.headers.get("retry-after"),
-		);
-	return res.arrayBuffer();
+		)
+	return res.arrayBuffer()
 }
 
 /**
@@ -64,19 +64,19 @@ async function elevenLabsSound(
 export async function generateSound(
 	spec: ProcessorJobSpec,
 ): Promise<ArrayBuffer | null> {
-	if (!spec.soundPrompt) return null;
-	if (spec.providerKeys.elevenlabs.length === 0) return null;
+	if (!spec.soundPrompt) return null
+	if (spec.providerKeys.elevenlabs.length === 0) return null
 
-	let lastError: unknown;
+	let lastError: unknown
 	for (const key of spec.providerKeys.elevenlabs) {
 		try {
 			return await elevenLabsSound(
 				key,
 				spec.soundPrompt,
 				spec.soundDurationSeconds,
-			);
+			)
 		} catch (e) {
-			lastError = e;
+			lastError = e
 			if (isHttpErr(e)) {
 				await reportKeyFailure(
 					spec,
@@ -85,21 +85,21 @@ export async function generateSound(
 					e.httpStatus,
 					e.bodySnippet,
 					e.retryAfterHeader,
-				);
-				continue;
+				)
+				continue
 			}
 			// Non-HTTP error: log but don't rotate
 			logger.warn("sound_gen_elevenlabs_error_non_rotating", {
 				jobId: spec.jobId,
 				error: e instanceof Error ? e.message : String(e),
-			});
-			break;
+			})
+			break
 		}
 	}
 
 	logger.warn("sound_gen_failed_skipping", {
 		jobId: spec.jobId,
 		error: lastError instanceof Error ? lastError.message : String(lastError),
-	});
-	return null; // non-fatal: video continues without sound
+	})
+	return null // non-fatal: video continues without sound
 }

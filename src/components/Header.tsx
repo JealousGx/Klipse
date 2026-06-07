@@ -1,8 +1,8 @@
-import { BrandLogo } from "@/components/shared/BrandLogo";
-import { Separator } from "@/components/ui/separator";
+import { BrandLogo } from "@/components/shared/BrandLogo"
+import { Separator } from "@/components/ui/separator"
 
-import { GetStartedButton } from "./get-started-button";
-import ThemeToggle from "./ThemeToggle";
+import { GetStartedButton } from "./get-started-button"
+import ThemeToggle from "./ThemeToggle"
 
 export default function Header() {
 	return (
@@ -21,5 +21,5 @@ export default function Header() {
 				</div>
 			</nav>
 		</header>
-	);
+	)
 }

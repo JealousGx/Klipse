@@ -1,5 +1,5 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
 import {
 	AlertTriangle,
 	Check,
@@ -12,25 +12,25 @@ import {
 	ShieldOff,
 	Trash2,
 	X,
-} from "lucide-react";
-import { useState } from "react";
-import { toast } from "sonner";
+} from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/components/ui/dropdown-menu"
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 import {
 	type AdminKeyRow,
 	addAdminKeyFn,
@@ -39,11 +39,11 @@ import {
 	resetAdminKeyCooldownFn,
 	toggleAdminKeyFn,
 	updateAdminKeyFn,
-} from "@/features/admin/admin-keys.functions";
+} from "@/features/admin/admin-keys.functions"
 
 export const Route = createFileRoute("/_authed/admin/keys")({
 	component: AdminKeysPage,
-});
+})
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -61,9 +61,9 @@ const PROVIDERS = [
 	"openai",
 	"kling",
 	"luma",
-] as const;
+] as const
 
-type Provider = (typeof PROVIDERS)[number];
+type Provider = (typeof PROVIDERS)[number]
 
 const PROVIDER_DOT_COLOR: Record<Provider, string> = {
 	openrouter: "bg-violet-400",
@@ -76,7 +76,7 @@ const PROVIDER_DOT_COLOR: Record<Provider, string> = {
 	openai: "bg-zinc-500",
 	kling: "bg-zinc-500",
 	luma: "bg-zinc-500",
-};
+}
 
 const PROVIDER_LABEL: Record<Provider, string> = {
 	openrouter: "OpenRouter",
@@ -89,10 +89,10 @@ const PROVIDER_LABEL: Record<Provider, string> = {
 	openai: "OpenAI",
 	kling: "Kling",
 	luma: "Luma",
-};
+}
 
-const TASK_TYPES = ["any", "script", "image", "tts", "voice", "sound"] as const;
-type TaskType = (typeof TASK_TYPES)[number];
+const TASK_TYPES = ["any", "script", "image", "tts", "voice", "sound"] as const
+type TaskType = (typeof TASK_TYPES)[number]
 
 const TASK_TYPE_LABEL: Record<TaskType, string> = {
 	any: "Any",
@@ -101,27 +101,27 @@ const TASK_TYPE_LABEL: Record<TaskType, string> = {
 	tts: "TTS",
 	voice: "Voice",
 	sound: "Sound",
-};
+}
 
 const fieldClass =
-	"w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 outline-none ring-offset-0 transition placeholder:text-zinc-500 focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 disabled:cursor-not-allowed disabled:opacity-50";
+	"w-full rounded-lg border border-zinc-700 bg-zinc-800 px-3 py-2 text-sm text-zinc-100 outline-none ring-offset-0 transition placeholder:text-zinc-500 focus:border-zinc-500 focus:ring-1 focus:ring-zinc-500 disabled:cursor-not-allowed disabled:opacity-50"
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function formatCooldownUntil(date: Date | null): string {
-	if (!date) return "";
-	const d = new Date(date);
-	return `until ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`;
+	if (!date) return ""
+	const d = new Date(date)
+	return `until ${d.getHours().toString().padStart(2, "0")}:${d.getMinutes().toString().padStart(2, "0")}`
 }
 
 function StatusBadge({
 	status,
 	cooldownUntil,
 }: {
-	status: AdminKeyRow["status"];
-	cooldownUntil: Date | null;
+	status: AdminKeyRow["status"]
+	cooldownUntil: Date | null
 }) {
 	if (status === "active") {
 		return (
@@ -129,7 +129,7 @@ function StatusBadge({
 				<span className="size-1.5 rounded-full bg-emerald-400" />
 				Active
 			</span>
-		);
+		)
 	}
 	if (status === "cooling") {
 		return (
@@ -137,25 +137,25 @@ function StatusBadge({
 				<Clock className="size-3" />
 				Cooling {formatCooldownUntil(cooldownUntil)}
 			</span>
-		);
+		)
 	}
 	return (
 		<span className="inline-flex items-center gap-1.5 rounded-full border border-zinc-600/50 bg-zinc-700/50 px-2.5 py-0.5 text-xs font-medium text-zinc-400">
 			<ShieldOff className="size-3" />
 			Disabled
 		</span>
-	);
+	)
 }
 
 function ProviderBadge({ provider }: { provider: string }) {
-	const dotColor = PROVIDER_DOT_COLOR[provider as Provider] ?? "bg-zinc-400";
-	const label = PROVIDER_LABEL[provider as Provider] ?? provider;
+	const dotColor = PROVIDER_DOT_COLOR[provider as Provider] ?? "bg-zinc-400"
+	const label = PROVIDER_LABEL[provider as Provider] ?? provider
 	return (
 		<span className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-300">
 			<span className={`size-2 rounded-full ${dotColor}`} />
 			{label}
 		</span>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -167,16 +167,16 @@ function StatCard({
 	value,
 	color,
 }: {
-	label: string;
-	value: number;
-	color: "green" | "amber" | "zinc";
+	label: string
+	value: number
+	color: "green" | "amber" | "zinc"
 }) {
 	const valueClass =
 		color === "green"
 			? "text-emerald-400"
 			: color === "amber"
 				? "text-amber-400"
-				: "text-zinc-400";
+				: "text-zinc-400"
 
 	return (
 		<div className="rounded-xl border border-zinc-800 bg-zinc-900 p-5">
@@ -185,7 +185,7 @@ function StatCard({
 			</p>
 			<p className={`mt-1 text-3xl font-bold ${valueClass}`}>{value}</p>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -198,12 +198,12 @@ function DeleteDialog({
 	onConfirm,
 	isPending,
 }: {
-	keyId: string;
-	onClose: () => void;
-	onConfirm: (id: string) => void;
-	isPending: boolean;
+	keyId: string
+	onClose: () => void
+	onConfirm: (id: string) => void
+	isPending: boolean
 }) {
-	const [confirmText, setConfirmText] = useState("");
+	const [confirmText, setConfirmText] = useState("")
 
 	return (
 		<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm">
@@ -261,7 +261,7 @@ function DeleteDialog({
 				</div>
 			</div>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -272,51 +272,51 @@ function AddKeyModal({
 	onClose,
 	onSuccess,
 }: {
-	onClose: () => void;
-	onSuccess: () => void;
+	onClose: () => void
+	onSuccess: () => void
 }) {
-	const [provider, setProvider] = useState<Provider>("openrouter");
-	const [secret, setSecret] = useState("");
-	const [showSecret, setShowSecret] = useState(false);
-	const [ownerEmail, setOwnerEmail] = useState("");
-	const [sortOrder, setSortOrder] = useState(0);
-	const [label, setLabel] = useState("");
-	const [modelId, setModelId] = useState("");
-	const [taskType, setTaskType] = useState<TaskType>("any");
+	const [provider, setProvider] = useState<Provider>("openrouter")
+	const [secret, setSecret] = useState("")
+	const [showSecret, setShowSecret] = useState(false)
+	const [ownerEmail, setOwnerEmail] = useState("")
+	const [sortOrder, setSortOrder] = useState(0)
+	const [label, setLabel] = useState("")
+	const [modelId, setModelId] = useState("")
+	const [taskType, setTaskType] = useState<TaskType>("any")
 
-	const queryClient = useQueryClient();
+	const queryClient = useQueryClient()
 
 	const mutation = useMutation({
 		mutationFn: (data: {
-			provider: Provider;
-			secret: string;
-			ownerEmail?: string;
-			sortOrder: number;
-			label?: string;
-			modelId?: string;
-			taskType: TaskType;
+			provider: Provider
+			secret: string
+			ownerEmail?: string
+			sortOrder: number
+			label?: string
+			modelId?: string
+			taskType: TaskType
 		}) => addAdminKeyFn({ data }),
 		onSuccess: (result) => {
 			if (result.ok) {
-				toast.success("API key added successfully.");
-				queryClient.invalidateQueries({ queryKey: ["admin-keys"] });
-				onSuccess();
+				toast.success("API key added successfully.")
+				queryClient.invalidateQueries({ queryKey: ["admin-keys"] })
+				onSuccess()
 			} else if (result.code === "duplicate") {
-				toast.error(result.message ?? "Duplicate key.");
+				toast.error(result.message ?? "Duplicate key.")
 			} else {
-				toast.error("Failed to add key.");
+				toast.error("Failed to add key.")
 			}
 		},
 		onError: () => {
-			toast.error("Failed to add key.");
+			toast.error("Failed to add key.")
 		},
-	});
+	})
 
-	const isValid = secret.length >= 8;
+	const isValid = secret.length >= 8
 
 	function handleSubmit(e: React.FormEvent) {
-		e.preventDefault();
-		if (!isValid) return;
+		e.preventDefault()
+		if (!isValid) return
 		mutation.mutate({
 			provider,
 			secret,
@@ -325,7 +325,7 @@ function AddKeyModal({
 			label: label.trim() || undefined,
 			modelId: modelId.trim() || undefined,
 			taskType,
-		});
+		})
 	}
 
 	return (
@@ -526,7 +526,7 @@ function AddKeyModal({
 				</form>
 			</div>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -537,42 +537,42 @@ function EditKeyModal({
 	row,
 	onClose,
 }: {
-	row: AdminKeyRow;
-	onClose: () => void;
+	row: AdminKeyRow
+	onClose: () => void
 }) {
-	const [label, setLabel] = useState(row.label ?? "");
-	const [modelId, setModelId] = useState(row.modelId ?? "");
+	const [label, setLabel] = useState(row.label ?? "")
+	const [modelId, setModelId] = useState(row.modelId ?? "")
 	const [taskType, setTaskType] = useState<TaskType>(
 		(row.taskType as TaskType) ?? "any",
-	);
-	const [sortOrder, setSortOrder] = useState(row.sortOrder);
-	const [ownerEmail, setOwnerEmail] = useState(row.ownerEmail ?? "");
+	)
+	const [sortOrder, setSortOrder] = useState(row.sortOrder)
+	const [ownerEmail, setOwnerEmail] = useState(row.ownerEmail ?? "")
 
-	const queryClient = useQueryClient();
+	const queryClient = useQueryClient()
 
 	const mutation = useMutation({
 		mutationFn: (data: {
-			id: string;
-			label?: string;
-			modelId?: string;
-			taskType: TaskType;
-			sortOrder: number;
-			ownerEmail?: string;
+			id: string
+			label?: string
+			modelId?: string
+			taskType: TaskType
+			sortOrder: number
+			ownerEmail?: string
 		}) => updateAdminKeyFn({ data }),
 		onSuccess: (result) => {
 			if (result.ok) {
-				toast.success("Key updated.");
-				queryClient.invalidateQueries({ queryKey: ["admin-keys"] });
-				onClose();
+				toast.success("Key updated.")
+				queryClient.invalidateQueries({ queryKey: ["admin-keys"] })
+				onClose()
 			} else {
-				toast.error(result.message ?? "Failed to update key.");
+				toast.error(result.message ?? "Failed to update key.")
 			}
 		},
 		onError: () => toast.error("Failed to update key."),
-	});
+	})
 
 	function handleSubmit(e: React.FormEvent) {
-		e.preventDefault();
+		e.preventDefault()
 		mutation.mutate({
 			id: row.id,
 			label: label.trim() || undefined,
@@ -580,7 +580,7 @@ function EditKeyModal({
 			taskType,
 			sortOrder,
 			ownerEmail: ownerEmail.trim() || undefined,
-		});
+		})
 	}
 
 	return (
@@ -729,7 +729,7 @@ function EditKeyModal({
 				</form>
 			</div>
 		</div>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -737,53 +737,53 @@ function EditKeyModal({
 // ---------------------------------------------------------------------------
 
 function KeyRowActions({ row }: { row: AdminKeyRow }) {
-	const queryClient = useQueryClient();
-	const [deleteId, setDeleteId] = useState<string | null>(null);
-	const [editRow, setEditRow] = useState<AdminKeyRow | null>(null);
+	const queryClient = useQueryClient()
+	const [deleteId, setDeleteId] = useState<string | null>(null)
+	const [editRow, setEditRow] = useState<AdminKeyRow | null>(null)
 
 	const toggleMutation = useMutation({
 		mutationFn: (vars: { id: string; disabled: boolean }) =>
 			toggleAdminKeyFn({ data: vars }),
 		onSuccess: (result) => {
 			if (result.ok) {
-				toast.success("Key updated.");
-				queryClient.invalidateQueries({ queryKey: ["admin-keys"] });
+				toast.success("Key updated.")
+				queryClient.invalidateQueries({ queryKey: ["admin-keys"] })
 			} else {
-				toast.error("Failed to update key.");
+				toast.error("Failed to update key.")
 			}
 		},
 		onError: () => toast.error("Failed to update key."),
-	});
+	})
 
 	const cooldownMutation = useMutation({
 		mutationFn: (id: string) => resetAdminKeyCooldownFn({ data: { id } }),
 		onSuccess: (result) => {
 			if (result.ok) {
-				toast.success("Cooldown reset.");
-				queryClient.invalidateQueries({ queryKey: ["admin-keys"] });
+				toast.success("Cooldown reset.")
+				queryClient.invalidateQueries({ queryKey: ["admin-keys"] })
 			} else {
-				toast.error("Failed to reset cooldown.");
+				toast.error("Failed to reset cooldown.")
 			}
 		},
 		onError: () => toast.error("Failed to reset cooldown."),
-	});
+	})
 
 	const deleteMutation = useMutation({
 		mutationFn: (id: string) => deleteAdminKeyFn({ data: { id } }),
 		onSuccess: (result) => {
 			if (result.ok) {
-				toast.success("Key deleted.");
-				queryClient.invalidateQueries({ queryKey: ["admin-keys"] });
-				setDeleteId(null);
+				toast.success("Key deleted.")
+				queryClient.invalidateQueries({ queryKey: ["admin-keys"] })
+				setDeleteId(null)
 			} else {
-				toast.error("Failed to delete key.");
+				toast.error("Failed to delete key.")
 			}
 		},
 		onError: () => toast.error("Failed to delete key."),
-	});
+	})
 
-	const isDisabled = row.status === "disabled";
-	const isCooling = row.status === "cooling";
+	const isDisabled = row.status === "disabled"
+	const isCooling = row.status === "cooling"
 
 	return (
 		<>
@@ -847,7 +847,7 @@ function KeyRowActions({ row }: { row: AdminKeyRow }) {
 				<EditKeyModal row={editRow} onClose={() => setEditRow(null)} />
 			)}
 		</>
-	);
+	)
 }
 
 // ---------------------------------------------------------------------------
@@ -855,20 +855,20 @@ function KeyRowActions({ row }: { row: AdminKeyRow }) {
 // ---------------------------------------------------------------------------
 
 function AdminKeysPage() {
-	const [showAddModal, setShowAddModal] = useState(false);
+	const [showAddModal, setShowAddModal] = useState(false)
 
 	const { data, isLoading, isError } = useQuery({
 		queryKey: ["admin-keys"],
 		queryFn: () => listAdminKeysFn(),
 		staleTime: 15_000,
 		refetchInterval: 30_000,
-	});
+	})
 
-	const keys: AdminKeyRow[] = data?.ok ? data.keys : [];
+	const keys: AdminKeyRow[] = data?.ok ? data.keys : []
 
-	const activeCount = keys.filter((k) => k.status === "active").length;
-	const coolingCount = keys.filter((k) => k.status === "cooling").length;
-	const disabledCount = keys.filter((k) => k.status === "disabled").length;
+	const activeCount = keys.filter((k) => k.status === "active").length
+	const coolingCount = keys.filter((k) => k.status === "cooling").length
+	const disabledCount = keys.filter((k) => k.status === "disabled").length
 
 	return (
 		<div className="space-y-8">
@@ -1057,5 +1057,5 @@ function AdminKeysPage() {
 				/>
 			)}
 		</div>
-	);
+	)
 }

@@ -1,25 +1,25 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm"
 
-import { getDb } from "@/db";
-import { providerApiKeys } from "@/db/schema/provider-api-keys";
-import { requireAdmin } from "@/features/admin/admin.guard.server";
+import { getDb } from "@/db"
+import { providerApiKeys } from "@/db/schema/provider-api-keys"
+import { requireAdmin } from "@/features/admin/admin.guard.server"
 import type {
 	AddKeyInput,
 	AdminKeyRow,
 	UpdateKeyInput,
-} from "@/features/admin/admin-keys.functions";
-import { secretFingerprint } from "@/features/ai/lib/provider-key-fingerprint.server";
-import { providerApiKeyRowId } from "@/lib/id";
+} from "@/features/admin/admin-keys.functions"
+import { secretFingerprint } from "@/features/ai/lib/provider-key-fingerprint.server"
+import { providerApiKeyRowId } from "@/lib/id"
 
 // ---------------------------------------------------------------------------
 // Internal helper
 // ---------------------------------------------------------------------------
 
 function toAdminKeyRow(row: typeof providerApiKeys.$inferSelect): AdminKeyRow {
-	const now = new Date();
+	const now = new Date()
 	const cooling = Boolean(
 		row.cooldownUntil && new Date(row.cooldownUntil) > now,
-	);
+	)
 	return {
 		id: row.id,
 		provider: row.provider,
@@ -36,7 +36,7 @@ function toAdminKeyRow(row: typeof providerApiKeys.$inferSelect): AdminKeyRow {
 		quotaResetAt: row.quotaResetAt ?? null,
 		createdAt: row.createdAt,
 		status: row.disabled ? "disabled" : cooling ? "cooling" : "active",
-	};
+	}
 }
 
 // ---------------------------------------------------------------------------
@@ -49,18 +49,18 @@ export async function listAdminKeys(
 	{ ok: true; keys: AdminKeyRow[] } | { ok: false; code: "unauthorized" }
 > {
 	try {
-		await requireAdmin(request);
+		await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
-	const db = getDb();
+	const db = getDb()
 	const rows = await db
 		.select()
 		.from(providerApiKeys)
-		.orderBy(providerApiKeys.provider, providerApiKeys.sortOrder);
+		.orderBy(providerApiKeys.provider, providerApiKeys.sortOrder)
 
-	return { ok: true, keys: rows.map(toAdminKeyRow) };
+	return { ok: true, keys: rows.map(toAdminKeyRow) }
 }
 
 // ---------------------------------------------------------------------------
@@ -73,19 +73,19 @@ export async function addAdminKey(
 ): Promise<
 	| { ok: true; key: AdminKeyRow }
 	| {
-			ok: false;
-			code: "unauthorized" | "duplicate" | "validation";
-			message?: string;
+			ok: false
+			code: "unauthorized" | "duplicate" | "validation"
+			message?: string
 	  }
 > {
 	try {
-		await requireAdmin(request);
+		await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
-	const fingerprint = await secretFingerprint(data.secret);
-	const db = getDb();
+	const fingerprint = await secretFingerprint(data.secret)
+	const db = getDb()
 
 	// Duplicate check
 	const [existing] = await db
@@ -97,18 +97,18 @@ export async function addAdminKey(
 				eq(providerApiKeys.secretFingerprint, fingerprint),
 			),
 		)
-		.limit(1);
+		.limit(1)
 
 	if (existing) {
 		return {
 			ok: false,
 			code: "duplicate",
 			message: `A key with the same secret already exists for ${data.provider}.`,
-		};
+		}
 	}
 
-	const now = new Date();
-	const id = providerApiKeyRowId();
+	const now = new Date()
+	const id = providerApiKeyRowId()
 	await db.insert(providerApiKeys).values({
 		id,
 		provider: data.provider,
@@ -123,19 +123,19 @@ export async function addAdminKey(
 		taskType: data.taskType,
 		createdAt: now,
 		updatedAt: now,
-	});
+	})
 
 	const [inserted] = await db
 		.select()
 		.from(providerApiKeys)
 		.where(eq(providerApiKeys.id, id))
-		.limit(1);
+		.limit(1)
 
 	if (!inserted) {
-		return { ok: false, code: "validation", message: "Insert failed." };
+		return { ok: false, code: "validation", message: "Insert failed." }
 	}
 
-	return { ok: true, key: toAdminKeyRow(inserted) };
+	return { ok: true, key: toAdminKeyRow(inserted) }
 }
 
 // ---------------------------------------------------------------------------
@@ -148,18 +148,18 @@ export async function updateAdminKey(
 ): Promise<
 	| { ok: true; key: AdminKeyRow }
 	| {
-			ok: false;
-			code: "unauthorized" | "not_found" | "validation";
-			message?: string;
+			ok: false
+			code: "unauthorized" | "not_found" | "validation"
+			message?: string
 	  }
 > {
 	try {
-		await requireAdmin(request);
+		await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
-	const db = getDb();
+	const db = getDb()
 	const result = await db
 		.update(providerApiKeys)
 		.set({
@@ -170,18 +170,18 @@ export async function updateAdminKey(
 			ownerEmail: data.ownerEmail?.trim() || null,
 			updatedAt: new Date(),
 		})
-		.where(eq(providerApiKeys.id, data.id));
+		.where(eq(providerApiKeys.id, data.id))
 
-	if (!result[0].affectedRows) return { ok: false, code: "not_found" };
+	if (!result[0].affectedRows) return { ok: false, code: "not_found" }
 
 	const [updated] = await db
 		.select()
 		.from(providerApiKeys)
 		.where(eq(providerApiKeys.id, data.id))
-		.limit(1);
+		.limit(1)
 
-	if (!updated) return { ok: false, code: "not_found" };
-	return { ok: true, key: toAdminKeyRow(updated) };
+	if (!updated) return { ok: false, code: "not_found" }
+	return { ok: true, key: toAdminKeyRow(updated) }
 }
 
 // ---------------------------------------------------------------------------
@@ -194,19 +194,19 @@ export async function toggleAdminKey(
 	disabled: boolean,
 ): Promise<{ ok: true } | { ok: false; code: "unauthorized" | "not_found" }> {
 	try {
-		await requireAdmin(request);
+		await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
-	const db = getDb();
+	const db = getDb()
 	const result = await db
 		.update(providerApiKeys)
 		.set({ disabled, updatedAt: new Date() })
-		.where(eq(providerApiKeys.id, id));
+		.where(eq(providerApiKeys.id, id))
 
-	if (!result[0].affectedRows) return { ok: false, code: "not_found" };
-	return { ok: true };
+	if (!result[0].affectedRows) return { ok: false, code: "not_found" }
+	return { ok: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -218,12 +218,12 @@ export async function resetAdminKeyCooldown(
 	id: string,
 ): Promise<{ ok: true } | { ok: false; code: "unauthorized" | "not_found" }> {
 	try {
-		await requireAdmin(request);
+		await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
-	const db = getDb();
+	const db = getDb()
 	const result = await db
 		.update(providerApiKeys)
 		.set({
@@ -233,10 +233,10 @@ export async function resetAdminKeyCooldown(
 			lastFailureAt: null,
 			updatedAt: new Date(),
 		})
-		.where(eq(providerApiKeys.id, id));
+		.where(eq(providerApiKeys.id, id))
 
-	if (!result[0].affectedRows) return { ok: false, code: "not_found" };
-	return { ok: true };
+	if (!result[0].affectedRows) return { ok: false, code: "not_found" }
+	return { ok: true }
 }
 
 // ---------------------------------------------------------------------------
@@ -248,16 +248,16 @@ export async function deleteAdminKey(
 	id: string,
 ): Promise<{ ok: true } | { ok: false; code: "unauthorized" | "not_found" }> {
 	try {
-		await requireAdmin(request);
+		await requireAdmin(request)
 	} catch {
-		return { ok: false, code: "unauthorized" };
+		return { ok: false, code: "unauthorized" }
 	}
 
-	const db = getDb();
+	const db = getDb()
 	const result = await db
 		.delete(providerApiKeys)
-		.where(eq(providerApiKeys.id, id));
+		.where(eq(providerApiKeys.id, id))
 
-	if (!result[0].affectedRows) return { ok: false, code: "not_found" };
-	return { ok: true };
+	if (!result[0].affectedRows) return { ok: false, code: "not_found" }
+	return { ok: true }
 }

@@ -1,9 +1,9 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { Toaster as Sonner, type ToasterProps } from "sonner";
+import { useEffect, useState } from "react"
+import { Toaster as Sonner, type ToasterProps } from "sonner"
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 
 /**
  * Theme must not be read from `document` during the first render: the inline
@@ -12,20 +12,20 @@ import { cn } from "@/lib/utils";
  * Initial render uses `"light"` on server and client; `useEffect` syncs after mount.
  */
 export function Toaster(props: ToasterProps) {
-	const [theme, setTheme] = useState<"light" | "dark">("light");
+	const [theme, setTheme] = useState<"light" | "dark">("light")
 
 	useEffect(() => {
 		const sync = () => {
 			setTheme(
 				document.documentElement.classList.contains("dark") ? "dark" : "light",
-			);
-		};
-		sync();
-		const el = document.documentElement;
-		const observer = new MutationObserver(sync);
-		observer.observe(el, { attributes: true, attributeFilter: ["class"] });
-		return () => observer.disconnect();
-	}, []);
+			)
+		}
+		sync()
+		const el = document.documentElement
+		const observer = new MutationObserver(sync)
+		observer.observe(el, { attributes: true, attributeFilter: ["class"] })
+		return () => observer.disconnect()
+	}, [])
 
 	return (
 		<Sonner
@@ -36,5 +36,5 @@ export function Toaster(props: ToasterProps) {
 			position={props.position ?? "top-center"}
 			closeButton={props.closeButton ?? true}
 		/>
-	);
+	)
 }

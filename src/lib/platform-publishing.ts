@@ -3,23 +3,19 @@
  * Add new platforms here as they launch — every consumer updates automatically.
  */
 
-export type PublishingPlatform =
-	| "unlinked"
-	| "youtube"
-	| "tiktok"
-	| "instagram";
+export type PublishingPlatform = "unlinked" | "youtube" | "tiktok" | "instagram"
 
 /** Human-readable platform name for UI labels. */
 export function platformDisplayName(platform: PublishingPlatform): string {
 	switch (platform) {
 		case "youtube":
-			return "YouTube";
+			return "YouTube"
 		case "tiktok":
-			return "TikTok";
+			return "TikTok"
 		case "instagram":
-			return "Instagram";
+			return "Instagram"
 		default:
-			return "Not linked";
+			return "Not linked"
 	}
 }
 
@@ -30,13 +26,13 @@ export function platformDisplayName(platform: PublishingPlatform): string {
 export function platformAuthProviderName(platform: PublishingPlatform): string {
 	switch (platform) {
 		case "youtube":
-			return "Google";
+			return "Google"
 		case "tiktok":
-			return "TikTok";
+			return "TikTok"
 		case "instagram":
-			return "Meta";
+			return "Meta"
 		default:
-			return "account";
+			return "account"
 	}
 }
 
@@ -48,17 +44,17 @@ export function platformOAuthStartUrl(
 	platform: PublishingPlatform,
 	channelId: string,
 ): string | null {
-	const id = encodeURIComponent(channelId);
+	const id = encodeURIComponent(channelId)
 	switch (platform) {
 		case "youtube":
-			return `/api/youtube/oauth/start?channelId=${id}`;
+			return `/api/youtube/oauth/start?channelId=${id}`
 		case "tiktok":
-			return `/api/tiktok/oauth/start?channelId=${id}`;
+			return `/api/tiktok/oauth/start?channelId=${id}`
 		case "instagram":
 			// Not yet implemented — return null so callers can show an upgrade/coming-soon state.
-			return null;
+			return null
 		default:
-			return null;
+			return null
 	}
 }
 
@@ -72,15 +68,15 @@ export function platformChannelUrl(
 ): string | null {
 	switch (platform) {
 		case "youtube":
-			return `https://www.youtube.com/channel/${encodeURIComponent(externalChannelId)}`;
+			return `https://www.youtube.com/channel/${encodeURIComponent(externalChannelId)}`
 		case "tiktok":
 			// externalChannelId is open_id; use externalChannelHandle for the URL.
 			// Callers should pass the handle (creator_username) when available.
-			return `https://www.tiktok.com/@${encodeURIComponent(externalChannelId)}`;
+			return `https://www.tiktok.com/@${encodeURIComponent(externalChannelId)}`
 		case "instagram":
-			return `https://www.instagram.com/${encodeURIComponent(externalChannelId)}`;
+			return `https://www.instagram.com/${encodeURIComponent(externalChannelId)}`
 		default:
-			return null;
+			return null
 	}
 }
 
@@ -94,12 +90,12 @@ export function platformVideoUrl(
 ): string | null {
 	switch (platform) {
 		case "youtube":
-			return `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`;
+			return `https://www.youtube.com/watch?v=${encodeURIComponent(videoId)}`
 		case "tiktok":
-			return `https://www.tiktok.com/video/${encodeURIComponent(videoId)}`;
+			return `https://www.tiktok.com/video/${encodeURIComponent(videoId)}`
 		case "instagram":
-			return `https://www.instagram.com/p/${encodeURIComponent(videoId)}`;
+			return `https://www.instagram.com/p/${encodeURIComponent(videoId)}`
 		default:
-			return null;
+			return null
 	}
 }

@@ -1,6 +1,6 @@
-import "@tanstack/react-start/server-only";
+import "@tanstack/react-start/server-only"
 
-import { siteConfig } from "@/config/site";
+import { siteConfig } from "@/config/site"
 
 /**
  * Escape HTML special characters for safe interpolation.
@@ -10,14 +10,14 @@ export function escapeHtml(text: string): string {
 		.replace(/&/g, "&amp;")
 		.replace(/</g, "&lt;")
 		.replace(/>/g, "&gt;")
-		.replace(/"/g, "&quot;");
+		.replace(/"/g, "&quot;")
 }
 
 interface BrandEmailOptions {
 	/** Optional pre-header text shown in inbox preview. */
-	preheader?: string;
+	preheader?: string
 	/** Inner content HTML injected into the card body. */
-	content: string;
+	content: string
 }
 
 /**
@@ -30,11 +30,11 @@ export function brandEmailHtml({
 	preheader,
 	content,
 }: BrandEmailOptions): string {
-	const appName = siteConfig.name || "Klipse";
-	const appUrl = siteConfig.origin || "https://klipse.app";
-	const logoUrl = `${appUrl}/logo.png`;
-	const primary = "#E07B30";
-	const domainDisplay = appUrl.replace(/^https?:\/\//, "");
+	const appName = siteConfig.name || "Klipse"
+	const appUrl = siteConfig.origin || "https://klipse.app"
+	const logoUrl = `${appUrl}/logo.png`
+	const primary = "#E07B30"
+	const domainDisplay = appUrl.replace(/^https?:\/\//, "")
 
 	return `<!DOCTYPE html>
 <html lang="en">
@@ -113,5 +113,5 @@ export function brandEmailHtml({
     </tr>
   </table>
 </body>
-</html>`;
+</html>`
 }

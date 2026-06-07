@@ -1,16 +1,16 @@
-import { Copy, ExternalLink } from "lucide-react";
+import { Copy, ExternalLink } from "lucide-react"
 
-import { Button } from "@/components/ui/button";
-import { youtubeChannelUrl } from "@/lib/youtube";
-import { PublishingChannelThumbnail } from "./publishing-channel-thumbnail";
-import type { PublishingDestinationChannel } from "./publishing-destination-channel.types";
+import { Button } from "@/components/ui/button"
+import { youtubeChannelUrl } from "@/lib/youtube"
+import { PublishingChannelThumbnail } from "./publishing-channel-thumbnail"
+import type { PublishingDestinationChannel } from "./publishing-destination-channel.types"
 
 type Props = {
-	channel: PublishingDestinationChannel;
-	onCopyChannelId: () => void;
+	channel: PublishingDestinationChannel
+	onCopyChannelId: () => void
 	/** False when the user revoked Klipse in Google or the refresh token is no longer valid. */
-	googleAccessActive: boolean;
-};
+	googleAccessActive: boolean
+}
 
 /**
  * Shown when we have channel metadata (active OAuth or last-linked channel after revoke).
@@ -22,7 +22,7 @@ export function DestinationYoutubeChannelFields({
 }: Props) {
 	const thumbAlt = ch.externalChannelTitle
 		? `${ch.externalChannelTitle} channel image`
-		: "YouTube channel";
+		: "YouTube channel"
 
 	return (
 		<div className="space-y-4">
@@ -104,5 +104,5 @@ export function DestinationYoutubeChannelFields({
 				section above.
 			</p>
 		</div>
-	);
+	)
 }
