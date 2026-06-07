@@ -3,7 +3,11 @@
  * Add new platforms here as they launch — every consumer updates automatically.
  */
 
-export type PublishingPlatform = "unlinked" | "youtube" | "tiktok" | "instagram";
+export type PublishingPlatform =
+	| "unlinked"
+	| "youtube"
+	| "tiktok"
+	| "instagram";
 
 /** Human-readable platform name for UI labels. */
 export function platformDisplayName(platform: PublishingPlatform): string {
@@ -49,6 +53,7 @@ export function platformOAuthStartUrl(
 		case "youtube":
 			return `/api/youtube/oauth/start?channelId=${id}`;
 		case "tiktok":
+			return `/api/tiktok/oauth/start?channelId=${id}`;
 		case "instagram":
 			// Not yet implemented — return null so callers can show an upgrade/coming-soon state.
 			return null;
@@ -69,7 +74,8 @@ export function platformChannelUrl(
 		case "youtube":
 			return `https://www.youtube.com/channel/${encodeURIComponent(externalChannelId)}`;
 		case "tiktok":
-			// TikTok uses handle-based URLs; store the handle in externalChannelId when implemented.
+			// externalChannelId is open_id; use externalChannelHandle for the URL.
+			// Callers should pass the handle (creator_username) when available.
 			return `https://www.tiktok.com/@${encodeURIComponent(externalChannelId)}`;
 		case "instagram":
 			return `https://www.instagram.com/${encodeURIComponent(externalChannelId)}`;
