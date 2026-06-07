@@ -294,6 +294,7 @@ export function PublishingDestinationView({
 								isPausing={isPausingSchedule}
 								isResuming={isResumingSchedule}
 								canTriggerNow={canTriggerNow}
+								oauthConnected={channel.oauthConnected}
 								onTriggerNow={onTriggerNow}
 								isTriggeringNow={isTriggeringNow}
 							/>
