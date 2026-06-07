@@ -31,6 +31,12 @@ export async function dispatchPlatformPublishAfterRender(input: {
 			});
 			return;
 		case "tiktok":
+			await requestPlatformPublishForJob({
+				jobId: input.jobId,
+				userId: input.userId,
+				platform: "tiktok",
+			});
+			return;
 		case "instagram":
 			// OAuth + upload not yet implemented.
 			logger.warn("publish_platform_not_implemented", {
