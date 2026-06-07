@@ -19,6 +19,7 @@ import {
 	ChannelNotFoundError,
 	createChannel,
 	deleteChannel,
+	disconnectChannelOAuth,
 	ensureDefaultPublishingDestination,
 	getChannelForUser,
 	listChannelsForUser,
@@ -228,6 +229,32 @@ export const updateChannelFn = createServerFn({ method: "POST" })
 					code: "validation",
 					message: first?.message ?? "Validation failed.",
 				};
+			}
+			throw e;
+		}
+	});
+
+export type DisconnectChannelResult =
+	| { ok: true }
+	| { ok: false; code: "unauthorized" | "not_found" };
+
+export const disconnectChannelFn = createServerFn({ method: "POST" })
+	.inputValidator((raw: unknown) => idParam.parse(raw))
+	.handler(async ({ data }): Promise<DisconnectChannelResult> => {
+		const request = getRequest();
+		const session = await auth.api.getSession({ headers: request.headers });
+		if (!session?.user) {
+			return { ok: false, code: "unauthorized" };
+		}
+		try {
+			await disconnectChannelOAuth({
+				userId: session.user.id,
+				channelId: data.channelId,
+			});
+			return { ok: true };
+		} catch (e) {
+			if (e instanceof ChannelNotFoundError) {
+				return { ok: false, code: "not_found" };
 			}
 			throw e;
 		}

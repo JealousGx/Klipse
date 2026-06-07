@@ -8,12 +8,10 @@ import { channels } from "@/db/schema/channels";
 import { users } from "@/db/schema/users";
 
 import { assertChannelCapacity } from "@/features/entitlements";
+import { upsertChannelSchedule } from "@/features/scheduling/scheduling.service.server";
 import type { MeResponse } from "@/features/user/types/me";
-
 import { channelRowId } from "@/lib/id";
 import { logger } from "@/lib/logger";
-
-import { upsertChannelSchedule } from "@/features/scheduling/scheduling.service.server";
 
 import {
 	type ChannelConfig,
@@ -386,6 +384,82 @@ export async function clearOAuthRefreshTokenOnly(input: {
 			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
 		);
 	logger.warn("channel_oauth_token_cleared", {
+		userId: input.userId,
+		channelId: input.channelId,
+	});
+}
+
+/**
+ * Explicit user-initiated disconnect. Clears the OAuth refresh token and
+ * external channel metadata, locks `boundExternalAccountId` so the user can
+ * only reconnect with the same external account, but deliberately **preserves
+ * `platform`** so the UI knows which reconnect button to show.
+ */
+export async function disconnectChannelOAuth(input: {
+	userId: string;
+	channelId: string;
+}): Promise<void> {
+	const db = getDb();
+
+	const existing = await getChannelForUser(input.userId, input.channelId);
+	if (!existing) {
+		throw new ChannelNotFoundError();
+	}
+
+	const patch: Partial<typeof channels.$inferInsert> = {
+		oauthRefreshToken: null,
+		externalChannelId: null,
+		externalChannelHandle: null,
+		externalChannelThumbnailUrl: null,
+		// externalChannelTitle intentionally kept — used as readable label in
+		// the "Same {platform} channel only" reconnect notice.
+		updatedAt: new Date(),
+	};
+
+	// Lock the bound account id so reconnect must use the same channel.
+	if (!existing.boundExternalAccountId && existing.externalChannelId) {
+		patch.boundExternalAccountId = existing.externalChannelId.trim();
+	}
+
+	// NOTE: platform is intentionally NOT cleared — keeps "tiktok" / "youtube"
+	// so the connection section shows the correct single reconnect button.
+
+	await db
+		.update(channels)
+		.set(patch)
+		.where(
+			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
+		);
+
+	logger.info("channel_oauth_disconnected", {
+		userId: input.userId,
+		channelId: input.channelId,
+		platform: existing.platform,
+	});
+}
+
+/**
+ * Rotates a stored OAuth refresh token to a new value.
+ * Used by platforms (e.g. TikTok) that issue a new refresh token on every
+ * token-refresh call. The new token must be persisted before the old one
+ * is consumed and discarded by the platform.
+ */
+export async function updateChannelOAuthRefreshToken(input: {
+	userId: string;
+	channelId: string;
+	refreshToken: string;
+}): Promise<void> {
+	const db = getDb();
+	await db
+		.update(channels)
+		.set({
+			oauthRefreshToken: input.refreshToken,
+			updatedAt: new Date(),
+		})
+		.where(
+			and(eq(channels.id, input.channelId), eq(channels.userId, input.userId)),
+		);
+	logger.info("channel_oauth_token_rotated", {
 		userId: input.userId,
 		channelId: input.channelId,
 	});

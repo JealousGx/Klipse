@@ -19,6 +19,12 @@ export const env = createEnv({
 		/** HMAC secret for signed `state` in `/api/youtube/oauth/*` (min 32 chars). */
 		YOUTUBE_OAUTH_STATE_SECRET: z.string().min(32),
 
+		/** TikTok app credentials — from developers.tiktok.com → Manage apps. */
+		TIKTOK_CLIENT_KEY: z.string().min(1).optional(),
+		TIKTOK_CLIENT_SECRET: z.string().min(1).optional(),
+		/** HMAC secret for signed `state` in `/api/tiktok/oauth/*` (min 32 chars). */
+		TIKTOK_OAUTH_STATE_SECRET: z.string().min(32).optional(),
+
 		R2_ACCOUNT_ID: z.string(),
 		R2_ACCESS_KEY_ID: z.string(),
 		R2_SECRET_ACCESS_KEY: z.string(),
