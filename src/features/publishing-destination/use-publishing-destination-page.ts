@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { useNavigate, useRouterState } from "@tanstack/react-router"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
@@ -13,17 +13,7 @@ import type {
 	ChannelConfig,
 	PlatformConfirmedTerm,
 } from "@/features/channels/channel-config.schema"
-import {
-	deleteChannelFn,
-	disconnectChannelFn,
-	reconcileYoutubeOAuthFn,
-	updateChannelFn,
-} from "@/features/channels/channels.functions"
-import {
-	pauseScheduleFn,
-	resumeScheduleFn,
-	triggerScheduleNowFn,
-} from "@/features/scheduling/scheduling.functions"
+import { reconcileYoutubeOAuthFn } from "@/features/channels/channels.functions"
 import type { MeResponse } from "@/features/user/types/me"
 import {
 	channelQueryOptions,
@@ -35,6 +25,7 @@ import {
 	type PublishingDestinationSearch,
 } from "./publishing-destination-search.schema"
 import type { PublishingDestinationViewProps } from "./publishing-destination-view"
+import { usePublishingDestinationMutations } from "./use-publishing-destination-mutations"
 
 export type PublishingDestinationPageState =
 	| { status: "loading" }
@@ -120,304 +111,28 @@ export function usePublishingDestinationPage(
 		})
 	}, [locationHash])
 
-	const deleteMutation = useMutation({
-		mutationFn: async () => {
-			return deleteChannelFn({ data: { channelId: destinationId } })
-		},
-		onSuccess: (r) => {
-			if (r.ok) {
-				toast.success("Destination removed")
-				void queryClient.invalidateQueries({ queryKey: ["channels"] })
-				void navigate({ to: "/dashboard/publishing" })
-				return
-			}
-			toast.error("Couldn’t remove destination")
-		},
-		onError: (_err) => {
-			toast.error("Couldn’t remove destination")
-		},
-	})
-
-	const updateProfileMutation = useMutation({
-		mutationFn: async () => {
-			return updateChannelFn({
-				data: {
-					channelId: destinationId,
-					name: displayName.trim(),
-					niche: niche.trim(),
-				},
-			})
-		},
-		onSuccess: (r) => {
-			if (r.ok) {
-				toast.success("Destination updated")
-				void queryClient.invalidateQueries({
-					queryKey: ["channel", destinationId],
-				})
-				void queryClient.invalidateQueries({ queryKey: ["channels"] })
-				return
-			}
-			toast.error(r.message ?? "Could not save")
-		},
-		onError: (err) => {
-			console.error("Error in updateProfileMutation", err)
-
-			const errorMessage =
-				Array.isArray(err) && err[0]
-					? (err[0] as { message?: string })?.message
-					: null
-
-			toast.error(errorMessage ?? "Could not save")
-		},
-	})
-
-	const updateAutoPostMutation = useMutation({
-		mutationFn: async (nextAutoPost: boolean) => {
-			const c = queryClient.getQueryData(["channel", destinationId]) as
-				| { config: ChannelConfig }
-				| undefined
-			if (!c) {
-				throw new Error("Channel not loaded")
-			}
-			return updateChannelFn({
-				data: {
-					channelId: destinationId,
-					config: { ...c.config, auto_post: nextAutoPost },
-				},
-			})
-		},
-		onSuccess: (r) => {
-			if (r.ok) {
-				setAutoPost(r.channel.config.auto_post)
-				toast.success("Publishing preference saved")
-				void queryClient.invalidateQueries({
-					queryKey: ["channel", destinationId],
-				})
-				void queryClient.invalidateQueries({ queryKey: ["channels"] })
-				return
-			}
-			toast.error(r.message ?? "Could not save")
-		},
-		onError: (err) => {
-			const errorMessage =
-				Array.isArray(err) && err[0]
-					? (err[0] as { message?: string })?.message
-					: null
-			toast.error(errorMessage ?? "Could not save")
-		},
-	})
-
-	const updateFrequencyMutation = useMutation({
-		mutationFn: async (newFrequency: ChannelConfig["posting_frequency"]) => {
-			const c = queryClient.getQueryData(["channel", destinationId]) as
-				| { config: ChannelConfig }
-				| undefined
-			if (!c) {
-				throw new Error("Channel not loaded")
-			}
-			return updateChannelFn({
-				data: {
-					channelId: destinationId,
-					config: { ...c.config, posting_frequency: newFrequency },
-				},
-			})
-		},
-		onSuccess: (r, newFrequency) => {
-			if (r.ok) {
-				setFrequency(newFrequency)
-				toast.success("Posting frequency updated")
-				void queryClient.invalidateQueries({
-					queryKey: ["channel", destinationId],
-				})
-				void queryClient.invalidateQueries({
-					queryKey: ["schedule", destinationId],
-				})
-				return
-			}
-			toast.error(r.message ?? "Could not save")
-		},
-		onError: (err) => {
-			const errorMessage =
-				Array.isArray(err) && err[0]
-					? (err[0] as { message?: string })?.message
-					: null
-			toast.error(errorMessage ?? "Could not save")
-		},
-	})
-
-	const updateSoundEnabledMutation = useMutation({
-		mutationFn: async (next: boolean) => {
-			return updateChannelFn({
-				data: { channelId: destinationId, soundEnabled: next },
-			})
-		},
-		onSuccess: (r, next) => {
-			if (r.ok) {
-				setSoundEnabled(next)
-				toast.success(
-					next ? "Background sound enabled" : "Background sound disabled",
-				)
-				void queryClient.invalidateQueries({
-					queryKey: ["channel", destinationId],
-				})
-				return
-			}
-			toast.error(r.message ?? "Could not save")
-		},
-		onError: () => toast.error("Could not save"),
-	})
-
-	const updateSoundPromptHintMutation = useMutation({
-		mutationFn: async () => {
-			return updateChannelFn({
-				data: {
-					channelId: destinationId,
-					soundPromptHint: soundPromptHint.trim() || null,
-				},
-			})
-		},
-		onSuccess: (r) => {
-			if (r.ok) {
-				toast.success("Sound prompt hint saved")
-				void queryClient.invalidateQueries({
-					queryKey: ["channel", destinationId],
-				})
-				return
-			}
-			toast.error(r.message ?? "Could not save")
-		},
-		onError: () => toast.error("Could not save"),
-	})
-
-	const oauthDisconnectMutation = useMutation({
-		mutationFn: async () =>
-			disconnectChannelFn({ data: { channelId: destinationId } }),
-		onSuccess: (r) => {
-			if (r.ok) {
-				toast.success("Publishing account disconnected")
-				void queryClient.invalidateQueries({
-					queryKey: ["channel", destinationId],
-				})
-				void queryClient.invalidateQueries({ queryKey: ["channels"] })
-				return
-			}
-			toast.error("Could not disconnect. Try again.")
-		},
-		onError: () => toast.error("Could not disconnect. Try again."),
-	})
-
-	const pauseScheduleMutation = useMutation({
-		mutationFn: async () =>
-			pauseScheduleFn({ data: { channelId: destinationId } }),
-		onSuccess: (r) => {
-			if (r.ok) {
-				toast.success("Schedule paused")
-				void queryClient.invalidateQueries({
-					queryKey: ["schedule", destinationId],
-				})
-				return
-			}
-			toast.error("Sign in required.")
-		},
-		onError: () => toast.error("Something went wrong."),
-	})
-
-	const resumeScheduleMutation = useMutation({
-		mutationFn: async () =>
-			resumeScheduleFn({ data: { channelId: destinationId } }),
-		onSuccess: (r) => {
-			if (r.ok) {
-				toast.success("Schedule resumed")
-				void queryClient.invalidateQueries({
-					queryKey: ["schedule", destinationId],
-				})
-				return
-			}
-			toast.error("Sign in required.")
-		},
-		onError: () => toast.error("Something went wrong."),
-	})
-
-	const triggerNowMutation = useMutation({
-		mutationFn: async () =>
-			triggerScheduleNowFn({ data: { channelId: destinationId } }),
-		onSuccess: (r) => {
-			if (r.ok) {
-				toast.success("Video queued — check the Jobs page for progress.")
-				void queryClient.invalidateQueries({
-					queryKey: ["schedule", destinationId],
-				})
-				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] })
-				return
-			}
-			if (r.code === "insufficient_credits") {
-				toast.error("Not enough credits. Add more under Billing.")
-				return
-			}
-			if (r.code === "plan_required") {
-				toast.error("Upgrade to Creator or higher to use this feature.")
-				return
-			}
-			toast.error("Something went wrong. Please try again.")
-		},
-		onError: () => toast.error("Something went wrong."),
-	})
-
-	const updateTiktokDefaultsMutation = useMutation({
-		mutationFn: async (
-			updates: Partial<
-				Pick<
-					ChannelConfig,
-					"tiktok_default_privacy_level" | "tiktok_disclosure"
-				>
-			>,
-		) => {
-			const c = queryClient.getQueryData(["channel", destinationId]) as
-				| { config: ChannelConfig }
-				| undefined
-			if (!c) throw new Error("Channel not loaded")
-			return updateChannelFn({
-				data: {
-					channelId: destinationId,
-					config: { ...c.config, ...updates },
-				},
-			})
-		},
-		onSuccess: (r) => {
-			if (r.ok) {
-				void queryClient.invalidateQueries({
-					queryKey: ["channel", destinationId],
-				})
-				return
-			}
-			toast.error(r.message ?? "Could not save")
-		},
-		onError: () => toast.error("Could not save"),
-	})
-
-	const updateConfirmedTermsMutation = useMutation({
-		mutationFn: async (newTerms: PlatformConfirmedTerm[]) => {
-			const c = queryClient.getQueryData(["channel", destinationId]) as
-				| { config: ChannelConfig }
-				| undefined
-			if (!c) throw new Error("Channel not loaded")
-			return updateChannelFn({
-				data: {
-					channelId: destinationId,
-					config: { ...c.config, confirmed_terms: newTerms },
-				},
-			})
-		},
-		onSuccess: (r) => {
-			if (r.ok) {
-				void queryClient.invalidateQueries({
-					queryKey: ["channel", destinationId],
-				})
-				return
-			}
-			toast.error(r.message ?? "Could not save")
-		},
-		onError: () => toast.error("Could not save"),
+	const {
+		deleteMutation,
+		updateProfileMutation,
+		updateAutoPostMutation,
+		updateFrequencyMutation,
+		updateSoundEnabledMutation,
+		updateSoundPromptHintMutation,
+		oauthDisconnectMutation,
+		pauseScheduleMutation,
+		resumeScheduleMutation,
+		triggerNowMutation,
+		updateTiktokDefaultsMutation,
+		updateConfirmedTermsMutation,
+		handleDisconnect,
+		handleRemoveClick,
+	} = usePublishingDestinationMutations(destinationId, {
+		displayName,
+		niche,
+		soundPromptHint,
+		setAutoPost,
+		setFrequency,
+		setSoundEnabled,
 	})
 
 	const ch = channelQuery.data
@@ -434,18 +149,6 @@ export function usePublishingDestinationPage(
 		setSoundPromptHint(ch.soundPromptHint ?? "")
 	}, [ch])
 
-	const handleDisconnect = useCallback(() => {
-		if (
-			typeof window !== "undefined" &&
-			!window.confirm(
-				"Disconnect this publishing account? Access is removed. You can reconnect later, but only with the same channel that was first linked to this destination.",
-			)
-		) {
-			return
-		}
-		oauthDisconnectMutation.mutate()
-	}, [oauthDisconnectMutation])
-
 	const handleCopyChannelId = useCallback(() => {
 		const id = ch?.externalChannelId
 		if (!id) {
@@ -456,18 +159,6 @@ export function usePublishingDestinationPage(
 			() => toast.error("Could not copy"),
 		)
 	}, [ch?.externalChannelId])
-
-	const handleRemoveClick = useCallback(() => {
-		if (
-			typeof window !== "undefined" &&
-			!window.confirm(
-				"Remove this publishing destination? Associated jobs in the database may be deleted.",
-			)
-		) {
-			return
-		}
-		deleteMutation.mutate()
-	}, [deleteMutation])
 
 	if (channelQuery.isPending) {
 		return { status: "loading" }
