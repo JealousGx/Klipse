@@ -59,6 +59,10 @@ export function usePublishingScheduleMutations(destinationId: string) {
 				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] })
 				return
 			}
+			if (r.code === "not_connected") {
+				toast.error("Connect a publishing account to this destination first.")
+				return
+			}
 			if (r.code === "insufficient_credits") {
 				toast.error("Not enough credits. Add more under Billing.")
 				return

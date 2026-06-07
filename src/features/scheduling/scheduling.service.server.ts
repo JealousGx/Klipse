@@ -169,7 +169,10 @@ export async function getScheduleForChannel(
 
 export type TriggerNowResult =
 	| { ok: true }
-	| { ok: false; code: "no_schedule" | "insufficient_credits" | "error" }
+	| {
+			ok: false
+			code: "no_schedule" | "not_connected" | "insufficient_credits" | "error"
+	  }
 
 /**
  * Fires the content pipeline immediately for a channel's schedule, then advances
@@ -192,6 +195,7 @@ export async function triggerScheduleNowForChannel(
 			frequency: schedules.frequency,
 			jitterMinutes: schedules.jitterMinutes,
 			channelNiche: channels.niche,
+			oauthRefreshToken: channels.oauthRefreshToken,
 		})
 		.from(schedules)
 		.innerJoin(channels, eq(schedules.channelId, channels.id))
@@ -202,6 +206,10 @@ export async function triggerScheduleNowForChannel(
 
 	if (!row) {
 		return { ok: false, code: "no_schedule" }
+	}
+
+	if (!row.oauthRefreshToken) {
+		return { ok: false, code: "not_connected" }
 	}
 
 	const idempotencyKey = `schedule-now:${row.id}:${now.toISOString()}`

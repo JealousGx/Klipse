@@ -57,6 +57,7 @@ export type TriggerScheduleNowResult =
 				| "unauthorized"
 				| "plan_required"
 				| "no_schedule"
+				| "not_connected"
 				| "insufficient_credits"
 				| "error"
 	  }
