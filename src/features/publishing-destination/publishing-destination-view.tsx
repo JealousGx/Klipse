@@ -1,62 +1,83 @@
-import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
+import { Link } from "@tanstack/react-router"
+import { ArrowLeft } from "lucide-react"
 
-import { DashboardPanel } from "@/components/dashboard/dashboard-panel";
-import { DashboardSection } from "@/components/dashboard/dashboard-section";
-import { Button } from "@/components/ui/button";
-import type { ChannelConfig } from "@/features/channels/channel-config.schema";
-import { DestinationAutoPostFields } from "./destination-auto-post-fields";
-import { DestinationConnectionFields } from "./destination-connection-section";
-import { DestinationDetailsFields } from "./destination-details-card";
-import { DestinationExternalChannelFields } from "./destination-external-channel-card";
-import { DestinationScheduleFields } from "./destination-schedule-fields";
-import { DestinationSoundFields } from "./destination-sound-fields";
-import type { PublishingDestinationChannel } from "./publishing-destination-channel.types";
-import { PublishingDestinationWidgets } from "./publishing-destination-widgets";
+import { DashboardPanel } from "@/components/dashboard/dashboard-panel"
+import { DashboardSection } from "@/components/dashboard/dashboard-section"
+import { Button } from "@/components/ui/button"
+import type {
+	ChannelConfig,
+	PlatformConfirmedTerm,
+} from "@/features/channels/channel-config.schema"
+import { PLATFORM_REQUIRED_TERMS } from "@/features/channels/channel-config.schema"
+import { DestinationAutoPostFields } from "./destination-auto-post-fields"
+import { DestinationConnectionFields } from "./destination-connection-section"
+import { DestinationDetailsFields } from "./destination-details-card"
+import { DestinationExternalChannelFields } from "./destination-external-channel-card"
+import { DestinationScheduleFields } from "./destination-schedule-fields"
+import { DestinationSoundFields } from "./destination-sound-fields"
+import { DestinationTermsFields } from "./destination-terms-fields"
+import { DestinationTiktokDefaultsFields } from "./destination-tiktok-defaults-fields"
+import type { PublishingDestinationChannel } from "./publishing-destination-channel.types"
+import { PublishingDestinationWidgets } from "./publishing-destination-widgets"
 
 export type PublishingDestinationViewProps = {
-	destinationId: string;
-	channel: PublishingDestinationChannel;
-	displayName: string;
-	niche: string;
-	onDisplayNameChange: (value: string) => void;
-	onNicheChange: (value: string) => void;
-	onSaveProfile: () => void;
-	isSavingProfile: boolean;
-	autoPost: boolean;
-	onAutoPostChange: (next: boolean) => void;
-	isSavingAutoPost: boolean;
-	onDisconnect: () => void;
-	isDisconnectPending: boolean;
+	destinationId: string
+	channel: PublishingDestinationChannel
+	displayName: string
+	niche: string
+	onDisplayNameChange: (value: string) => void
+	onNicheChange: (value: string) => void
+	onSaveProfile: () => void
+	isSavingProfile: boolean
+	autoPost: boolean
+	onAutoPostChange: (next: boolean) => void
+	isSavingAutoPost: boolean
+	onDisconnect: () => void
+	isDisconnectPending: boolean
 	/** Paid plan allows OAuth for publishing integrations (YouTube today; others later). */
-	canConnectPublishing: boolean;
-	onCopyChannelId: () => void;
-	onRemoveClick: () => void;
-	isRemovePending: boolean;
+	canConnectPublishing: boolean
+	onCopyChannelId: () => void
+	onRemoveClick: () => void
+	isRemovePending: boolean
 	schedule: {
-		nextRunAt: Date;
-		frequency: ChannelConfig["posting_frequency"];
-		enabled: boolean;
-	} | null;
-	frequency: ChannelConfig["posting_frequency"];
-	onFrequencyChange: (value: ChannelConfig["posting_frequency"]) => void;
-	isChangingFrequency: boolean;
-	onPauseSchedule: () => void;
-	onResumeSchedule: () => void;
-	isPausingSchedule: boolean;
-	isResumingSchedule: boolean;
-	canTriggerNow: boolean;
-	onTriggerNow: () => void;
-	isTriggeringNow: boolean;
-	soundEnabled: boolean;
-	onSoundEnabledChange: (next: boolean) => void;
-	isSavingSoundEnabled: boolean;
-	soundPromptHint: string;
-	onSoundPromptHintChange: (next: string) => void;
-	onSaveSoundPromptHint: () => void;
-	isSavingSoundPromptHint: boolean;
-	canUseSoundGeneration: boolean;
-};
+		nextRunAt: Date
+		frequency: ChannelConfig["posting_frequency"]
+		enabled: boolean
+	} | null
+	frequency: ChannelConfig["posting_frequency"]
+	onFrequencyChange: (value: ChannelConfig["posting_frequency"]) => void
+	isChangingFrequency: boolean
+	onPauseSchedule: () => void
+	onResumeSchedule: () => void
+	isPausingSchedule: boolean
+	isResumingSchedule: boolean
+	canTriggerNow: boolean
+	onTriggerNow: () => void
+	isTriggeringNow: boolean
+	soundEnabled: boolean
+	onSoundEnabledChange: (next: boolean) => void
+	isSavingSoundEnabled: boolean
+	soundPromptHint: string
+	onSoundPromptHintChange: (next: string) => void
+	onSaveSoundPromptHint: () => void
+	isSavingSoundPromptHint: boolean
+	canUseSoundGeneration: boolean
+	/** Terms already confirmed by the user for this destination's platform. */
+	confirmedTerms: PlatformConfirmedTerm[]
+	/** Called when user ticks/unticks a required platform term checkbox (auto-saves). */
+	onConfirmTerm: (term: PlatformConfirmedTerm, checked: boolean) => void
+	isConfirmingTerm: boolean
+	/** Stored default TikTok privacy level for this destination (TikTok only). */
+	tiktokDefaultPrivacyLevel: string | undefined
+	/** Stored default TikTok disclosure settings for this destination (TikTok only). */
+	tiktokDisclosure: ChannelConfig["tiktok_disclosure"]
+	/** Auto-saves new default privacy level to channel config (TikTok only). */
+	onTiktokPrivacyLevelChange: (level: string) => void
+	/** Auto-saves new default disclosure settings to channel config (TikTok only). */
+	onTiktokDisclosureChange: (
+		d: NonNullable<ChannelConfig["tiktok_disclosure"]>,
+	) => void
+}
 
 export function PublishingDestinationView({
 	destinationId,
@@ -95,11 +116,18 @@ export function PublishingDestinationView({
 	onSaveSoundPromptHint,
 	isSavingSoundPromptHint,
 	canUseSoundGeneration,
+	confirmedTerms,
+	onConfirmTerm,
+	isConfirmingTerm,
+	tiktokDefaultPrivacyLevel,
+	tiktokDisclosure,
+	onTiktokPrivacyLevelChange,
+	onTiktokDisclosureChange,
 }: PublishingDestinationViewProps) {
-	const oauthConnected = channel.oauthConnected;
+	const oauthConnected = channel.oauthConnected
 	const showConnectedChannelSection = Boolean(
 		oauthConnected || channel.externalChannelId,
-	);
+	)
 
 	return (
 		<div className="w-full space-y-8 pb-4 lg:space-y-10">
@@ -200,6 +228,55 @@ export function PublishingDestinationView({
 						</DashboardPanel>
 					</DashboardSection>
 
+					{channel.platform === "tiktok" ? (
+						<DashboardSection
+							id="tiktok-settings"
+							titleId="tiktok-settings-heading"
+							title="TikTok settings"
+							description="Default posting options and required confirmations for this TikTok destination."
+						>
+							<DashboardPanel>
+								<div className="space-y-6">
+									<DestinationTiktokDefaultsFields
+										channelId={destinationId}
+										privacyLevel={tiktokDefaultPrivacyLevel}
+										disclosure={tiktokDisclosure}
+										onPrivacyLevelChange={onTiktokPrivacyLevelChange}
+										onDisclosureChange={onTiktokDisclosureChange}
+									/>
+									{(PLATFORM_REQUIRED_TERMS["tiktok"] ?? []).length > 0 ? (
+										<div className="border-t border-border pt-5">
+											<DestinationTermsFields
+												requiredTerms={PLATFORM_REQUIRED_TERMS["tiktok"] ?? []}
+												confirmedTerms={confirmedTerms}
+												onConfirmTerm={onConfirmTerm}
+												isConfirming={isConfirmingTerm}
+											/>
+										</div>
+									) : null}
+								</div>
+							</DashboardPanel>
+						</DashboardSection>
+					) : (PLATFORM_REQUIRED_TERMS[channel.platform] ?? []).length > 0 ? (
+						<DashboardSection
+							id="platform-terms"
+							titleId="platform-terms-heading"
+							title="Platform terms"
+							description="Required confirmations for this platform. Approval is blocked until all are checked."
+						>
+							<DashboardPanel>
+								<DestinationTermsFields
+									requiredTerms={
+										PLATFORM_REQUIRED_TERMS[channel.platform] ?? []
+									}
+									confirmedTerms={confirmedTerms}
+									onConfirmTerm={onConfirmTerm}
+									isConfirming={isConfirmingTerm}
+								/>
+							</DashboardPanel>
+						</DashboardSection>
+					) : null}
+
 					<DashboardSection
 						id="posting-schedule"
 						titleId="posting-schedule-heading"
@@ -280,5 +357,5 @@ export function PublishingDestinationView({
 				</aside>
 			</div>
 		</div>
-	);
+	)
 }

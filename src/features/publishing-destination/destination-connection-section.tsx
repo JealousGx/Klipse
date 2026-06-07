@@ -19,6 +19,9 @@ type Props = {
 	isDisconnectPending: boolean;
 };
 
+/** Implemented platforms a user can connect (ordered by launch priority). */
+const CONNECTABLE_PLATFORMS = ["youtube", "tiktok"] as const;
+
 /** Inner body for the platform connection block (wrapped by `DashboardPanel` in the view). */
 export function DestinationConnectionFields({
 	destinationId,
@@ -27,22 +30,35 @@ export function DestinationConnectionFields({
 	onDisconnect,
 	isDisconnectPending,
 }: Props) {
-	// An unlinked channel has no platform yet — default to YouTube since it's the
-	// only implemented OAuth flow. Replace with a platform picker when TikTok /
-	// Instagram OAuth lands.
-	const connectPlatform = ch.platform === "unlinked" ? "youtube" : ch.platform;
-	const platformName = platformDisplayName(connectPlatform);
-	const authProvider = platformAuthProviderName(connectPlatform);
-	const oauthHref = platformOAuthStartUrl(connectPlatform, destinationId);
+	const isUnlinked = ch.platform === "unlinked";
 
-	const showDisconnect = Boolean(ch.externalChannelId || ch.oauthConnected);
+	// For a connected or platform-specific channel, use its assigned platform.
+	// For unlinked channels the platform picker below handles selection.
+	const connectPlatform = isUnlinked ? null : ch.platform;
+	const platformName = connectPlatform
+		? platformDisplayName(connectPlatform)
+		: null;
+	const authProvider = connectPlatform
+		? platformAuthProviderName(connectPlatform)
+		: null;
+	const oauthHref = connectPlatform
+		? platformOAuthStartUrl(connectPlatform, destinationId)
+		: null;
+
+	// Only show Disconnect when an active OAuth token is stored.
+	const showDisconnect = ch.oauthConnected;
 	const needsOAuth = !ch.oauthConnected;
 	const boundId = ch.boundExternalAccountId;
 	const mustReconnectSameChannel = Boolean(boundId && !ch.oauthConnected);
+	// Prefer a human-readable label over the raw external account id.
+	const boundLabel =
+		ch.externalChannelTitle?.trim() ||
+		ch.externalChannelHandle?.trim() ||
+		boundId;
 
 	return (
 		<div className="flex flex-col gap-5" data-section="publishing-connection">
-			{ch.oauthConnected ? (
+			{ch.oauthConnected && authProvider && platformName ? (
 				<div className="flex gap-3">
 					<div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary">
 						<CheckCircle2 className="size-5" aria-hidden />
@@ -60,30 +76,49 @@ export function DestinationConnectionFields({
 				</div>
 			) : null}
 
-			{mustReconnectSameChannel ? (
+			{mustReconnectSameChannel && authProvider && platformName ? (
 				<p className="text-xs leading-relaxed text-muted-foreground">
 					<strong className="font-medium text-foreground">
 						Same {platformName} channel only.
 					</strong>{" "}
-					This destination is already linked to channel{" "}
-					<code className="rounded bg-muted/70 px-1 py-0.5 font-mono text-[11px] text-foreground">
-						{boundId}
-					</code>
-					. Use{" "}
+					This destination is linked to{" "}
+					<strong className="font-medium text-foreground">{boundLabel}</strong>.
+					Use{" "}
 					<strong className="font-medium text-foreground">
 						Connect with {authProvider}
 					</strong>{" "}
-					and sign in with the {authProvider} account that{" "}
-					<strong className="font-medium text-foreground">
-						owns that channel
-					</strong>
-					—another channel cannot be attached here.
+					and sign in with the {authProvider} account that owns that channel —
+					another channel cannot be attached here.
 				</p>
 			) : null}
 
 			<div className="flex flex-wrap items-center gap-2">
 				{needsOAuth ? (
-					canConnectPublishing && oauthHref ? (
+					isUnlinked ? (
+						// Platform picker — shown for new unlinked destinations.
+						canConnectPublishing ? (
+							<>
+								{CONNECTABLE_PLATFORMS.map((p) => {
+									const href = platformOAuthStartUrl(p, destinationId);
+									const provider = platformAuthProviderName(p);
+									return href ? (
+										<Button
+											key={p}
+											type="button"
+											className="w-fit gap-2 shadow-sm"
+											asChild
+										>
+											<a href={href}>Connect with {provider}</a>
+										</Button>
+									) : null;
+								})}
+							</>
+						) : (
+							<Button type="button" className="w-fit gap-2 shadow-sm" asChild>
+								<Link to="/dashboard/billing">Upgrade to connect</Link>
+							</Button>
+						)
+					) : canConnectPublishing && oauthHref ? (
 						<Button type="button" className="w-fit gap-2 shadow-sm" asChild>
 							<a href={oauthHref}>Connect with {authProvider}</a>
 						</Button>

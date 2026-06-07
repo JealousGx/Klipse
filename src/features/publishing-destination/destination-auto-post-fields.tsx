@@ -1,11 +1,25 @@
+import { Info } from "lucide-react"
+import {
+	Tooltip,
+	TooltipContent,
+	TooltipProvider,
+	TooltipTrigger,
+} from "@/components/ui/tooltip"
+
 type DestinationAutoPostFieldsProps = {
 	/** Mirrors `channels.config.auto_post`: publish without asking when the pipeline is ready. */
-	autoPost: boolean;
-	onAutoPostChange: (next: boolean) => void;
-	disabled: boolean;
-	disabledReason?: string;
-	isSaving: boolean;
-};
+	autoPost: boolean
+	onAutoPostChange: (next: boolean) => void
+	disabled: boolean
+	disabledReason?: string
+	isSaving: boolean
+	/**
+	 * When set, the entire control is locked — radios are disabled and "Ask before publishing"
+	 * is forced. A tooltip icon beside the section title explains why.
+	 * Used for platforms like TikTok that always require manual review.
+	 */
+	lockedReason?: string
+}
 
 export function DestinationAutoPostFields({
 	autoPost,
@@ -13,27 +27,49 @@ export function DestinationAutoPostFields({
 	disabled,
 	disabledReason,
 	isSaving,
+	lockedReason,
 }: DestinationAutoPostFieldsProps) {
-	const groupName = "destination-auto-post";
+	const groupName = "destination-auto-post"
+	const isLocked = Boolean(lockedReason)
 
 	return (
 		<div className="space-y-3">
 			<div>
-				<p className="text-sm font-medium text-foreground">
-					When a video is ready
-				</p>
+				<span className="flex items-center gap-1.5">
+					<p className="text-sm font-medium text-foreground">
+						When a video is ready
+					</p>
+					{lockedReason ? (
+						<TooltipProvider>
+							<Tooltip>
+								<TooltipTrigger asChild>
+									<button
+										type="button"
+										className="inline-flex items-center text-muted-foreground hover:text-foreground"
+										aria-label="Why is this locked?"
+									>
+										<Info className="size-3.5" aria-hidden />
+									</button>
+								</TooltipTrigger>
+								<TooltipContent side="top" className="max-w-60 text-center">
+									{lockedReason}
+								</TooltipContent>
+							</Tooltip>
+						</TooltipProvider>
+					) : null}
+				</span>
 				<p className="mt-1 text-sm text-muted-foreground">
 					Choose whether Klipse must ask you before publishing to your connected
 					channel, or may publish on your behalf once your video is ready.
 				</p>
 			</div>
 
-			{disabled && disabledReason ? (
+			{disabled && !isLocked && disabledReason ? (
 				<p className="text-sm text-muted-foreground">{disabledReason}</p>
 			) : null}
 
 			<fieldset
-				disabled={disabled || isSaving}
+				disabled={disabled || isLocked || isSaving}
 				className="space-y-3 border-0 p-0"
 			>
 				<legend className="sr-only">
@@ -45,7 +81,7 @@ export function DestinationAutoPostFields({
 						type="radio"
 						name={groupName}
 						className="mt-1"
-						checked={!autoPost}
+						checked={isLocked ? true : !autoPost}
 						onChange={() => onAutoPostChange(false)}
 					/>
 					<span>
@@ -64,7 +100,7 @@ export function DestinationAutoPostFields({
 						type="radio"
 						name={groupName}
 						className="mt-1"
-						checked={autoPost}
+						checked={isLocked ? false : autoPost}
 						onChange={() => onAutoPostChange(true)}
 					/>
 					<span>
@@ -83,5 +119,5 @@ export function DestinationAutoPostFields({
 				</p>
 			) : null}
 		</div>
-	);
+	)
 }
