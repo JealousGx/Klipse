@@ -38,6 +38,8 @@ import { Route as AuthedAdminJobsRouteImport } from './routes/_authed/admin/jobs
 import { Route as AuthedDashboardPublishingIndexRouteImport } from './routes/_authed/dashboard/publishing.index'
 import { Route as ApiYoutubeOauthStartRouteImport } from './routes/api/youtube/oauth/start'
 import { Route as ApiYoutubeOauthCallbackRouteImport } from './routes/api/youtube/oauth/callback'
+import { Route as ApiTiktokOauthStartRouteImport } from './routes/api/tiktok/oauth/start'
+import { Route as ApiTiktokOauthCallbackRouteImport } from './routes/api/tiktok/oauth/callback'
 import { Route as ApiInternalVideoProcessorAssemblyCompleteRouteImport } from './routes/api/internal/video-processor/assembly-complete'
 import { Route as ApiInternalProcessorProgressRouteImport } from './routes/api/internal/processor/progress'
 import { Route as ApiInternalProcessorKeyFailureRouteImport } from './routes/api/internal/processor/key-failure'
@@ -193,6 +195,16 @@ const ApiYoutubeOauthCallbackRoute = ApiYoutubeOauthCallbackRouteImport.update({
   path: '/api/youtube/oauth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiTiktokOauthStartRoute = ApiTiktokOauthStartRouteImport.update({
+  id: '/api/tiktok/oauth/start',
+  path: '/api/tiktok/oauth/start',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTiktokOauthCallbackRoute = ApiTiktokOauthCallbackRouteImport.update({
+  id: '/api/tiktok/oauth/callback',
+  path: '/api/tiktok/oauth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiInternalVideoProcessorAssemblyCompleteRoute =
   ApiInternalVideoProcessorAssemblyCompleteRouteImport.update({
     id: '/api/internal/video-processor/assembly-complete',
@@ -248,6 +260,8 @@ export interface FileRoutesByFullPath {
   '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
   '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
+  '/api/tiktok/oauth/callback': typeof ApiTiktokOauthCallbackRoute
+  '/api/tiktok/oauth/start': typeof ApiTiktokOauthStartRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/dashboard/publishing/': typeof AuthedDashboardPublishingIndexRoute
@@ -279,6 +293,8 @@ export interface FileRoutesByTo {
   '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
   '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
+  '/api/tiktok/oauth/callback': typeof ApiTiktokOauthCallbackRoute
+  '/api/tiktok/oauth/start': typeof ApiTiktokOauthStartRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/dashboard/publishing': typeof AuthedDashboardPublishingIndexRoute
@@ -315,6 +331,8 @@ export interface FileRoutesById {
   '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
   '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
+  '/api/tiktok/oauth/callback': typeof ApiTiktokOauthCallbackRoute
+  '/api/tiktok/oauth/start': typeof ApiTiktokOauthStartRoute
   '/api/youtube/oauth/callback': typeof ApiYoutubeOauthCallbackRoute
   '/api/youtube/oauth/start': typeof ApiYoutubeOauthStartRoute
   '/_authed/dashboard/publishing/': typeof AuthedDashboardPublishingIndexRoute
@@ -351,6 +369,8 @@ export interface FileRouteTypes {
     | '/api/internal/processor/key-failure'
     | '/api/internal/processor/progress'
     | '/api/internal/video-processor/assembly-complete'
+    | '/api/tiktok/oauth/callback'
+    | '/api/tiktok/oauth/start'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
     | '/dashboard/publishing/'
@@ -382,6 +402,8 @@ export interface FileRouteTypes {
     | '/api/internal/processor/key-failure'
     | '/api/internal/processor/progress'
     | '/api/internal/video-processor/assembly-complete'
+    | '/api/tiktok/oauth/callback'
+    | '/api/tiktok/oauth/start'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
     | '/dashboard/publishing'
@@ -417,6 +439,8 @@ export interface FileRouteTypes {
     | '/api/internal/processor/key-failure'
     | '/api/internal/processor/progress'
     | '/api/internal/video-processor/assembly-complete'
+    | '/api/tiktok/oauth/callback'
+    | '/api/tiktok/oauth/start'
     | '/api/youtube/oauth/callback'
     | '/api/youtube/oauth/start'
     | '/_authed/dashboard/publishing/'
@@ -437,6 +461,8 @@ export interface RootRouteChildren {
   ApiInternalProcessorKeyFailureRoute: typeof ApiInternalProcessorKeyFailureRoute
   ApiInternalProcessorProgressRoute: typeof ApiInternalProcessorProgressRoute
   ApiInternalVideoProcessorAssemblyCompleteRoute: typeof ApiInternalVideoProcessorAssemblyCompleteRoute
+  ApiTiktokOauthCallbackRoute: typeof ApiTiktokOauthCallbackRoute
+  ApiTiktokOauthStartRoute: typeof ApiTiktokOauthStartRoute
   ApiYoutubeOauthCallbackRoute: typeof ApiYoutubeOauthCallbackRoute
   ApiYoutubeOauthStartRoute: typeof ApiYoutubeOauthStartRoute
 }
@@ -646,6 +672,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiYoutubeOauthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/tiktok/oauth/start': {
+      id: '/api/tiktok/oauth/start'
+      path: '/api/tiktok/oauth/start'
+      fullPath: '/api/tiktok/oauth/start'
+      preLoaderRoute: typeof ApiTiktokOauthStartRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tiktok/oauth/callback': {
+      id: '/api/tiktok/oauth/callback'
+      path: '/api/tiktok/oauth/callback'
+      fullPath: '/api/tiktok/oauth/callback'
+      preLoaderRoute: typeof ApiTiktokOauthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/internal/video-processor/assembly-complete': {
       id: '/api/internal/video-processor/assembly-complete'
       path: '/api/internal/video-processor/assembly-complete'
@@ -768,6 +808,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiInternalProcessorProgressRoute: ApiInternalProcessorProgressRoute,
   ApiInternalVideoProcessorAssemblyCompleteRoute:
     ApiInternalVideoProcessorAssemblyCompleteRoute,
+  ApiTiktokOauthCallbackRoute: ApiTiktokOauthCallbackRoute,
+  ApiTiktokOauthStartRoute: ApiTiktokOauthStartRoute,
   ApiYoutubeOauthCallbackRoute: ApiYoutubeOauthCallbackRoute,
   ApiYoutubeOauthStartRoute: ApiYoutubeOauthStartRoute,
 }
