@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start"
-import { getRequest } from "@tanstack/react-start/server"
 import { z } from "zod"
 
-import { auth } from "@/lib/auth"
+import { withAuth } from "@/middleware/with-auth"
 
 import { retryFailedJobForUser } from "./retry-failed-job.server"
 import { retryPublishForUser } from "./retry-publish.server"
@@ -42,18 +41,14 @@ export type ListJobsResult =
 	| { ok: false; code: "unauthorized" }
 
 export const listVideoJobsFn = createServerFn({ method: "GET" })
+	.middleware([withAuth])
 	.inputValidator((raw: unknown) => listJobsSchema.parse(raw))
-	.handler(async ({ data }): Promise<ListJobsResult> => {
-		const request = getRequest()
-		const session = await auth.api.getSession({ headers: request.headers })
-		if (!session?.user) {
-			return { ok: false, code: "unauthorized" }
-		}
+	.handler(async ({ context, data }): Promise<ListJobsResult> => {
 		const cursor = data.cursor
 			? { createdAt: new Date(data.cursor.createdAt), id: data.cursor.id }
 			: undefined
 		const result = await listVideoJobsForUser(
-			session.user.id,
+			context.user.id,
 			cursor,
 			data.pageSize,
 		)
@@ -95,25 +90,23 @@ export type PublishVideoJobApprovalResult =
 	| { ok: false; code: "not_found" | "invalid_state" | "terms_not_confirmed" }
 
 export const publishVideoJobApprovalFn = createServerFn({ method: "POST" })
+	.middleware([withAuth])
 	.inputValidator((raw: unknown) => publishApprovalSchema.parse(raw))
-	.handler(async ({ data }): Promise<PublishVideoJobApprovalResult> => {
-		const request = getRequest()
-		const session = await auth.api.getSession({ headers: request.headers })
-		if (!session?.user) {
-			return { ok: false, code: "unauthorized" }
-		}
-		const result = await setPublishApprovalForUser({
-			userId: session.user.id,
-			jobId: data.jobId,
-			decision: data.decision,
-			captionOverride: data.captionOverride,
-			publishSettings: data.publishSettings,
-		})
-		if (!result.ok) {
-			return { ok: false, code: result.code }
-		}
-		return { ok: true }
-	})
+	.handler(
+		async ({ context, data }): Promise<PublishVideoJobApprovalResult> => {
+			const result = await setPublishApprovalForUser({
+				userId: context.user.id,
+				jobId: data.jobId,
+				decision: data.decision,
+				captionOverride: data.captionOverride,
+				publishSettings: data.publishSettings,
+			})
+			if (!result.ok) {
+				return { ok: false, code: result.code }
+			}
+			return { ok: true }
+		},
+	)
 
 const retryJobSchema = z.object({
 	jobId: z.string().trim().min(1).max(64),
@@ -125,15 +118,11 @@ export type RetryVideoJobResult =
 	| { ok: false; code: "not_found" | "not_failed" | "max_retries" }
 
 export const retryVideoJobFn = createServerFn({ method: "POST" })
+	.middleware([withAuth])
 	.inputValidator((raw: unknown) => retryJobSchema.parse(raw))
-	.handler(async ({ data }): Promise<RetryVideoJobResult> => {
-		const request = getRequest()
-		const session = await auth.api.getSession({ headers: request.headers })
-		if (!session?.user) {
-			return { ok: false, code: "unauthorized" }
-		}
+	.handler(async ({ context, data }): Promise<RetryVideoJobResult> => {
 		const result = await retryFailedJobForUser({
-			userId: session.user.id,
+			userId: context.user.id,
 			jobId: data.jobId,
 		})
 		if (!result.ok) {
@@ -165,16 +154,12 @@ export type RetryPublishResult =
 	  }
 
 export const retryPublishFn = createServerFn({ method: "POST" })
+	.middleware([withAuth])
 	.inputValidator((raw: unknown) => retryPublishSchema.parse(raw))
-	.handler(async ({ data }): Promise<RetryPublishResult> => {
-		const request = getRequest()
-		const session = await auth.api.getSession({ headers: request.headers })
-		if (!session?.user) {
-			return { ok: false, code: "unauthorized" }
-		}
+	.handler(async ({ context, data }): Promise<RetryPublishResult> => {
 		const result = await retryPublishForUser({
 			jobId: data.jobId,
-			userId: session.user.id,
+			userId: context.user.id,
 			platform: data.platform,
 		})
 		if (!result.ok) {

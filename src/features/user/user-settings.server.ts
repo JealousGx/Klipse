@@ -3,7 +3,6 @@ import { and, eq, isNotNull } from "drizzle-orm";
 import { getDb } from "@/db";
 import { accounts } from "@/db/schema/accounts";
 import { users } from "@/db/schema/users";
-import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { deleteUserR2Data } from "@/lib/storage/r2.server";
 
@@ -12,22 +11,15 @@ import { deleteUserR2Data } from "@/lib/storage/r2.server";
 // ---------------------------------------------------------------------------
 
 export async function hasPasswordAccount(
-	request: Request,
-): Promise<
-	{ ok: true; hasPassword: boolean } | { ok: false; code: "unauthorized" }
-> {
-	const session = await auth.api.getSession({ headers: request.headers });
-	if (!session?.user) {
-		return { ok: false, code: "unauthorized" };
-	}
-
+	userId: string,
+): Promise<{ ok: true; hasPassword: boolean }> {
 	const db = getDb();
 	const [row] = await db
 		.select({ id: accounts.id })
 		.from(accounts)
 		.where(
 			and(
-				eq(accounts.userId, session.user.id),
+				eq(accounts.userId, userId),
 				eq(accounts.providerId, "credential"),
 				isNotNull(accounts.password),
 			),
@@ -42,17 +34,10 @@ export async function hasPasswordAccount(
 // ---------------------------------------------------------------------------
 
 export async function deleteUserAccount(
-	request: Request,
+	userId: string,
 ): Promise<
-	{ ok: true } | { ok: false; code: "unauthorized" | "error"; message?: string }
+	{ ok: true } | { ok: false; code: "error"; message?: string }
 > {
-	const session = await auth.api.getSession({ headers: request.headers });
-	if (!session?.user) {
-		return { ok: false, code: "unauthorized" };
-	}
-
-	const userId = session.user.id;
-
 	// Step 1 — purge R2 (best-effort; don't fail account deletion if R2 is down)
 	try {
 		const { deleted } = await deleteUserR2Data(userId);

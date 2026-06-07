@@ -1,8 +1,9 @@
-import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
-import { z } from "zod";
+import { createServerFn } from "@tanstack/react-start"
+import { z } from "zod"
 
-import { submitBugReport } from "@/features/feedback/post.server";
+import { submitBugReport } from "@/features/feedback/post.server"
+
+import { withAuth } from "@/middleware/with-auth"
 
 // ---------------------------------------------------------------------------
 // Validators
@@ -18,16 +19,24 @@ const bugReportSchema = z.object({
 	expected: z.string().max(500).optional(),
 	severity: z.enum(["low", "medium", "high", "critical"]),
 	page: z.string().max(200).optional(),
-});
+})
 
-export type BugReportInput = z.infer<typeof bugReportSchema>;
+export type BugReportInput = z.infer<typeof bugReportSchema>
 
 // ---------------------------------------------------------------------------
 // submitBug
 // ---------------------------------------------------------------------------
 
 export const submitBug = createServerFn({ method: "POST" })
+	.middleware([withAuth])
 	.inputValidator((raw: unknown) => bugReportSchema.parse(raw))
-	.handler(async ({ data }) => {
-		return submitBugReport(getRequest(), data);
-	});
+	.handler(async ({ context, data }) => {
+		return submitBugReport(
+			{
+				id: context.user.id,
+				name: context.user.name,
+				email: context.user.email,
+			},
+			data,
+		)
+	})

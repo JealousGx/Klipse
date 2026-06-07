@@ -1,68 +1,62 @@
-import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
-import { z } from "zod";
+import { createServerFn } from "@tanstack/react-start"
+import { z } from "zod"
 
-import { InsufficientCreditsError } from "@/features/billing/credit-usage.server";
+import { InsufficientCreditsError } from "@/features/billing/credit-usage.server"
 import {
 	ChannelNotFoundError,
 	TiktokChannelConfigIncompleteError,
-} from "@/features/channels/channel-errors";
-import { FreeTierVideoQuotaExhaustedError } from "@/features/entitlements";
-import { auth } from "@/lib/auth";
+} from "@/features/channels/channel-errors"
+import { FreeTierVideoQuotaExhaustedError } from "@/features/entitlements"
+import { withAuth } from "@/middleware/with-auth"
 
-import { executeContentPipelineWithIdempotency } from "./content-pipeline-execute.server";
+import { executeContentPipelineWithIdempotency } from "./content-pipeline-execute.server"
 
-export { estimateContentPipelineCredits } from "./content-pipeline-estimate";
+export { estimateContentPipelineCredits } from "./content-pipeline-estimate"
 
 const inputSchema = z.object({
 	channelId: z.string().trim().min(1).max(64),
 	idempotencyKey: z.string().trim().min(8).max(128),
 	idea: z.string().trim().min(3).max(20_000),
-});
+})
 
 export type RunContentPipelineResult =
 	| {
-			ok: true;
-			creditsRemaining: number;
-			ref: string;
-			creditsCharged: number;
-			replayed: boolean;
-			creditsConsumed: boolean;
+			ok: true
+			creditsRemaining: number
+			ref: string
+			creditsCharged: number
+			replayed: boolean
+			creditsConsumed: boolean
 	  }
 	| { ok: false; code: "unauthorized" }
 	| {
-			ok: false;
-			code: "insufficient_credits";
-			required: number;
-			remaining: number;
+			ok: false
+			code: "insufficient_credits"
+			required: number
+			remaining: number
 	  }
 	| { ok: false; code: "channel_not_found" }
 	| { ok: false; code: "free_tier_video_exhausted" }
 	| {
-			ok: false;
-			code: "tiktok_config_incomplete";
-			reason: string;
-	  };
+			ok: false
+			code: "tiktok_config_incomplete"
+			reason: string
+	  }
 
 export const runContentPipeline = createServerFn({ method: "POST" })
+	.middleware([withAuth])
 	.inputValidator((raw: unknown) => inputSchema.parse(raw))
-	.handler(async ({ data }): Promise<RunContentPipelineResult> => {
-		const request = getRequest();
-		const session = await auth.api.getSession({ headers: request.headers });
-		if (!session?.user) {
-			return { ok: false, code: "unauthorized" };
-		}
-
+	.handler(async ({ context, data }): Promise<RunContentPipelineResult> => {
 		try {
 			const outcome = await executeContentPipelineWithIdempotency({
-				userId: session.user.id,
+				userId: context.user.id,
 				channelId: data.channelId,
 				idempotencyKey: data.idempotencyKey,
 				idea: data.idea,
-			});
+			})
 
-			const replayed = outcome.kind === "replay";
-			const creditsConsumed = outcome.kind === "fresh";
+			const replayed = outcome.kind === "replay"
+			const creditsConsumed = outcome.kind === "fresh"
 
 			return {
 				ok: true,
@@ -71,7 +65,7 @@ export const runContentPipeline = createServerFn({ method: "POST" })
 				creditsCharged: outcome.payload.creditsCharged,
 				replayed,
 				creditsConsumed,
-			};
+			}
 		} catch (e) {
 			if (e instanceof InsufficientCreditsError) {
 				return {
@@ -79,21 +73,21 @@ export const runContentPipeline = createServerFn({ method: "POST" })
 					code: "insufficient_credits",
 					required: e.required,
 					remaining: e.remaining,
-				};
+				}
 			}
 			if (e instanceof ChannelNotFoundError) {
-				return { ok: false, code: "channel_not_found" };
+				return { ok: false, code: "channel_not_found" }
 			}
 			if (e instanceof FreeTierVideoQuotaExhaustedError) {
-				return { ok: false, code: "free_tier_video_exhausted" };
+				return { ok: false, code: "free_tier_video_exhausted" }
 			}
 			if (e instanceof TiktokChannelConfigIncompleteError) {
 				return {
 					ok: false,
 					code: "tiktok_config_incomplete",
 					reason: e.reason,
-				};
+				}
 			}
-			throw e;
+			throw e
 		}
-	});
+	})

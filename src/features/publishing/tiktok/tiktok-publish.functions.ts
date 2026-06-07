@@ -1,8 +1,7 @@
 import { createServerFn } from "@tanstack/react-start"
-import { getRequest } from "@tanstack/react-start/server"
 import { z } from "zod"
 
-import { auth } from "@/lib/auth"
+import { withAuth } from "@/middleware/with-auth"
 
 import { getTiktokPublishOptions } from "./get-tiktok-publish-options.server"
 
@@ -29,12 +28,8 @@ export type TiktokPublishOptionsResult =
 	  }
 
 export const getTiktokPublishOptionsFn = createServerFn({ method: "POST" })
+	.middleware([withAuth])
 	.inputValidator((raw: unknown) => getOptionsInput.parse(raw))
-	.handler(async ({ data }): Promise<TiktokPublishOptionsResult> => {
-		const request = getRequest()
-		const session = await auth.api.getSession({ headers: request.headers })
-		if (!session?.user) {
-			return { ok: false, code: "unauthorized" }
-		}
-		return getTiktokPublishOptions(session.user.id, data.channelId)
+	.handler(async ({ context, data }): Promise<TiktokPublishOptionsResult> => {
+		return getTiktokPublishOptions(context.user.id, data.channelId)
 	})

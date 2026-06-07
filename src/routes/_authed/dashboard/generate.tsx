@@ -1,9 +1,9 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute, Link, useRouter } from "@tanstack/react-router";
-import { Gift, Sparkles, Video } from "lucide-react";
-import { useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import { createFileRoute, Link, useRouter } from "@tanstack/react-router"
+import { Gift, Sparkles, Video } from "lucide-react"
+import { useRef, useState } from "react"
 
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/ui/button"
 import {
 	Select,
 	SelectContent,
@@ -12,113 +12,113 @@ import {
 	SelectLabel,
 	SelectTrigger,
 	SelectValue,
-} from "@/components/ui/select";
+} from "@/components/ui/select"
 
-import { useDashboardRouteContext } from "@/context/useDashboardRouteContext";
+import { useDashboardRouteContext } from "@/context/useDashboardRouteContext"
 import {
 	estimateContentPipelineCredits,
 	runContentPipeline,
-} from "@/features/video/content-pipeline";
-import { authClient } from "@/lib/auth/client";
+} from "@/features/video/content-pipeline.functions"
+import { authClient } from "@/lib/auth/client"
 import {
 	FREE_TIER_RETENTION_HOURS,
 	humanizeRetentionHours,
-} from "@/lib/format-output-retention";
-import { channelsQueryOptions } from "@/lib/queries/dashboard-queries";
+} from "@/lib/format-output-retention"
+import { channelsQueryOptions } from "@/lib/queries/dashboard-queries"
 
 export const Route = createFileRoute("/_authed/dashboard/generate")({
 	staticData: { dashboardTitle: "Generate" },
 	beforeLoad: ({ context }) => {
-		void context.queryClient.ensureQueryData(channelsQueryOptions);
+		void context.queryClient.ensureQueryData(channelsQueryOptions)
 	},
 	component: GeneratePage,
-});
+})
 
 const fieldClass =
-	"w-full text-sm text-foreground transition disabled:cursor-not-allowed disabled:opacity-50";
+	"w-full text-sm text-foreground transition disabled:cursor-not-allowed disabled:opacity-50"
 
 function GeneratePage() {
-	const queryClient = useQueryClient();
-	const router = useRouter();
-	const { refetch: refetchSession } = authClient.useSession();
-	const { session } = useDashboardRouteContext();
-	const user = session.user;
+	const queryClient = useQueryClient()
+	const router = useRouter()
+	const { refetch: refetchSession } = authClient.useSession()
+	const { session } = useDashboardRouteContext()
+	const user = session.user
 
-	const [busy, setBusy] = useState(false);
-	const [success, setSuccess] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	const idempotencyKeyRef = useRef<string | null>(null);
-	const [channelId, setChannelId] = useState<string>("");
-	const [idea, setIdea] = useState("");
+	const [busy, setBusy] = useState(false)
+	const [success, setSuccess] = useState(false)
+	const [error, setError] = useState<string | null>(null)
+	const idempotencyKeyRef = useRef<string | null>(null)
+	const [channelId, setChannelId] = useState<string>("")
+	const [idea, setIdea] = useState("")
 
-	const creditEstimate = estimateContentPipelineCredits({ idea });
-	const channelsQuery = useQuery(channelsQueryOptions);
-	const channels = channelsQuery.data ?? [];
+	const creditEstimate = estimateContentPipelineCredits({ idea })
+	const channelsQuery = useQuery(channelsQueryOptions)
+	const channels = channelsQuery.data ?? []
 
 	const handleGenerate = async () => {
-		const trimmed = idea.trim();
+		const trimmed = idea.trim()
 		if (!channelId) {
-			setError("Choose a channel first.");
-			return;
+			setError("Choose a channel first.")
+			return
 		}
 		if (trimmed.length < 3) {
-			setError("Describe what the video is about (at least 3 characters).");
-			return;
+			setError("Describe what the video is about (at least 3 characters).")
+			return
 		}
 
 		if (!idempotencyKeyRef.current) {
-			idempotencyKeyRef.current = crypto.randomUUID();
+			idempotencyKeyRef.current = crypto.randomUUID()
 		}
-		const idempotencyKey = idempotencyKeyRef.current;
+		const idempotencyKey = idempotencyKeyRef.current
 
-		setBusy(true);
-		setSuccess(false);
-		setError(null);
+		setBusy(true)
+		setSuccess(false)
+		setError(null)
 
 		try {
 			const r = await runContentPipeline({
 				data: { channelId, idempotencyKey, idea: trimmed },
-			});
+			})
 
 			if (r.ok) {
-				idempotencyKeyRef.current = null;
-				setIdea("");
-				setSuccess(true);
+				idempotencyKeyRef.current = null
+				setIdea("")
+				setSuccess(true)
 				if (r.creditsConsumed) {
-					await refetchSession({ query: { disableCookieCache: true } });
+					await refetchSession({ query: { disableCookieCache: true } })
 				}
-				await router.invalidate();
-				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] });
-				void channelsQuery.refetch();
+				await router.invalidate()
+				void queryClient.invalidateQueries({ queryKey: ["video-jobs"] })
+				void channelsQuery.refetch()
 			} else if (r.code === "insufficient_credits") {
 				setError(
 					`You don't have enough credits for this. You need ${r.required} but have ${r.remaining}. Add more under Billing.`,
-				);
+				)
 			} else if (r.code === "channel_not_found") {
-				setError("That channel no longer exists. Refresh and try again.");
+				setError("That channel no longer exists. Refresh and try again.")
 			} else if (r.code === "free_tier_video_exhausted") {
 				setError(
 					"Free accounts include one video. Upgrade your plan to generate more.",
-				);
+				)
 			} else if (r.code === "tiktok_config_incomplete") {
 				const detail =
 					r.reason === "music_usage_not_confirmed"
 						? "confirm Music Usage in destination settings"
 						: r.reason === "privacy_level_not_set"
 							? "set a default visibility in destination settings"
-							: "complete the commercial content disclosure in destination settings";
+							: "complete the commercial content disclosure in destination settings"
 				setError(
 					`Your TikTok destination isn't ready to publish yet — ${detail} before generating.`,
-				);
+				)
 			} else {
-				setError("You need to be signed in to generate videos.");
+				setError("You need to be signed in to generate videos.")
 			}
 		} catch {
-			setError("Something went wrong. Please try again.");
+			setError("Something went wrong. Please try again.")
 		} finally {
-			setBusy(false);
+			setBusy(false)
 		}
-	};
+	}
 
 	return (
 		<div className="max-w-2xl space-y-8">
@@ -203,9 +203,9 @@ function GeneratePage() {
 							<Select
 								defaultValue={channelId}
 								onValueChange={(val) => {
-									setChannelId(val);
-									setSuccess(false);
-									setError(null);
+									setChannelId(val)
+									setSuccess(false)
+									setError(null)
 								}}
 								disabled={busy}
 							>
@@ -243,9 +243,9 @@ function GeneratePage() {
 							className={`${fieldClass} min-h-24 resize-y`}
 							value={idea}
 							onChange={(e) => {
-								setIdea(e.target.value);
-								setSuccess(false);
-								setError(null);
+								setIdea(e.target.value)
+								setSuccess(false)
+								setError(null)
 							}}
 							disabled={busy}
 						/>
@@ -330,5 +330,5 @@ function GeneratePage() {
 				</p>
 			) : null}
 		</div>
-	);
+	)
 }

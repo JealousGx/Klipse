@@ -1,6 +1,5 @@
 import { env } from "@/env";
 import type { BugReportInput } from "@/features/feedback/post.functions";
-import { auth } from "@/lib/auth";
 import { logger } from "@/lib/logger";
 import { getEnvironment } from "@/lib/utils";
 
@@ -27,19 +26,15 @@ const SEVERITY_LABELS: Record<string, string> = {
 // ---------------------------------------------------------------------------
 
 export async function submitBugReport(
-	request: Request,
+	user: { id: string; name: string; email: string },
 	data: BugReportInput,
 ): Promise<{ success: true } | { error: string }> {
 	try {
 		const { title, what, steps, expected, severity, page } = data;
 
-		const _userInfo = await auth.api.getSession({
-			headers: request.headers,
-		});
-
-		const userName = _userInfo?.user.name ?? "Anonymous";
-		const userEmail = _userInfo?.user.email ?? "N/A";
-		const userId = _userInfo?.user.id ?? "N/A";
+		const userName = user.name;
+		const userEmail = user.email;
+		const userId = user.id;
 
 		const fields = [{ name: "What happened", value: what, inline: false }];
 

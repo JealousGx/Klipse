@@ -1,10 +1,11 @@
-import { createServerFn } from "@tanstack/react-start";
-import { getRequest } from "@tanstack/react-start/server";
+import { createServerFn } from "@tanstack/react-start"
 
 import {
 	deleteUserAccount,
 	hasPasswordAccount,
-} from "@/features/user/user-settings.server";
+} from "@/features/user/user-settings.server"
+
+import { withAuth } from "@/middleware/with-auth"
 
 // ---------------------------------------------------------------------------
 // hasPasswordAccountFn
@@ -12,18 +13,18 @@ import {
 
 export type HasPasswordAccountResult =
 	| { ok: true; hasPassword: boolean }
-	| { ok: false; code: "unauthorized" };
+	| { ok: false; code: "unauthorized" }
 
 /**
  * Returns whether the authenticated user has a credential (email + password)
  * account stored — used to decide whether the settings page shows
  * "Change password" or "Set a password" UI.
  */
-export const hasPasswordAccountFn = createServerFn({ method: "GET" }).handler(
-	async (): Promise<HasPasswordAccountResult> => {
-		return hasPasswordAccount(getRequest());
-	},
-);
+export const hasPasswordAccountFn = createServerFn({ method: "GET" })
+	.middleware([withAuth])
+	.handler(async ({ context }): Promise<HasPasswordAccountResult> => {
+		return hasPasswordAccount(context.user.id)
+	})
 
 // ---------------------------------------------------------------------------
 // deleteUserAccountFn
@@ -31,7 +32,7 @@ export const hasPasswordAccountFn = createServerFn({ method: "GET" }).handler(
 
 export type DeleteUserAccountResult =
 	| { ok: true }
-	| { ok: false; code: "unauthorized" | "error"; message?: string };
+	| { ok: false; code: "unauthorized" | "error"; message?: string }
 
 /**
  * Permanently deletes the authenticated user's account.
@@ -46,8 +47,8 @@ export type DeleteUserAccountResult =
  *
  * Does NOT touch Polar — subscription management lives outside our DB.
  */
-export const deleteUserAccountFn = createServerFn({ method: "POST" }).handler(
-	async (): Promise<DeleteUserAccountResult> => {
-		return deleteUserAccount(getRequest());
-	},
-);
+export const deleteUserAccountFn = createServerFn({ method: "POST" })
+	.middleware([withAuth])
+	.handler(async ({ context }): Promise<DeleteUserAccountResult> => {
+		return deleteUserAccount(context.user.id)
+	})
