@@ -1,6 +1,6 @@
 import { useMutation } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { ArrowUpRight, Clock, Download, Timer, Unplug } from "lucide-react"
+import { ArrowUpRight, Clock, Download } from "lucide-react"
 import { toast } from "sonner"
 
 import { JobApprovalSection } from "@/components/dashboard/job-approval-section"
@@ -23,6 +23,15 @@ import {
 	platformVideoUrl,
 } from "@/lib/platform-publishing"
 import { Button } from "../ui/button"
+import {
+	DurationErrorBanner,
+	GenericPublishErrorBanner,
+	isDurationError,
+	isPostCapError,
+	isTokenError,
+	PostCapErrorBanner,
+	TokenErrorBanner,
+} from "./job-detail-helpers"
 
 export function JobDetailPane({
 	job,
@@ -54,15 +63,9 @@ export function JobDetailPane({
 			captionOverride,
 			publishSettings,
 		}: ApprovalOpts) => {
-			const r = await publishVideoJobApprovalFn({
-				data: {
-					jobId: job.id,
-					decision,
-					captionOverride,
-					publishSettings,
-				},
+			return publishVideoJobApprovalFn({
+				data: { jobId: job.id, decision, captionOverride, publishSettings },
 			})
-			return r
 		},
 		onSuccess: (r) => {
 			if (r.ok) {
@@ -88,10 +91,7 @@ export function JobDetailPane({
 	})
 
 	const retryMutation = useMutation({
-		mutationFn: async () => {
-			const r = await retryVideoJobFn({ data: { jobId: job.id } })
-			return r
-		},
+		mutationFn: async () => retryVideoJobFn({ data: { jobId: job.id } }),
 		onSuccess: (r) => {
 			if (r.ok) {
 				toast.success("Job queued for retry.")
@@ -115,13 +115,12 @@ export function JobDetailPane({
 
 	const retryPublishMutation = useMutation({
 		mutationFn: async () => {
-			const r = await retryPublishFn({
+			return retryPublishFn({
 				data: {
 					jobId: job.id,
 					platform: job.channelPlatform as "youtube" | "tiktok" | "instagram",
 				},
 			})
-			return r
 		},
 		onSuccess: (r) => {
 			if (r.ok) {
@@ -146,8 +145,14 @@ export function JobDetailPane({
 		job.status === "completed" &&
 		Boolean(job.outputStorageExpiresAt)
 	const retentionNote = job.outputStorageExpiresAt
-		? `This video is scheduled for removal after ${formatOutputRetentionDeadlineUtc(job.outputStorageExpiresAt)}. Approve or reject before then so you don’t lose access.`
+		? `This video is scheduled for removal after ${formatOutputRetentionDeadlineUtc(job.outputStorageExpiresAt)}. Approve or reject before then so you don't lose access.`
 		: `Videos are kept for ${humanizeRetentionHours(PAID_TIER_RETENTION_HOURS)} on paid plans (then purged). Approve or reject before your window ends.`
+
+	const retryPublishProps = {
+		publishRetryCount: job.publishRetryCount,
+		isRetrying: retryPublishMutation.isPending,
+		onRetry: () => retryPublishMutation.mutate(),
+	}
 
 	return (
 		<div className="flex flex-col">
@@ -234,111 +239,20 @@ export function JobDetailPane({
 				job.status === "completed" &&
 				!job.publishedVideoId ? (
 					isPostCapError(job.publishLastError) ? (
-						<div className="rounded-lg border border-amber-500/35 bg-amber-500/8 px-3 py-2.5">
-							<div className="flex items-center gap-2">
-								<Timer className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-								<p className="text-sm font-medium text-foreground">
-									Daily post limit reached
-								</p>
-							</div>
-							<p className="mt-1 text-xs text-muted-foreground">
-								TikTok limits how many videos can be posted per day. Try again
-								tomorrow.
-							</p>
-							{job.publishRetryCount < MAX_PUBLISH_RETRIES ? (
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									className="mt-2 h-7 text-xs"
-									disabled={retryPublishMutation.isPending}
-									onClick={() => retryPublishMutation.mutate()}
-								>
-									{retryPublishMutation.isPending
-										? "Retrying…"
-										: "Retry publish"}
-								</Button>
-							) : (
-								<p className="mt-2 text-xs text-muted-foreground">
-									Max retries reached.
-								</p>
-							)}
-						</div>
+						<PostCapErrorBanner {...retryPublishProps} />
 					) : isDurationError(job.publishLastError) ? (
-						<div className="rounded-lg border border-destructive/30 bg-destructive/8 px-3 py-2.5">
-							<p className="text-sm font-medium text-foreground">
-								Video too long for your TikTok account
-							</p>
-							<p className="mt-1 text-xs text-muted-foreground">
-								The video exceeds your account&apos;s maximum post duration on
-								TikTok. Generate a shorter video and try again.
-							</p>
-						</div>
+						<DurationErrorBanner />
 					) : isTokenError(job.publishLastError) ? (
-						<div className="rounded-lg border border-amber-500/35 bg-amber-500/8 px-3 py-2.5">
-							<div className="flex items-center gap-2">
-								<Unplug className="size-3.5 shrink-0 text-amber-600 dark:text-amber-400" />
-								<p className="text-sm font-medium text-foreground">
-									{platformDisplayName(job.channelPlatform)} access expired
-								</p>
-							</div>
-							<p className="mt-1 text-xs text-muted-foreground">
-								Klipse lost access to your{" "}
-								{platformDisplayName(job.channelPlatform)} account. Reconnect
-								then retry publishing.
-							</p>
-							<div className="mt-2 flex flex-wrap items-center gap-3">
-								<Link
-									to="/dashboard/publishing/$destinationId"
-									params={{ destinationId: job.channelId }}
-									className="text-xs font-semibold text-primary hover:underline"
-								>
-									Reconnect {platformDisplayName(job.channelPlatform)} →
-								</Link>
-								{job.publishRetryCount < MAX_PUBLISH_RETRIES ? (
-									<Button
-										type="button"
-										size="sm"
-										variant="outline"
-										className="h-7 text-xs"
-										disabled={retryPublishMutation.isPending}
-										onClick={() => retryPublishMutation.mutate()}
-									>
-										{retryPublishMutation.isPending
-											? "Retrying…"
-											: "Retry publish"}
-									</Button>
-								) : (
-									<p className="text-xs text-muted-foreground">
-										Max retries reached.
-									</p>
-								)}
-							</div>
-						</div>
+						<TokenErrorBanner
+							channelId={job.channelId}
+							channelPlatform={job.channelPlatform}
+							{...retryPublishProps}
+						/>
 					) : (
-						<div className="flex flex-wrap items-center gap-3">
-							<p className="text-xs text-destructive">
-								Publish failed: {job.publishLastError}
-							</p>
-							{job.publishRetryCount < MAX_PUBLISH_RETRIES ? (
-								<Button
-									type="button"
-									size="sm"
-									variant="outline"
-									className="h-7 text-xs"
-									disabled={retryPublishMutation.isPending}
-									onClick={() => retryPublishMutation.mutate()}
-								>
-									{retryPublishMutation.isPending
-										? "Retrying…"
-										: "Retry publish"}
-								</Button>
-							) : (
-								<p className="text-xs text-muted-foreground">
-									Max retries reached.
-								</p>
-							)}
-						</div>
+						<GenericPublishErrorBanner
+							error={job.publishLastError}
+							{...retryPublishProps}
+						/>
 					)
 				) : null}
 				<div>
@@ -349,7 +263,6 @@ export function JobDetailPane({
 						{job.artifacts?.title ?? title}
 					</p>
 				</div>
-				{/* Hide static description + tags when pending — editable textarea in approval section serves as single source */}
 				{!pendingApproval && job.artifacts?.description ? (
 					<div>
 						<p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
@@ -387,7 +300,6 @@ export function JobDetailPane({
 						}
 					/>
 				) : null}
-				{/* Publishing in progress — manual approval or auto-post in flight */}
 				{(job.publishApprovalStatus === "approved" ||
 					Boolean(job.publishStartedAt)) &&
 				!job.publishedVideoId &&
@@ -470,28 +382,4 @@ export function JobDetailPane({
 			</div>
 		</div>
 	)
-}
-
-/**
- * True when `publishLastError` indicates a revoked / expired OAuth token —
- * used to show a friendly "Reconnect [Platform]" prompt instead of a raw error.
- */
-function isTokenError(error: string): boolean {
-	const e = error.toLowerCase()
-	return (
-		e === "missing_oauth_refresh_token" ||
-		e.includes("invalid_grant") ||
-		e.includes("token has been") ||
-		e.includes("revoked")
-	)
-}
-
-/** True when the creator has hit their daily TikTok post cap. */
-function isPostCapError(error: string): boolean {
-	return error === "creator_post_cap_reached"
-}
-
-/** True when the video exceeds the creator's maximum post duration on TikTok. */
-function isDurationError(error: string): boolean {
-	return error === "duration_exceeds_tiktok_limit"
 }
