@@ -1,7 +1,13 @@
 # From repo root (recommended):
 #   cp packages/external-video-processor/.env.example packages/external-video-processor/.env
+#   export WEIGHTS_IMAGE=us-central1-docker.pkg.dev/<PROJECT_ID>/klipse/processor-weights:ltx-2.3-distilled-v1
 #   pnpm processor:docker:up
 #   pnpm processor:docker:logs
+#
+# WEIGHTS_IMAGE must point at an already-built-and-pushed weights base image (see
+# Dockerfile.weights) — this compose file builds the app/runtime layer only, it does not
+# bake weights inline. For API/plumbing-only local testing without a GPU or real weights,
+# skip Docker entirely and run `uvicorn src.main:app` directly instead (see docs/video-processor.md).
 #
 # Env is loaded from packages/external-video-processor/.env (see env_file below).
 
@@ -10,6 +16,8 @@ services:
     build:
       context: ../..
       dockerfile: docker/external-video-processor/Dockerfile
+      args:
+        WEIGHTS_IMAGE: ${WEIGHTS_IMAGE}
     image: klipse-external-video-processor:latest
     ports:
       - "8790:8790"

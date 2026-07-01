@@ -1,0 +1,14 @@
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+httpx==0.28.1
+pydantic==2.10.4
+
+# LTX-2 (Lightricks/LTX-2) — confirmed real system requirements from the official repo:
+# Python >=3.12, CUDA >12.7, PyTorch ~=2.7. The repo's own setup uses `uv sync` against
+# its packages/ workspace (ltx-core, ltx-pipelines) rather than plain PyPI packages —
+# the git+subdirectory pip install below is a best-effort translation of that, not
+# confirmed working; verify against https://github.com/Lightricks/LTX-2's own setup
+# instructions once you have hands-on access, and prefer `uv sync` if pip install fails.
+torch==2.7.0
+git+https://github.com/Lightricks/LTX-2.git#subdirectory=packages/ltx-core
+git+https://github.com/Lightricks/LTX-2.git#subdirectory=packages/ltx-pipelines
