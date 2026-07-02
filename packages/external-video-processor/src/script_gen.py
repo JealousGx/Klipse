@@ -1,5 +1,4 @@
 import json
-import logging
 import re
 from dataclasses import dataclass
 
@@ -7,9 +6,8 @@ import httpx
 from pydantic import BaseModel, ValidationError
 
 from .callbacks import report_key_failure
+from .logger import logger
 from .retry import NonRetriableError
-
-logger = logging.getLogger("processor")
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 GEMINI_URL_TEMPLATE = (
@@ -193,6 +191,12 @@ async def generate_script(
                 raw = await _call_openrouter(model, key, system_prompt, user_prompt)
                 parsed = parse_script_json(raw)
                 if parsed:
+                    logger.info(
+                        "script_generation_complete",
+                        jobId=job_id,
+                        provider="openrouter",
+                        model=model,
+                    )
                     return parsed
                 last_error = ValueError("openrouter_unparseable_response")
             except Exception as e:  # noqa: BLE001
@@ -222,6 +226,12 @@ async def generate_script(
             )
             parsed = parse_script_json(raw)
             if parsed:
+                logger.info(
+                    "script_generation_complete",
+                    jobId=job_id,
+                    provider="gemini",
+                    model=DEFAULT_GEMINI_FALLBACK_MODEL,
+                )
                 return parsed
             last_error = ValueError("gemini_unparseable_response")
         except Exception as e:  # noqa: BLE001
@@ -237,4 +247,5 @@ async def generate_script(
                 callback_base_url, callback_secret, job_id, "gemini", key.id, status, msg, None
             )
 
+    logger.error("script_generation_exhausted", jobId=job_id, error=str(last_error))
     raise NonRetriableError(f"script_generation_exhausted:{last_error}")

@@ -2,6 +2,8 @@ import asyncio
 import os
 import tempfile
 
+from .logger import logger
+
 FONT_PATH = "/usr/share/fonts/dejavu/DejaVuSans-Bold.ttf"
 
 
@@ -53,7 +55,9 @@ async def apply_watermark_with_audio(input_path: str, output_path: str, label: s
         )
         _, stderr = await proc.communicate()
         if proc.returncode != 0:
-            raise RuntimeError(f"ffmpeg_watermark_failed:{stderr.decode(errors='replace')[:500]}")
+            err = stderr.decode(errors="replace")[:500]
+            logger.error("watermark_failed", error=err, returncode=proc.returncode)
+            raise RuntimeError(f"ffmpeg_watermark_failed:{err}")
     finally:
         if os.path.exists(label_path):
             os.remove(label_path)

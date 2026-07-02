@@ -1,8 +1,8 @@
-import logging
 import os
 import threading
+import time
 
-logger = logging.getLogger("processor")
+from ..logger import logger
 
 # Baked into the container image at build time (Phase 5 hard requirement) — never
 # downloaded from Hugging Face at process startup. Real artifact filenames confirmed
@@ -46,7 +46,8 @@ def load_model():
                     "image at build time, not fetched at runtime"
                 )
 
-        logger.info("model_load_start", extra={"weightsRoot": WEIGHTS_ROOT})
+        logger.info("model_load_start", weightsRoot=WEIGHTS_ROOT)
+        start = time.monotonic()
 
         from ltx_pipelines.distilled import DistilledPipeline
 
@@ -56,7 +57,10 @@ def load_model():
             spatial_upsampler_path=SPATIAL_UPSAMPLER_PATH,
             loras=[],
         )
-        logger.info("model_load_complete")
+        durationMs = int((time.monotonic() - start) * 1000)
+        # Real cold-start timing — the only source of this data since Phase 0's GPU
+        # validation was skipped; watch this in production instead.
+        logger.info("model_load_complete", durationMs=durationMs)
         return _pipeline
 
 

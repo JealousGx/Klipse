@@ -1,5 +1,5 @@
 import asyncio
-import logging
+import time
 from collections import OrderedDict
 
 from fastapi import Depends, FastAPI
@@ -8,12 +8,10 @@ from pydantic import BaseModel
 from .auth import require_bearer_auth
 from .callbacks import report_complete, report_progress
 from .inference.generate import generate_video
+from .logger import logger
 from .r2_upload import upload_bytes_to_presigned_url
 from .script_gen import ProviderKey, generate_script
 from .watermark import apply_watermark_with_audio
-
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("processor")
 
 app = FastAPI()
 
@@ -82,7 +80,7 @@ async def _worker_loop() -> None:
         try:
             await _run_job(spec)
         except Exception as e:  # noqa: BLE001
-            logger.error("job_failed", extra={"jobId": spec.jobId, "error": str(e)})
+            logger.error("job_failed", jobId=spec.jobId, error=str(e))
         finally:
             _active_job_ids.discard(spec.jobId)
             _mark_finished(spec.jobId)
@@ -100,6 +98,9 @@ async def _run_job(spec: ProcessorJobSpecIn) -> None:
     job_id = spec.jobId
     base_url = spec.callbackBaseUrl
     secret = spec.callbackSecret
+    start = time.monotonic()
+
+    logger.info("job_start", jobId=job_id, channelId=spec.channelId, userId=spec.userId)
 
     try:
         await report_progress(base_url, secret, job_id, "script", 5)
@@ -160,17 +161,18 @@ async def _run_job(spec: ProcessorJobSpecIn) -> None:
             description=script.description,
             tags=script.tags,
         )
-        logger.info("job_complete", extra={"jobId": job_id})
+        durationMs = int((time.monotonic() - start) * 1000)
+        logger.info("job_complete", jobId=job_id, durationMs=durationMs)
     except Exception as e:  # noqa: BLE001
-        logger.error("job_error", extra={"jobId": job_id, "error": str(e)})
+        durationMs = int((time.monotonic() - start) * 1000)
+        logger.error("job_error", jobId=job_id, durationMs=durationMs, error=str(e))
         try:
             await report_complete(
                 base_url, secret, job_id, spec.userId, "failed", error=str(e)
             )
         except Exception as callback_error:  # noqa: BLE001
             logger.error(
-                "job_error_callback_failed",
-                extra={"jobId": job_id, "error": str(callback_error)},
+                "job_error_callback_failed", jobId=job_id, error=str(callback_error)
             )
         raise
 

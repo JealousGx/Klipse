@@ -20,8 +20,11 @@ FROM ${WEIGHTS_IMAGE} AS weights
 
 # ---
 
-FROM nvidia/cuda:12.8.0-runtime-ubuntu22.04 AS runner
+FROM nvidia/cuda:12.8.0-runtime-ubuntu24.04 AS runner
 
+# ubuntu22.04 (Jammy)'s default apt repos only ship Python 3.10 — 3.12 isn't available
+# without a PPA. Using ubuntu24.04 (Noble) instead, which ships 3.12 natively (confirmed
+# real published tag: nvidia/cuda:12.8.0-runtime-ubuntu24.04).
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	python3.12 python3-pip ffmpeg fonts-dejavu-core git \
 	&& rm -rf /var/lib/apt/lists/* \
@@ -37,7 +40,10 @@ ENV PORT=8790 \
 COPY packages/external-video-processor/requirements.txt ./requirements.txt
 # --default-timeout + --retries: torch's wheel is large and a plain pip install can hit
 # a read timeout downloading it (confirmed via a local smoke-test build).
-RUN pip3 install --no-cache-dir --default-timeout=300 --retries=5 -r requirements.txt
+# --break-system-packages: ubuntu24.04's pip enforces PEP 668 (externally-managed-
+# environment) by default, blocking plain `pip install` outside a venv. Safe to override
+# here — this is an isolated single-purpose container, not a shared system Python.
+RUN pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system-packages -r requirements.txt
 
 COPY --from=weights --chown=app:app /weights /app/weights
 COPY --chown=app:app packages/external-video-processor/src ./src

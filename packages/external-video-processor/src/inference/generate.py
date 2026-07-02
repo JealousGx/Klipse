@@ -1,10 +1,9 @@
-import logging
 import random
 import tempfile
+import time
 
+from ..logger import logger
 from .model import get_model
-
-logger = logging.getLogger("processor")
 
 # Confirmed real value from Lightricks/LTX-2's ltx-pipelines example.
 FRAME_RATE = 25.0
@@ -41,13 +40,12 @@ async def generate_video(
 
     logger.info(
         "video_generation_start",
-        extra={
-            "targetDuration": target_duration,
-            "aspectRatio": aspect_ratio,
-            "numFrames": num_frames,
-            "seed": seed,
-        },
+        targetDuration=target_duration,
+        aspectRatio=aspect_ratio,
+        numFrames=num_frames,
+        seed=seed,
     )
+    start = time.monotonic()
 
     video, audio = pipeline(
         prompt=video_prompt,
@@ -58,6 +56,9 @@ async def generate_video(
         frame_rate=FRAME_RATE,
         images=[],
     )
+
+    generationDurationMs = int((time.monotonic() - start) * 1000)
+    logger.info("video_generation_complete", durationMs=generationDurationMs)
 
     from ltx_core.model.video_vae import TilingConfig, get_video_chunks_number
     from ltx_pipelines.utils.media_io import encode_video

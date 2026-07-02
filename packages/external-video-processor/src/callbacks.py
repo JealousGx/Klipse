@@ -1,11 +1,9 @@
-import logging
 from typing import Literal
 
 import httpx
 
+from .logger import logger
 from .retry import NonRetriableError, with_retries
-
-logger = logging.getLogger("processor")
 
 Stage = Literal["script", "video_gen"]
 
@@ -42,7 +40,7 @@ async def report_progress(
             attempts=3,
         )
     except Exception as e:  # noqa: BLE001
-        logger.warning("report_progress_failed", extra={"jobId": job_id, "error": str(e)})
+        logger.warning("report_progress_failed", jobId=job_id, error=str(e))
 
 
 async def report_key_failure(
@@ -71,7 +69,7 @@ async def report_key_failure(
             attempts=5,
         )
     except Exception as e:  # noqa: BLE001
-        logger.warning("report_key_failure_failed", extra={"jobId": job_id, "error": str(e)})
+        logger.warning("report_key_failure_failed", jobId=job_id, error=str(e))
 
 
 async def report_complete(

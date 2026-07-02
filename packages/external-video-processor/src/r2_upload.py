@@ -1,5 +1,6 @@
 import httpx
 
+from .logger import logger
 from .retry import with_retries
 
 
@@ -20,3 +21,4 @@ async def upload_bytes_to_presigned_url(
             res.raise_for_status()
 
     await with_retries("r2_upload", 3, attempt)
+    logger.info("r2_upload_complete", sizeBytes=len(data))

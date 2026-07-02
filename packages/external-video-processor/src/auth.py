@@ -2,6 +2,8 @@ import os
 
 from fastapi import Header, HTTPException
 
+from .logger import logger
+
 _CLIENT_SECRET = os.environ.get("VIDEO_PROCESSOR_CLIENT_SECRET", "").strip()
 
 
@@ -12,8 +14,10 @@ async def require_bearer_auth(authorization: str = Header(default="")) -> None:
     main app and processor deploys don't need to change how they authenticate.
     """
     if not _CLIENT_SECRET:
+        logger.error("processor_missing_client_secret")
         raise HTTPException(status_code=500, detail="processor_missing_client_secret")
 
     expected = f"Bearer {_CLIENT_SECRET}"
     if authorization != expected:
+        logger.warning("unauthorized_request")
         raise HTTPException(status_code=401, detail="unauthorized")
