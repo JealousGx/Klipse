@@ -190,7 +190,9 @@ async def health() -> dict:
     return {"ok": True}
 
 
-@app.post("/v1/process-spec", dependencies=[Depends(require_bearer_auth)])
+@app.post(
+    "/v1/process-spec", status_code=202, dependencies=[Depends(require_bearer_auth)]
+)
 async def process_spec(spec: ProcessorJobSpecIn) -> dict:
     _ensure_worker_started()
 

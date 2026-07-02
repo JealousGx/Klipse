@@ -5,9 +5,11 @@ from dataclasses import dataclass
 import httpx
 from pydantic import BaseModel, ValidationError
 
+from typing import Awaitable, Callable
+
 from .callbacks import report_key_failure
 from .logger import logger
-from .retry import NonRetriableError
+from .retry import NonRetriableError, with_retries
 
 OPENROUTER_URL = "https://openrouter.ai/api/v1/chat/completions"
 GEMINI_URL_TEMPLATE = (
@@ -168,6 +170,34 @@ async def _call_gemini(model: str, key: ProviderKey, system_prompt: str, user_pr
         return data["candidates"][0]["content"]["parts"][0]["text"]
 
 
+def _status_from_error(prefix: str, msg: str) -> int:
+    if not msg.startswith(prefix):
+        return 0
+    try:
+        return int(msg.split(":")[1])
+    except (IndexError, ValueError):
+        return 0
+
+
+async def _call_with_short_retry(label: str, error_prefix: str, fn: Callable[[], Awaitable[str]]) -> str:
+    """One retry (with backoff) for transient-looking failures (5xx — e.g. the "high
+    demand, try again later" errors both OpenRouter and Gemini return under load) before
+    giving up on this specific key. 4xx errors (auth/quota/bad request) aren't transient —
+    raised immediately so the caller moves on to the next key without wasting the retry.
+    """
+
+    async def attempt(_: int) -> str:
+        try:
+            return await fn()
+        except RuntimeError as e:
+            status = _status_from_error(error_prefix, str(e))
+            if status and status < 500:
+                raise NonRetriableError(str(e)) from e
+            raise
+
+    return await with_retries(label, 2, attempt)
+
+
 async def generate_script(
     *,
     job_id: str,
@@ -188,7 +218,11 @@ async def generate_script(
     for model in model_chain:
         for key in openrouter_keys:
             try:
-                raw = await _call_openrouter(model, key, system_prompt, user_prompt)
+                raw = await _call_with_short_retry(
+                    f"script_openrouter:{model}:{key.id}",
+                    "openrouter_error:",
+                    lambda: _call_openrouter(model, key, system_prompt, user_prompt),
+                )
                 parsed = parse_script_json(raw)
                 if parsed:
                     logger.info(
@@ -221,8 +255,12 @@ async def generate_script(
 
     for key in gemini_keys:
         try:
-            raw = await _call_gemini(
-                DEFAULT_GEMINI_FALLBACK_MODEL, key, system_prompt, user_prompt
+            raw = await _call_with_short_retry(
+                f"script_gemini:{DEFAULT_GEMINI_FALLBACK_MODEL}:{key.id}",
+                "gemini_error:",
+                lambda: _call_gemini(
+                    DEFAULT_GEMINI_FALLBACK_MODEL, key, system_prompt, user_prompt
+                ),
             )
             parsed = parse_script_json(raw)
             if parsed:
