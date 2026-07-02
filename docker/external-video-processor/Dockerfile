@@ -38,13 +38,17 @@ COPY packages/external-video-processor/requirements.txt ./requirements.txt
 # environment) by default, blocking plain `pip install` outside a venv. Safe to override
 # here — this is an isolated single-purpose container, not a shared system Python.
 #
-# torch installed first from PyTorch's own cu128 index (bundles a fixed, matching set of
-# nvidia-cuda-*-cu12 runtime libs for this image's CUDA 12.8 base) — installing it from
-# plain PyPI (as part of the requirements.txt below) resolves those sub-dependencies to
-# whatever's newest at build time, which drifted to CUDA 13 packages and broke
-# `libcudart.so` loading at model-load time.
+# torch + torchaudio installed first, together, from PyTorch's own cu128 index (bundles a
+# fixed, matching set of nvidia-cuda-*-cu12 runtime libs for this image's CUDA 12.8 base).
+# Both must be pinned here: ltx-core's own pyproject.toml (github.com/Lightricks/LTX-2)
+# depends on `torch~=2.7` (pinned) but bare, unpinned `torchaudio` — and neither is routed
+# to a CUDA-specific index in ltx-core's own [tool.uv.sources] (only xformers/tensorrt-llm
+# are). So `pip install -r requirements.txt` below resolves torchaudio from plain PyPI at
+# whatever's newest, independent of the torch build already installed — confirmed via a
+# real deploy this drifted to a CUDA 13-tagged torchaudio next to a CUDA 12.8 torch,
+# breaking `libcudart.so` loading at model-load time even with torch itself pinned.
 RUN pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system-packages \
-	torch==2.7.0 --index-url https://download.pytorch.org/whl/cu128 \
+	torch==2.7.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128 \
 	&& pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system-packages -r requirements.txt
 
 COPY --chown=app:app packages/external-video-processor/src ./src
