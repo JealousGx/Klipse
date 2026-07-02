@@ -65,7 +65,9 @@ class ProcessorJobSpecIn(BaseModel):
 _active_job_ids: set[str] = set()
 _finished_job_ids: "OrderedDict[str, None]" = OrderedDict()
 _queue: "asyncio.Queue[ProcessorJobSpecIn]" = asyncio.Queue()
-_worker_started = False
+# Strong reference required — asyncio only holds a *weak* ref to tasks internally, so a
+# task with no other reference can be garbage-collected mid-run (silently, no error).
+_worker_task: "asyncio.Task[None] | None" = None
 
 
 def _mark_finished(job_id: str) -> None:
@@ -88,10 +90,9 @@ async def _worker_loop() -> None:
 
 
 def _ensure_worker_started() -> None:
-    global _worker_started
-    if not _worker_started:
-        asyncio.create_task(_worker_loop())
-        _worker_started = True
+    global _worker_task
+    if _worker_task is None:
+        _worker_task = asyncio.create_task(_worker_loop())
 
 
 async def _run_job(spec: ProcessorJobSpecIn) -> None:
