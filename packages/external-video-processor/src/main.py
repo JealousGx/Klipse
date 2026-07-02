@@ -83,9 +83,14 @@ async def _worker_loop() -> None:
             await _run_job(spec)
         except Exception as e:  # noqa: BLE001
             logger.error("job_failed", jobId=spec.jobId, error=str(e))
+            # Not marked finished on failure — the dashboard's retry re-dispatches the
+            # SAME jobId (retry-failed-job.server.ts never mints a new one), so marking
+            # a failed job "finished" here would permanently idempotency-block every
+            # future retry of it (silently: 202 accepted, never actually re-queued).
+        else:
+            _mark_finished(spec.jobId)
         finally:
             _active_job_ids.discard(spec.jobId)
-            _mark_finished(spec.jobId)
             _queue.task_done()
 
 
