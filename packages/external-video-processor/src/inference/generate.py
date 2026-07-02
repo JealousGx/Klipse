@@ -1,3 +1,4 @@
+import asyncio
 import random
 import tempfile
 import time
@@ -33,7 +34,14 @@ async def generate_video(
 
     Returns (video, audio) SEPARATELY; their own `encode_video` utility handles muxing.
     """
-    pipeline = get_model()
+    # get_model()/pipeline(...) below are synchronous, blocking calls (model load off
+    # GCS-mounted disk into VRAM, then the GPU inference itself) — run in a thread so
+    # they don't block the event loop. Uvicorn is single-threaded here (concurrency=1);
+    # without this, /health can't respond for the whole load+generate duration, and
+    # Cloud Run's liveness probe kills the instance mid-job after 3 failed checks
+    # (confirmed: this happened in a real deploy — model_load_start with no
+    # model_load_complete before the instance was torn down).
+    pipeline = await asyncio.to_thread(get_model)
     width, height = _dimensions_for_aspect_ratio(aspect_ratio)
     num_frames = _round_to_valid_frame_count(target_duration)
     seed = random.randint(0, 2**31 - 1)
@@ -47,14 +55,16 @@ async def generate_video(
     )
     start = time.monotonic()
 
-    video, audio = pipeline(
-        prompt=video_prompt,
-        seed=seed,
-        height=height,
-        width=width,
-        num_frames=num_frames,
-        frame_rate=FRAME_RATE,
-        images=[],
+    video, audio = await asyncio.to_thread(
+        lambda: pipeline(
+            prompt=video_prompt,
+            seed=seed,
+            height=height,
+            width=width,
+            num_frames=num_frames,
+            frame_rate=FRAME_RATE,
+            images=[],
+        )
     )
 
     generationDurationMs = int((time.monotonic() - start) * 1000)
@@ -64,14 +74,16 @@ async def generate_video(
     from ltx_pipelines.utils.media_io import encode_video
 
     with tempfile.NamedTemporaryFile(suffix=".mp4") as out_f:
-        encode_video(
-            video=video,
-            fps=FRAME_RATE,
-            audio=audio,
-            output_path=out_f.name,
-            video_chunks_number=get_video_chunks_number(
-                num_frames, TilingConfig.default()
-            ),
+        await asyncio.to_thread(
+            lambda: encode_video(
+                video=video,
+                fps=FRAME_RATE,
+                audio=audio,
+                output_path=out_f.name,
+                video_chunks_number=get_video_chunks_number(
+                    num_frames, TilingConfig.default()
+                ),
+            )
         )
         with open(out_f.name, "rb") as f:
             return f.read()
