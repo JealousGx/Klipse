@@ -37,7 +37,15 @@ COPY packages/external-video-processor/requirements.txt ./requirements.txt
 # --break-system-packages: ubuntu24.04's pip enforces PEP 668 (externally-managed-
 # environment) by default, blocking plain `pip install` outside a venv. Safe to override
 # here — this is an isolated single-purpose container, not a shared system Python.
-RUN pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system-packages -r requirements.txt
+#
+# torch installed first from PyTorch's own cu128 index (bundles a fixed, matching set of
+# nvidia-cuda-*-cu12 runtime libs for this image's CUDA 12.8 base) — installing it from
+# plain PyPI (as part of the requirements.txt below) resolves those sub-dependencies to
+# whatever's newest at build time, which drifted to CUDA 13 packages and broke
+# `libcudart.so` loading at model-load time.
+RUN pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system-packages \
+	torch==2.7.0 --index-url https://download.pytorch.org/whl/cu128 \
+	&& pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system-packages -r requirements.txt
 
 COPY --chown=app:app packages/external-video-processor/src ./src
 

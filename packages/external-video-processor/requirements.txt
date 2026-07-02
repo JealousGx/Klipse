@@ -9,6 +9,11 @@ pydantic==2.10.4
 # the git+subdirectory pip install below is a best-effort translation of that, not
 # confirmed working; verify against https://github.com/Lightricks/LTX-2's own setup
 # instructions once you have hands-on access, and prefer `uv sync` if pip install fails.
-torch==2.7.0
+#
+# torch is installed separately in the Dockerfile from PyTorch's own cu128 index, not
+# here from plain PyPI — plain PyPI resolves torch's nvidia-cuda-runtime-cu*/nvidia-*
+# sub-dependencies to whatever is newest at build time (unpinned), which drifted to
+# CUDA 13 packages against this image's CUDA 12.8 base and broke `libcudart.so` loading
+# at model-load time. PyTorch's versioned cu128 index bundles a fixed, matching set.
 git+https://github.com/Lightricks/LTX-2.git#subdirectory=packages/ltx-core
 git+https://github.com/Lightricks/LTX-2.git#subdirectory=packages/ltx-pipelines
