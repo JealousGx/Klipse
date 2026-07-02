@@ -1,6 +1,8 @@
-# Builds the model weights base image (docker/external-video-processor/Dockerfile.weights).
-# NOT wired to an auto-trigger — run manually, only when the model version/artifacts
-# actually change:
+# Builds the model weights STAGING image (docker/external-video-processor/Dockerfile.weights)
+# — not something Cloud Run pulls directly; cloudbuild-weights-to-gcs.yaml copies files out
+# of this image into the GCS bucket Cloud Run actually mounts at runtime. NOT wired to an
+# auto-trigger — run manually, only when the model version/artifacts actually change, then
+# re-run cloudbuild-weights-to-gcs.yaml to refresh the bucket:
 #
 #   gcloud builds submit --config=cloudbuild-weights.yaml \
 #     --substitutions=_WEIGHTS_TAG=ltx-2.3-distilled-v1 .

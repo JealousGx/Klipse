@@ -1,18 +1,18 @@
 # syntax=docker/dockerfile:1.6
-# Standalone "weights" base image — built RARELY (only when the model version/artifacts
-# change), never on every app-code push. This is what makes ordinary code changes not
-# re-download 46GB+ of model weights on every build.
+# Standalone "weights" image — a STAGING artifact, not something the runtime service pulls
+# directly. Cloud Run mounts model weights from a GCS bucket at runtime instead of baking
+# them into the app image (see docker/external-video-processor/Dockerfile and
+# cloudbuild-weights-to-gcs.yaml) — that migration script copies files OUT of this image
+# and into the bucket. Built RARELY, only when the model version/artifacts actually change:
 #
-# Build + push once:
 #   docker build -f docker/external-video-processor/Dockerfile.weights \
 #     -t us-central1-docker.pkg.dev/<PROJECT_ID>/klipse/processor-weights:ltx-2.3-distilled-v1 \
 #     . --secret id=hf_token,env=HF_TOKEN
 #   docker push us-central1-docker.pkg.dev/<PROJECT_ID>/klipse/processor-weights:ltx-2.3-distilled-v1
 #
-# The main Dockerfile then references this pushed image by tag (via the WEIGHTS_IMAGE
-# build arg) instead of re-running these downloads inline. Only rebuild/repush this file
-# when you actually change model version, checkpoint variant, or add/remove an artifact —
-# not for routine app-code changes.
+# After rebuilding this (new model version), re-run cloudbuild-weights-to-gcs.yaml to
+# refresh the GCS bucket — Cloud Run picks up the new files on the next cold start, no
+# app-image rebuild needed.
 #
 # Requires an HF token with both the Lightricks/LTX-2.3 community license and the Gemma
 # license accepted, passed as a build secret (never a build ARG — those get cached into

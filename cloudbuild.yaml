@@ -7,16 +7,15 @@ steps:
       - "docker pull us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest || true"
 
   # Build the processor image (context = repo root, Dockerfile in docker/).
-  # WEIGHTS_IMAGE references the separately built, rarely-rebuilt weights base image
-  # (see cloudbuild-weights.yaml + docker/external-video-processor/Dockerfile.weights) —
-  # this step never touches Hugging Face, no secret needed here.
+  # No weights baked in anymore — they're mounted from a GCS bucket at runtime (Cloud
+  # Run volume mount config), populated once via cloudbuild-weights-to-gcs.yaml. This
+  # build no longer pulls/extracts a 56GB+ layer on every push.
   - name: "gcr.io/cloud-builders/docker"
     env:
       - "DOCKER_BUILDKIT=1"
     args:
       - "build"
       - "--cache-from=us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest"
-      - "--build-arg=WEIGHTS_IMAGE=${_WEIGHTS_IMAGE}"
       - "-t"
       - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA"
       - "-t"
@@ -49,12 +48,6 @@ steps:
 images:
   - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA"
   - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest"
-
-substitutions:
-  # Update this only when the weights image is rebuilt (new model version/artifacts) —
-  # see cloudbuild-weights.yaml. Override per-trigger in the Cloud Build console without
-  # editing this file, if preferred.
-  _WEIGHTS_IMAGE: "us-central1-docker.pkg.dev/klipse-492407/klipse/processor-weights:ltx-2.3-distilled-v1"
 
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET

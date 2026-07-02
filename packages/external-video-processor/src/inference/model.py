@@ -4,12 +4,13 @@ import time
 
 from ..logger import logger
 
-# Baked into the container image at build time (Phase 5 hard requirement) — never
-# downloaded from Hugging Face at process startup. Real artifact filenames confirmed
-# against the Lightricks/LTX-2.3 HF repo listing and DistilledPipeline's actual source:
-# a standalone distilled checkpoint (already merged, no extra LoRA needed on top), the
-# matching x2 spatial upsampler (confirmed by DistilledPipeline's own docstring: "Stage 2
-# upsamples by 2x"), and a separate Gemma 3-12B text encoder repo.
+# Mounted from a GCS bucket at runtime (Cloud Run volume mount, second-generation
+# execution environment) — never downloaded from Hugging Face at process startup or
+# baked into the image. Real artifact filenames confirmed against the Lightricks/LTX-2.3
+# HF repo listing and DistilledPipeline's actual source: a standalone distilled checkpoint
+# (already merged, no extra LoRA needed on top), the matching x2 spatial upsampler
+# (confirmed by DistilledPipeline's own docstring: "Stage 2 upsamples by 2x"), and a
+# separate Gemma 3-12B text encoder repo.
 WEIGHTS_ROOT = os.environ.get("MODEL_WEIGHTS_PATH", "/app/weights")
 DISTILLED_CHECKPOINT_PATH = os.path.join(
     WEIGHTS_ROOT, "ltx-2.3-22b-distilled-1.1.safetensors"
@@ -42,8 +43,9 @@ def load_model():
         for path in (DISTILLED_CHECKPOINT_PATH, SPATIAL_UPSAMPLER_PATH, GEMMA_ROOT):
             if not os.path.exists(path):
                 raise RuntimeError(
-                    f"model_weights_not_found:{path} — weights must be baked into the "
-                    "image at build time, not fetched at runtime"
+                    f"model_weights_not_found:{path} — expected a GCS volume mounted at "
+                    f"{WEIGHTS_ROOT}; check the Cloud Run service's Volumes/Volume mounts "
+                    "config and that the bucket is actually populated"
                 )
 
         logger.info("model_load_start", weightsRoot=WEIGHTS_ROOT)
