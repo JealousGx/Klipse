@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.6
-# Standalone "weights" image — a STAGING artifact, not something the runtime service pulls
+# Standalone "weights" image — a STAGING artifact, not something the runtime job pulls
 # directly. Cloud Run mounts model weights from a GCS bucket at runtime instead of baking
-# them into the app image (see docker/external-video-processor/Dockerfile and
-# cloudbuild-weights-to-gcs.yaml) — that migration script copies files OUT of this image
-# and into the bucket. Built RARELY, only when the model version/artifacts actually change:
+# them into the app image (see processor/Dockerfile and cloudbuild-weights-to-gcs.yaml) —
+# that migration script copies files OUT of this image and into the bucket. Built RARELY,
+# only when the model version/artifacts actually change (run from inside processor/):
 #
-#   docker build -f docker/external-video-processor/Dockerfile.weights \
+#   docker build -f Dockerfile.weights \
 #     -t us-central1-docker.pkg.dev/<PROJECT_ID>/klipse/processor-weights:ltx-2.3-distilled-v1 \
 #     . --secret id=hf_token,env=HF_TOKEN
 #   docker push us-central1-docker.pkg.dev/<PROJECT_ID>/klipse/processor-weights:ltx-2.3-distilled-v1

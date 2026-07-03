@@ -1,0 +1,7 @@
+# Slim context for `docker build -f Dockerfile .` (run from inside processor/).
+**/.DS_Store
+**/__pycache__
+.env
+.env.*
+!.env.example
+terraform

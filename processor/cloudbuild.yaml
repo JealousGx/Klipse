@@ -10,6 +10,7 @@ steps:
   # layer cache for the unchanged apt/pip layers on code-only changes.
   - name: "gcr.io/cloud-builders/docker"
     entrypoint: "bash"
+    dir: "processor"
     args:
       - "-c"
       - |
@@ -19,17 +20,23 @@ steps:
           --cache-to=type=registry,ref=us-central1-docker.pkg.dev/klipse-492407/klipse/processor:buildcache,mode=max \
           -t us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA \
           -t us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest \
-          -f docker/external-video-processor/Dockerfile \
+          -f Dockerfile \
           --push \
           .
 
-  # Deploy new revision to Cloud Run
+  # Update the Cloud Run Job's image (klipse-processor-job). Image-only — everything else
+  # (GPU, volume mount, secrets, IAM, timeout/retries) is Terraform-managed
+  # (processor/terraform/) with `lifecycle.ignore_changes` on the image field specifically,
+  # so this fast per-push image bump doesn't fight Terraform's state. The Job resource
+  # itself must already exist (`terraform apply` in processor/terraform/, run once) before
+  # this step can run for the first time.
   - name: "gcr.io/google.com/cloudsdktool/cloud-sdk"
     entrypoint: gcloud
     args:
       - "run"
+      - "jobs"
       - "deploy"
-      - "klipse-processor"
+      - "klipse-processor-job"
       - "--image=us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA"
       - "--region=us-central1"
       - "--project=klipse-492407"

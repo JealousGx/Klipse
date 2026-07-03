@@ -4,7 +4,8 @@
 # Does NOT touch Hugging Face — the weights were already downloaded once when
 # Dockerfile.weights was built; this just relocates them from an image layer to GCS.
 #
-# Run manually, once:
+# Run manually, once, from inside processor/:
+#   cd processor
 #   gcloud builds submit --config=cloudbuild-weights-to-gcs.yaml \
 #     --substitutions=_BUCKET=klipse-processor-weights .
 #

@@ -1,0 +1,32 @@
+# From repo root (recommended):
+#   cp processor/.env.example processor/.env
+#   pnpm processor:docker:build
+#
+# No weights baked into this image at all (see processor/Dockerfile) — real model weights
+# are mounted from GCS at runtime, only available on the deployed Cloud Run Job. This
+# local build has an empty /app/weights, so it's for API/plumbing-only testing (script-gen,
+# callbacks, watermark, upload, credit flow) — real generation will fail predictably at
+# the model-load step.
+#
+# This runs as a Cloud Run Job (not a Service) — one execution processes one job then
+# exits, no long-lived HTTP server/port to publish. To test locally against a real
+# video_jobs row your local `pnpm dev` app already created:
+#   docker compose -f processor/docker-compose.yml \
+#     run --rm -e KLIPSE_JOB_ID=<job-id-from-your-local-db> external-video-processor
+#
+# Env is loaded from processor/.env (see env_file below) — set KLIPSE_APP_BASE_URL there
+# to http://host.docker.internal:3000 for local dev so the container can reach the app on
+# the host.
+
+services:
+  external-video-processor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: klipse-external-video-processor:latest
+    # So the container can reach the app on the host (KLIPSE_APP_BASE_URL must use
+    # host.docker.internal — see .env.example).
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env

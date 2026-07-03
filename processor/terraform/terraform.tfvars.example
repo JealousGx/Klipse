@@ -1,0 +1,29 @@
+# Copy to terraform.tfvars (gitignored) and fill in real values, then:
+#   cd processor/terraform
+#   terraform init
+#   terraform plan
+#   terraform apply
+
+project_id   = "klipse-492407"
+region       = "us-central1"
+job_name     = "klipse-processor-job"
+
+# Initial image — first apply only, ongoing bumps go through cloudbuild.yaml (see
+# lifecycle.ignore_changes in main.tf).
+image = "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest"
+
+weights_bucket_name = "klipse-processor-weights"
+
+# Main app's public base URL — the Job fetches its own spec from here and calls back.
+app_base_url = "https://klipse.app"
+
+# Secret Manager secret IDs (names, not full resource paths) — must already exist.
+# These are klipse-492407's actual existing secret names (check
+# console.cloud.google.com/security/secret-manager for any project — names aren't
+# necessarily the same elsewhere):
+webhook_secret_id         = "klipse-video-processor-webhook-secret"
+axiom_api_token_secret_id = "AXIOM_API_TOKEN"
+axiom_dataset              = "klipse"
+
+environment      = "production"
+klipse_perf_log  = "1"

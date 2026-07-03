@@ -1,9 +1,10 @@
-# Builds the model weights STAGING image (docker/external-video-processor/Dockerfile.weights)
-# — not something Cloud Run pulls directly; cloudbuild-weights-to-gcs.yaml copies files out
-# of this image into the GCS bucket Cloud Run actually mounts at runtime. NOT wired to an
-# auto-trigger — run manually, only when the model version/artifacts actually change, then
-# re-run cloudbuild-weights-to-gcs.yaml to refresh the bucket:
+# Builds the model weights STAGING image (Dockerfile.weights) — not something Cloud Run
+# pulls directly; cloudbuild-weights-to-gcs.yaml copies files out of this image into the
+# GCS bucket Cloud Run actually mounts at runtime. NOT wired to an auto-trigger — run
+# manually, only when the model version/artifacts actually change, then re-run
+# cloudbuild-weights-to-gcs.yaml to refresh the bucket. Run from inside processor/:
 #
+#   cd processor
 #   gcloud builds submit --config=cloudbuild-weights.yaml \
 #     --substitutions=_WEIGHTS_TAG=ltx-2.3-distilled-v1 .
 #
@@ -33,7 +34,7 @@ steps:
       - "-c"
       - |
         docker build \
-          -f docker/external-video-processor/Dockerfile.weights \
+          -f Dockerfile.weights \
           -t us-central1-docker.pkg.dev/klipse-492407/klipse/processor-weights:${_WEIGHTS_TAG} \
           --secret id=hf_token,env=HF_TOKEN \
           .

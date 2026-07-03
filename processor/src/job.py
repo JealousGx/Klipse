@@ -1,11 +1,8 @@
-import asyncio
+import tempfile
 import time
-from collections import OrderedDict
 
-from fastapi import Depends, FastAPI
 from pydantic import BaseModel
 
-from .auth import require_bearer_auth
 from .callbacks import report_complete, report_progress
 from .inference.generate import generate_video
 from .logger import logger
@@ -13,13 +10,8 @@ from .r2_upload import upload_bytes_to_presigned_url
 from .script_gen import ProviderKey, generate_script
 from .watermark import apply_watermark_with_audio
 
-app = FastAPI()
-
-MAX_FINISHED_JOB_IDS = 2000
-
-
 # ---------------------------------------------------------------------------
-# Request schema — mirrors packages/video-assembly-shared/src/processor-spec.ts's
+# Spec schema — mirrors packages/video-assembly-shared/src/processor-spec.ts's
 # ProcessorJobSpec exactly (script-gen keys only; no TTS/image/sound fields).
 # ---------------------------------------------------------------------------
 
@@ -56,51 +48,12 @@ class ProcessorJobSpecIn(BaseModel):
     callbackSecret: str
 
 
-# ---------------------------------------------------------------------------
-# Serial single-worker queue + idempotency tracking — mirrors the old runner.ts's
-# specQueue/finishedSpecJobIds/activeSpecJobIds pattern, kept in-process since Cloud
-# Run concurrency for this service is set to 1 (Phase 5 hard requirement).
-# ---------------------------------------------------------------------------
-
-_active_job_ids: set[str] = set()
-_finished_job_ids: "OrderedDict[str, None]" = OrderedDict()
-_queue: "asyncio.Queue[ProcessorJobSpecIn]" = asyncio.Queue()
-# Strong reference required — asyncio only holds a *weak* ref to tasks internally, so a
-# task with no other reference can be garbage-collected mid-run (silently, no error).
-_worker_task: "asyncio.Task[None] | None" = None
-
-
-def _mark_finished(job_id: str) -> None:
-    _finished_job_ids[job_id] = None
-    if len(_finished_job_ids) > MAX_FINISHED_JOB_IDS:
-        _finished_job_ids.popitem(last=False)
-
-
-async def _worker_loop() -> None:
-    while True:
-        spec = await _queue.get()
-        try:
-            await _run_job(spec)
-        except Exception as e:  # noqa: BLE001
-            logger.error("job_failed", jobId=spec.jobId, error=str(e))
-            # Not marked finished on failure — the dashboard's retry re-dispatches the
-            # SAME jobId (retry-failed-job.server.ts never mints a new one), so marking
-            # a failed job "finished" here would permanently idempotency-block every
-            # future retry of it (silently: 202 accepted, never actually re-queued).
-        else:
-            _mark_finished(spec.jobId)
-        finally:
-            _active_job_ids.discard(spec.jobId)
-            _queue.task_done()
-
-
-def _ensure_worker_started() -> None:
-    global _worker_task
-    if _worker_task is None:
-        _worker_task = asyncio.create_task(_worker_loop())
-
-
-async def _run_job(spec: ProcessorJobSpecIn) -> None:
+async def run_job(spec: ProcessorJobSpecIn) -> None:
+    """Script gen -> single-call video+audio generation -> watermark -> R2 upload ->
+    callback. One Cloud Run Job execution runs exactly one call of this, start to finish
+    — no queue/worker needed (that only existed to serialize work within a single
+    long-lived Service instance, which Jobs replace entirely).
+    """
     job_id = spec.jobId
     base_url = spec.callbackBaseUrl
     secret = spec.callbackSecret
@@ -142,8 +95,6 @@ async def _run_job(spec: ProcessorJobSpecIn) -> None:
 
         final_bytes = video_bytes
         if spec.freeTierWatermark:
-            import tempfile
-
             with tempfile.NamedTemporaryFile(suffix=".mp4") as in_f, tempfile.NamedTemporaryFile(
                 suffix=".mp4"
             ) as out_f:
@@ -181,32 +132,3 @@ async def _run_job(spec: ProcessorJobSpecIn) -> None:
                 "job_error_callback_failed", jobId=job_id, error=str(callback_error)
             )
         raise
-
-
-# ---------------------------------------------------------------------------
-# Routes
-# ---------------------------------------------------------------------------
-
-
-@app.get("/health")
-async def health() -> dict:
-    """Liveness/startup probe — deliberately does not touch the model/VRAM, so
-    Cloud Run's health checks don't force a cold-start load before real traffic arrives.
-    """
-    return {"ok": True}
-
-
-@app.post(
-    "/v1/process-spec", status_code=202, dependencies=[Depends(require_bearer_auth)]
-)
-async def process_spec(spec: ProcessorJobSpecIn) -> dict:
-    _ensure_worker_started()
-
-    if spec.jobId in _finished_job_ids:
-        return {"accepted": True, "idempotent": True}
-    if spec.jobId in _active_job_ids:
-        return {"accepted": True, "idempotent": True}
-
-    _active_job_ids.add(spec.jobId)
-    await _queue.put(spec)
-    return {"accepted": True}

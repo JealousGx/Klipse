@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.6
-# Build from the repository root:
-#   docker build -f docker/external-video-processor/Dockerfile -t klipse-external-video-processor:latest .
+# Build with processor/ as the context:
+#   docker build -f processor/Dockerfile -t klipse-external-video-processor:latest processor/
 #
 # Runtime: Python 3.12 + CUDA 12.8 + ffmpeg (confirmed real system requirements from
 # Lightricks/LTX-2's official repo: Python >=3.12, CUDA >12.7, PyTorch ~=2.7).
@@ -27,11 +27,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-ENV PORT=8790 \
-	MODEL_WEIGHTS_PATH=/app/weights \
+ENV MODEL_WEIGHTS_PATH=/app/weights \
 	PYTHONUNBUFFERED=1
 
-COPY packages/external-video-processor/requirements.txt ./requirements.txt
+COPY requirements.txt ./requirements.txt
 # --default-timeout + --retries: torch's wheel is large and a plain pip install can hit
 # a read timeout downloading it (confirmed via a local smoke-test build).
 # --break-system-packages: ubuntu24.04's pip enforces PEP 668 (externally-managed-
@@ -55,21 +54,18 @@ RUN pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system
 	torch==2.7.0 torchaudio==2.7.0 torchvision==0.22.0 --index-url https://download.pytorch.org/whl/cu128 \
 	&& pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system-packages -r requirements.txt
 
-COPY --chown=app:app packages/external-video-processor/src ./src
+COPY --chown=app:app src ./src
 
 # /app/weights is intentionally NOT created/populated here — it's an empty mount point
 # that Cloud Run's GCS volume mount fills at container start. Locally (docker-compose,
 # no volume mount available), this directory will be empty — real generation requires
-# either a local GCS FUSE mount or running against the deployed Cloud Run service; API/
-# plumbing-only local testing without real weights still works via mock mode / running
-# uvicorn directly (see docs/video-processor.md).
+# either a local GCS FUSE mount or running against the deployed Cloud Run Job (see
+# docs/video-processor.md).
 RUN mkdir -p /app/weights && chown app:app /app/weights
 
 USER app:app
 
-EXPOSE 8790
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-	CMD python3 -c "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8790/health', timeout=3)" || exit 1
-
-CMD ["python3", "-m", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8790"]
+# No HTTP surface at all — this runs as a Cloud Run Job, not a Service: one execution
+# processes one video_jobs row (KLIPSE_JOB_ID env override) then exits. Cloud Run tracks
+# the process exit code directly, no health-check probe needed.
+CMD ["python3", "-m", "src.job_main"]
