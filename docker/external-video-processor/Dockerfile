@@ -38,17 +38,21 @@ COPY packages/external-video-processor/requirements.txt ./requirements.txt
 # environment) by default, blocking plain `pip install` outside a venv. Safe to override
 # here — this is an isolated single-purpose container, not a shared system Python.
 #
-# torch + torchaudio installed first, together, from PyTorch's own cu128 index (bundles a
-# fixed, matching set of nvidia-cuda-*-cu12 runtime libs for this image's CUDA 12.8 base).
-# Both must be pinned here: ltx-core's own pyproject.toml (github.com/Lightricks/LTX-2)
-# depends on `torch~=2.7` (pinned) but bare, unpinned `torchaudio` — and neither is routed
-# to a CUDA-specific index in ltx-core's own [tool.uv.sources] (only xformers/tensorrt-llm
-# are). So `pip install -r requirements.txt` below resolves torchaudio from plain PyPI at
-# whatever's newest, independent of the torch build already installed — confirmed via a
-# real deploy this drifted to a CUDA 13-tagged torchaudio next to a CUDA 12.8 torch,
-# breaking `libcudart.so` loading at model-load time even with torch itself pinned.
+# torch + torchaudio + torchvision installed first, together, from PyTorch's own cu128
+# index (bundles a fixed, matching set of nvidia-cuda-*-cu12 runtime libs for this image's
+# CUDA 12.8 base). All three must be pinned here: ltx-core's own pyproject.toml
+# (github.com/Lightricks/LTX-2) depends on `torch~=2.7` (pinned) but bare, unpinned
+# `torchaudio` — and neither torch nor torchaudio nor torchvision (a transitive need of
+# `transformers`' AutoImageProcessor) is routed to a CUDA-specific index in ltx-core's own
+# [tool.uv.sources] (only xformers/tensorrt-llm are). So `pip install -r requirements.txt`
+# below would otherwise resolve them from plain PyPI at whatever's newest, independent of
+# each other — confirmed via real deploys this drifted to a CUDA 13-tagged torchaudio next
+# to a CUDA 12.8 torch (broke `libcudart.so` loading), and separately left torchvision
+# missing entirely (transformers' AutoImageProcessor requires it, nothing in
+# requirements.txt pulled it in). torchvision==0.22.0 is the version PyTorch's official
+# compatibility matrix pairs with torch==2.7.0.
 RUN pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system-packages \
-	torch==2.7.0 torchaudio==2.7.0 --index-url https://download.pytorch.org/whl/cu128 \
+	torch==2.7.0 torchaudio==2.7.0 torchvision==0.22.0 --index-url https://download.pytorch.org/whl/cu128 \
 	&& pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system-packages -r requirements.txt
 
 COPY --chown=app:app packages/external-video-processor/src ./src
