@@ -51,25 +51,32 @@ def load_model():
         logger.info("model_load_start", weightsRoot=WEIGHTS_ROOT)
         start = time.monotonic()
 
-        from ltx_core.quantization.fp8_cast import build_policy
+        from ltx_core.model.transformer.compiling import CompilationConfig
         from ltx_pipelines.distilled import DistilledPipeline
 
-        # FP8-casts the attention (Q/K/V/out) and feed-forward Linear layers inside each
-        # transformer block (confirmed against the real source: ltx_core.quantization.
-        # fp8_cast's _FP8_CAST_LINEAR_SUFFIXES) — not the whole model, embeddings/norms/
-        # etc. stay bf16. Our checkpoint isn't a prequantized fp8 file (no sibling
-        # `*_scale` tensors), so build_policy falls back to naively downcasting those
-        # layers rather than using calibrated scales — confirmed real behavior from
-        # source, not the README's `QuantizationPolicy.fp8_cast()` (that classmethod
-        # doesn't actually exist; this is the real public API).
-        quantization = build_policy(DISTILLED_CHECKPOINT_PATH)
+        # FP8 quantization (tried earlier) is intentionally NOT used here — confirmed via
+        # a real deploy that it made no measurable difference to peak VRAM (our checkpoint
+        # isn't prequantized, so it only naively downcasts a narrow subset of Linear
+        # layers, and the forward pass upcasts back to bf16 during compute regardless),
+        # so it was pure quality risk with no benefit. Segmenting generation into ~5s
+        # calls (see generate.py) is what actually fixed the memory ceiling.
+        #
+        # torch.compile IS a real, officially-documented lever for generation *speed*
+        # specifically (packages/ltx-pipelines/README.md: "reduce-overhead captures CUDA
+        # graphs — the main latency lever for the denoising loop"). Compilation is
+        # shape-polymorphic (sequence dim marked dynamic), so one compiled artifact is
+        # reused across every segment's generation call, not just the first. Real
+        # documented tradeoff: CUDA graph capture reserves additional static VRAM, so this
+        # trades memory for speed — watch actual memory headroom on the first real test
+        # now that segments are much smaller than the ~753-frame case that OOM'd earlier.
+        compilation_config = CompilationConfig(mode="reduce-overhead")
 
         _pipeline = DistilledPipeline(
             distilled_checkpoint_path=DISTILLED_CHECKPOINT_PATH,
             gemma_root=GEMMA_ROOT,
             spatial_upsampler_path=SPATIAL_UPSAMPLER_PATH,
             loras=[],
-            quantization=quantization,
+            compilation_config=compilation_config,
         )
         durationMs = int((time.monotonic() - start) * 1000)
         # Real cold-start timing — the only source of this data since Phase 0's GPU
