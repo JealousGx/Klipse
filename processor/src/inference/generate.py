@@ -57,6 +57,18 @@ async def _generate_segment(
     )
     start = time.monotonic()
 
+    from ltx_core.model.video_vae import TilingConfig, get_video_chunks_number
+    from ltx_pipelines.utils.media_io import encode_video
+
+    # Passed into the actual pipeline call (not just used for the encoder's chunk-count
+    # bookkeeping below) — confirmed via Lightricks' own LTX-Desktop reference
+    # implementation that tiling_config is meant to reach the real generation call, where
+    # it splits the VAE decode into smaller spatial/temporal chunks instead of one
+    # memory-heavy full-video decode. Previously this was only used for
+    # get_video_chunks_number's progress-bar math, never actually applied to generation —
+    # a real, missed memory-saving opportunity given how much of today was spent on VRAM.
+    tiling_config = TilingConfig.default()
+
     video, audio = await asyncio.to_thread(
         lambda: pipeline(
             prompt=video_prompt,
@@ -66,14 +78,12 @@ async def _generate_segment(
             num_frames=num_frames,
             frame_rate=FRAME_RATE,
             images=[],
+            tiling_config=tiling_config,
         )
     )
 
     durationMs = int((time.monotonic() - start) * 1000)
     logger.info("segment_generation_complete", durationMs=durationMs)
-
-    from ltx_core.model.video_vae import TilingConfig, get_video_chunks_number
-    from ltx_pipelines.utils.media_io import encode_video
 
     fd, path = tempfile.mkstemp(suffix=".mp4")
     os.close(fd)
@@ -83,7 +93,7 @@ async def _generate_segment(
             fps=FRAME_RATE,
             audio=audio,
             output_path=path,
-            video_chunks_number=get_video_chunks_number(num_frames, TilingConfig.default()),
+            video_chunks_number=get_video_chunks_number(num_frames, tiling_config),
         )
     )
     return path

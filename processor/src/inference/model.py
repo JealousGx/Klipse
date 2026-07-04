@@ -23,6 +23,40 @@ GEMMA_ROOT = os.path.join(WEIGHTS_ROOT, "gemma-3-12b-it-qat-q4_0-unquantized")
 _pipeline = None
 _pipeline_lock = threading.Lock()
 
+# Matches Lightricks' own LTX-Desktop reference implementation's warmup() method
+# (backend/services/fast_video_pipeline/ltx_fast_video_pipeline.py) — a tiny, cheap,
+# throwaway generation run immediately after loading, before any real job. This absorbs
+# CUDA kernel JIT + torch.compile graph-tracing/CUDA-graph-capture overhead on a fast
+# dummy call instead of the real first segment (compilation is shape-polymorphic, so the
+# compiled artifact from this warmup gets reused by every real segment afterward).
+_WARMUP_FRAMES = 9
+_WARMUP_HEIGHT = 256
+_WARMUP_WIDTH = 384
+_WARMUP_FRAME_RATE = 8.0
+
+
+def _warmup(pipeline) -> None:
+    logger.info("model_warmup_start")
+    start = time.monotonic()
+    try:
+        pipeline(
+            prompt="test warmup",
+            seed=42,
+            height=_WARMUP_HEIGHT,
+            width=_WARMUP_WIDTH,
+            num_frames=_WARMUP_FRAMES,
+            frame_rate=_WARMUP_FRAME_RATE,
+            images=[],
+        )
+        durationMs = int((time.monotonic() - start) * 1000)
+        logger.info("model_warmup_complete", durationMs=durationMs)
+    except Exception as e:  # noqa: BLE001
+        # Warmup is a pure performance optimization, not correctness-critical — if it
+        # fails for some reason, real generation should still proceed (just without the
+        # warm-kernel benefit), not take the whole job down with it.
+        durationMs = int((time.monotonic() - start) * 1000)
+        logger.error("model_warmup_failed", durationMs=durationMs, error=str(e))
+
 
 def load_model():
     """Loads the distilled LTX-2.3 pipeline into VRAM once at process start and keeps
@@ -82,6 +116,8 @@ def load_model():
         # Real cold-start timing — the only source of this data since Phase 0's GPU
         # validation was skipped; watch this in production instead.
         logger.info("model_load_complete", durationMs=durationMs)
+
+        _warmup(_pipeline)
         return _pipeline
 
 
