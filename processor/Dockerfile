@@ -63,6 +63,20 @@ COPY --chown=app:app src ./src
 # docs/video-processor.md).
 RUN mkdir -p /app/weights && chown app:app /app/weights
 
+# torch.compile's Inductor cache (and Triton's kernel cache) write under $HOME by
+# default. The app user is created with `useradd -M` (no home directory, deliberately —
+# it's a single-purpose service account) so $HOME resolves to a nonexistent /home/app,
+# and those writes fail with a permission error partway through generation (confirmed via
+# a real deploy: a lazy-compiled second shape triggered the write, failing ~33 minutes
+# in, not immediately). Point HOME at a real, explicitly-owned directory instead — set
+# here (not earlier, alongside MODEL_WEIGHTS_PATH) so it only affects the runtime
+# container process, not the earlier root-run pip/git build steps above, which would
+# otherwise see a $HOME that doesn't exist yet at that point in the build.
+RUN mkdir -p /app/cache && chown app:app /app/cache
+ENV HOME=/app/cache \
+	TORCHINDUCTOR_CACHE_DIR=/app/cache/torchinductor \
+	TRITON_CACHE_DIR=/app/cache/triton
+
 USER app:app
 
 # No HTTP surface at all — this runs as a Cloud Run Job, not a Service: one execution
