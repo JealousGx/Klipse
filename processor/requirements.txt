@@ -1,8 +1,16 @@
 httpx==0.28.1
 pydantic==2.10.4
 
+# transformers pinned to match Lightricks' own uv.lock exactly (confirmed via the real
+# lockfile at github.com/Lightricks/LTX-2/blob/main/uv.lock) rather than relying on
+# ltx-core's own loose `transformers>=4.52` constraint, which would otherwise resolve to
+# whatever's newest on PyPI at build time — same class of drift risk as the
+# torch/torchaudio/torchvision pins below, just for a different package.
+transformers==4.57.6
+
 # LTX-2 (Lightricks/LTX-2) — confirmed real system requirements from the official repo:
-# Python >=3.12, CUDA >12.7, PyTorch ~=2.7. The repo's own setup uses `uv sync` against
+# Python >=3.12, CUDA >12.7, PyTorch ~=2.7 (loose declared constraint; see Dockerfile for
+# the exact tested version actually pinned). The repo's own setup uses `uv sync` against
 # its packages/ workspace (ltx-core, ltx-pipelines) rather than plain PyPI packages —
 # the git+subdirectory pip install below is a best-effort translation of that, not
 # confirmed working; verify against https://github.com/Lightricks/LTX-2's own setup

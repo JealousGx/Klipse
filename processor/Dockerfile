@@ -14,13 +14,31 @@
 # below must match the container path the GCS volume is mounted at in the Cloud Run
 # console (Volumes + Volume mounts settings).
 
-FROM nvidia/cuda:12.8.0-runtime-ubuntu24.04 AS runner
+
+# devel, not runtime: NVIDIA's own documented distinction is that "runtime" images only
+# add the CUDA shared libraries, while "devel" adds the compiler toolchain, headers, and
+# static libraries needed to compile CUDA applications from source. torch.compile's
+# Inductor backend does exactly that at runtime (generating and compiling C++/CUDA
+# kernels), which the plain runtime image can't support — confirmed real published tag:
+# nvidia/cuda:12.8.0-devel-ubuntu24.04.
+FROM nvidia/cuda:12.8.0-devel-ubuntu24.04 AS runner
 
 # ubuntu22.04 (Jammy)'s default apt repos only ship Python 3.10 — 3.12 isn't available
-# without a PPA. Using ubuntu24.04 (Noble) instead, which ships 3.12 natively (confirmed
-# real published tag: nvidia/cuda:12.8.0-runtime-ubuntu24.04).
+# without a PPA. Using ubuntu24.04 (Noble) instead, which ships 3.12 natively.
+#
+# build-essential (gcc/g++/make): torch.compile's Inductor backend generates C++/Triton
+# code and shells out to a C compiler to build it into native kernels. Without this
+# (and without the devel base image above), every job ran for ~30 minutes (through
+# prompt encoding, stage 1, etc.) before finally failing with "RuntimeError: Failed to
+# find C compiler" the moment Inductor actually tried to compile something — confirmed
+# via a real deploy. Compilation never actually succeeded once before these were added.
+# libomp-dev: defensive addition against a separate, real, documented Inductor C++
+# compile failure ("fatal error: 'omp.h' file not found") reported in container
+# environments — standard Ubuntu gcc/g++ (from build-essential) normally bundles OpenMP
+# support already, but this is cheap insurance given how costly each failed iteration
+# has been so far.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-	python3.12 python3-pip ffmpeg fonts-dejavu-core git \
+	python3.12 python3-pip ffmpeg fonts-dejavu-core git build-essential libomp-dev \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& groupadd -g 65532 app \
 	&& useradd -u 65532 -g app -M app
@@ -39,19 +57,21 @@ COPY requirements.txt ./requirements.txt
 #
 # torch + torchaudio + torchvision installed first, together, from PyTorch's own cu128
 # index (bundles a fixed, matching set of nvidia-cuda-*-cu12 runtime libs for this image's
-# CUDA 12.8 base). All three must be pinned here: ltx-core's own pyproject.toml
-# (github.com/Lightricks/LTX-2) depends on `torch~=2.7` (pinned) but bare, unpinned
-# `torchaudio` — and neither torch nor torchaudio nor torchvision (a transitive need of
-# `transformers`' AutoImageProcessor) is routed to a CUDA-specific index in ltx-core's own
-# [tool.uv.sources] (only xformers/tensorrt-llm are). So `pip install -r requirements.txt`
-# below would otherwise resolve them from plain PyPI at whatever's newest, independent of
-# each other — confirmed via real deploys this drifted to a CUDA 13-tagged torchaudio next
-# to a CUDA 12.8 torch (broke `libcudart.so` loading), and separately left torchvision
-# missing entirely (transformers' AutoImageProcessor requires it, nothing in
-# requirements.txt pulled it in). torchvision==0.22.0 is the version PyTorch's official
-# compatibility matrix pairs with torch==2.7.0.
+# CUDA 12.8 base). Versions match Lightricks' own uv.lock exactly (confirmed via the real
+# lockfile at github.com/Lightricks/LTX-2/blob/main/uv.lock: torch 2.9.1, torchaudio
+# 2.9.1, torchvision 0.24.1 for the standard — non-xformers, non-fp8-trtllm — extra,
+# which is what we use) rather than an older pin we'd chosen ourselves: ltx-core's own
+# declared constraint (`torch~=2.7`, bare unpinned `torchaudio`) is a loose compatibility
+# bound, not what's actually tested — the lockfile is. All three must be pinned together
+# here: none of them are routed to a CUDA-specific index in ltx-core's own
+# [tool.uv.sources] (only xformers/tensorrt-llm are), so `pip install -r requirements.txt`
+# below would otherwise resolve them from plain PyPI independently of each other —
+# confirmed via real deploys this drifted to a CUDA-13-tagged torchaudio next to a CUDA
+# 12.8 torch (broke `libcudart.so` loading), and separately left torchvision missing
+# entirely (transformers' AutoImageProcessor requires it, nothing in requirements.txt
+# pulled it in).
 RUN pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system-packages \
-	torch==2.7.0 torchaudio==2.7.0 torchvision==0.22.0 --index-url https://download.pytorch.org/whl/cu128 \
+	torch==2.9.1 torchaudio==2.9.1 torchvision==0.24.1 --index-url https://download.pytorch.org/whl/cu128 \
 	&& pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system-packages -r requirements.txt
 
 COPY --chown=app:app src ./src
