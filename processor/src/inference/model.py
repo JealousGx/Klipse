@@ -141,8 +141,27 @@ def load_model():
         logger.info("model_load_start", weightsRoot=WEIGHTS_ROOT)
         start = time.monotonic()
 
-        from ltx_core.quantization import QuantizationPolicy
+        # Import order matters here: `ltx_pipelines.distilled` must be imported before
+        # `ltx_core.quantization` (real, confirmed circular-import bug in ltx-core at
+        # this commit). `ltx_core.quantization.fp8_cast` does
+        # `from ltx_core.loader.module_ops import ModuleOps`, which — if `ltx_core.loader`
+        # hasn't been imported yet — triggers `ltx_core/loader/__init__.py`, whose first
+        # line is `from ltx_core.loader.fuse_loras import apply_loras`, and
+        # `fuse_loras.py` does `from ltx_core.quantization.fp8_cast import
+        # _fused_add_round_launch` — re-entering `fp8_cast` while it's still mid-import
+        # (before that name is even defined), raising exactly the
+        # "partially initialized module" ImportError seen in a real deploy.
+        # `ltx_pipelines.distilled` itself imports `ltx_core.loader` (for
+        # `LoraPathStrengthAndSDOps`) before its own `ltx_core.quantization` import, so
+        # importing it first here means `ltx_core.loader` is already fully cached in
+        # `sys.modules` by the time anything touches `fp8_cast.py` — no re-entrant
+        # partial import. LTX-Desktop's own code imports in the problem order
+        # (`QuantizationPolicy` first) but never hits this, only because its much larger
+        # app has already imported `ltx_core.loader` for some other service by the time
+        # that code runs — we're the first thing in our process to touch `ltx_core` at
+        # all, so we hit the raw bug unless we control the order ourselves.
         from ltx_pipelines.distilled import DistilledPipeline
+        from ltx_core.quantization import QuantizationPolicy
 
         device = torch.device("cuda", torch.cuda.current_device()) if torch.cuda.is_available() else torch.device("cpu")
 
