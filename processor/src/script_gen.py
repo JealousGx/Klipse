@@ -3,7 +3,7 @@ import re
 from dataclasses import dataclass
 
 import httpx
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 
 from typing import Awaitable, Callable
 
@@ -19,12 +19,16 @@ DEFAULT_GEMINI_FALLBACK_MODEL = "gemini-2.5-flash"
 
 
 class ScriptJson(BaseModel):
-    """Single-prompt schema — replaces the old {voiceover, imagePrompts[3]} shape.
-    The video model generates narration/dialogue/audio itself from `video_prompt`,
-    so there's no separate spoken-text field.
+    """Segmented-prompt schema — each `video_prompts` entry is generated as its own
+    independent model call (~5s each, the model's own tested-safe default; a single call
+    covering a full ~30s target reliably OOMs on a 96GB GPU, confirmed via real deploys),
+    then the resulting clips are concatenated. The video model generates narration/
+    dialogue/audio itself from each prompt, so there's no separate spoken-text field —
+    continuity across segments comes entirely from how consistently script_gen's system
+    prompt instructs the LLM to write them, not from any shared state between calls.
     """
 
-    video_prompt: str
+    video_prompts: list[str] = Field(min_length=1)
     title: str | None = None
     description: str | None = None
     tags: list[str] | None = None

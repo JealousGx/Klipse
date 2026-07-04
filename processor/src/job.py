@@ -87,8 +87,7 @@ async def run_job(spec: ProcessorJobSpecIn) -> None:
 
         await report_progress(base_url, secret, job_id, "video_gen", 10)
         video_bytes = await generate_video(
-            video_prompt=script.video_prompt,
-            target_duration=spec.targetDuration,
+            video_prompts=script.video_prompts,
             aspect_ratio=spec.aspectRatio,
         )
         await report_progress(base_url, secret, job_id, "video_gen", 80)
@@ -113,7 +112,7 @@ async def run_job(spec: ProcessorJobSpecIn) -> None:
             job_id,
             spec.userId,
             "completed",
-            script_text=script.video_prompt,
+            script_text="\n\n".join(script.video_prompts),
             title=script.title,
             description=script.description,
             tags=script.tags,
