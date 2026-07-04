@@ -88,6 +88,15 @@ _WARMUP_WIDTH = 384
 _WARMUP_FRAME_RATE = 8.0
 
 
+# @torch.inference_mode() as a function decorator, applied the same way as every real
+# official call site (distilled.py's `@torch.inference_mode() def main()`,
+# LTXFastVideoPipeline's `@torch.inference_mode() def generate(...)` /
+# `def warmup(...)`) — not just an inline `with` around the raw pipeline call. Without
+# it, PyTorch retains a full autograd graph (activations saved for a backward pass that
+# never happens) across every transformer block and denoising step, which for a
+# 22B-param model can silently consume tens of extra GB of VRAM. This isn't optional/a
+# tradeoff for us since we never train, only generate.
+@torch.inference_mode()
 def _warmup(pipeline) -> None:
     logger.info("model_warmup_start")
     start = time.monotonic()
