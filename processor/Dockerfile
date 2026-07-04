@@ -37,8 +37,14 @@ FROM nvidia/cuda:12.8.0-devel-ubuntu24.04 AS runner
 # environments — standard Ubuntu gcc/g++ (from build-essential) normally bundles OpenMP
 # support already, but this is cheap insurance given how costly each failed iteration
 # has been so far.
+# python3.12-dev: Triton compiles its own C extensions (e.g. cuda_utils.c) against
+# Python.h at runtime — the plain python3.12/python3-pip packages only provide the
+# interpreter and pip, not the development headers. Without this, compilation fails with
+# "fatal error: Python.h: No such file or directory" the moment Triton tries to build its
+# own native helper — confirmed via a real deploy, after the C-compiler and devel-image
+# fixes above were already in place (this is a separate, later blocker in the same chain).
 RUN apt-get update && apt-get install -y --no-install-recommends \
-	python3.12 python3-pip ffmpeg fonts-dejavu-core git build-essential libomp-dev \
+	python3.12 python3.12-dev python3-pip ffmpeg fonts-dejavu-core git build-essential libomp-dev \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& groupadd -g 65532 app \
 	&& useradd -u 65532 -g app -M app
