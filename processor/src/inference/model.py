@@ -2,6 +2,8 @@ import os
 import threading
 import time
 
+import torch
+
 from ..logger import logger
 
 # Mounted from a GCS bucket at runtime (Cloud Run volume mount, second-generation
@@ -23,12 +25,63 @@ GEMMA_ROOT = os.path.join(WEIGHTS_ROOT, "gemma-3-12b-it-qat-q4_0-unquantized")
 _pipeline = None
 _pipeline_lock = threading.Lock()
 
+# --- SageAttention ---------------------------------------------------------------
+# Ported verbatim (pattern-for-pattern) from Lightricks' own production server
+# (Lightricks/LTX-Desktop, backend/ltx2_server.py) — SageAttention is a real, officially
+# declared dependency of their shipped product (backend/pyproject.toml:
+# `sageattention>=1.0.0; sys_platform != 'darwin'`) and is enabled BY DEFAULT there
+# (`USE_SAGE_ATTENTION` env var defaults to "1"). It replaces the standard
+# scaled_dot_product_attention with a quantized-attention kernel for supported head
+# dimensions, with the same graceful two-layer fallback their server uses: if the
+# package isn't installed, or fails at runtime for an unsupported shape/GPU, attention
+# silently falls back to plain SDPA — never breaks a job.
+_USE_SAGE_ATTENTION = os.environ.get("USE_SAGE_ATTENTION", "1") == "1"
+_SAGE_SUPPORTED_HEADDIMS = {64, 96, 128}
+_sage_runtime_fallback_logged = False
+
+
+def _enable_sage_attention() -> None:
+    global _sage_runtime_fallback_logged
+
+    import torch.nn.functional as F
+
+    try:
+        from sageattention import sageattn
+    except ImportError:
+        logger.warn("sage_attention_not_installed")
+        return
+
+    _original_sdpa = F.scaled_dot_product_attention
+
+    def _patched_sdpa(query, key, value, attn_mask=None, dropout_p=0.0, is_causal=False, **kwargs):
+        try:
+            if (
+                attn_mask is None
+                and dropout_p == 0.0
+                and query.is_cuda
+                and query.shape[-1] in _SAGE_SUPPORTED_HEADDIMS
+            ):
+                return sageattn(query, key, value, is_causal=is_causal, tensor_layout="HND")
+        except Exception:  # noqa: BLE001
+            if not _sage_runtime_fallback_logged:
+                logger.warn("sage_attention_runtime_fallback")
+                _sage_runtime_fallback_logged = True
+        return _original_sdpa(query, key, value, attn_mask=attn_mask, dropout_p=dropout_p, is_causal=is_causal)
+
+    F.scaled_dot_product_attention = _patched_sdpa
+    logger.info("sage_attention_enabled")
+
+
+if _USE_SAGE_ATTENTION:
+    try:
+        _enable_sage_attention()
+    except Exception as e:  # noqa: BLE001
+        logger.warn("sage_attention_setup_failed", error=str(e))
+
 # Matches Lightricks' own LTX-Desktop reference implementation's warmup() method
 # (backend/services/fast_video_pipeline/ltx_fast_video_pipeline.py) — a tiny, cheap,
 # throwaway generation run immediately after loading, before any real job. This absorbs
-# CUDA kernel JIT + torch.compile graph-tracing/CUDA-graph-capture overhead on a fast
-# dummy call instead of the real first segment (compilation is shape-polymorphic, so the
-# compiled artifact from this warmup gets reused by every real segment afterward).
+# CUDA kernel JIT overhead on a fast dummy call instead of the real first segment.
 _WARMUP_FRAMES = 9
 _WARMUP_HEIGHT = 256
 _WARMUP_WIDTH = 384
@@ -63,11 +116,14 @@ def load_model():
     it resident for the life of the instance (Cloud Run scale-to-zero handles idle
     teardown between jobs).
 
-    Constructor signature confirmed against the real DistilledPipeline source
-    (Lightricks/LTX-2, packages/ltx-pipelines/src/ltx_pipelines/distilled.py):
-    `distilled_checkpoint_path`, `gemma_root`, `spatial_upsampler_path`, `loras`
-    (required list — empty here since the checkpoint is already fully distilled,
-    no additional LoRA needed on top), plus optional device/quantization/etc.
+    Constructor signature and defaults confirmed against the real DistilledPipeline
+    source at the exact commit Lightricks' own LTX-Desktop pins
+    (Lightricks/LTX-2@a2c3f24078eb918171967f74b6f66b756b29ee45,
+    packages/ltx-pipelines/src/ltx_pipelines/distilled.py): `distilled_checkpoint_path`,
+    `gemma_root`, `spatial_upsampler_path`, `loras` (required list — empty here since the
+    checkpoint is already fully distilled), `device`, `quantization`, `registry`,
+    `torch_compile: bool` (NOT a `compilation_config`/`CompilationConfig` object — that
+    only exists on the `main` branch, which has diverged from this pinned commit).
     """
     global _pipeline
     with _pipeline_lock:
@@ -85,32 +141,43 @@ def load_model():
         logger.info("model_load_start", weightsRoot=WEIGHTS_ROOT)
         start = time.monotonic()
 
-        from ltx_core.model.transformer.compiling import CompilationConfig
+        from ltx_core.quantization import QuantizationPolicy
         from ltx_pipelines.distilled import DistilledPipeline
 
-        # FP8 quantization (tried earlier) is intentionally NOT used here — confirmed via
-        # a real deploy that it made no measurable difference to peak VRAM (our checkpoint
-        # isn't prequantized, so it only naively downcasts a narrow subset of Linear
-        # layers, and the forward pass upcasts back to bf16 during compute regardless),
-        # so it was pure quality risk with no benefit. Segmenting generation into ~5s
-        # calls (see generate.py) is what actually fixed the memory ceiling.
-        #
-        # torch.compile IS a real, officially-documented lever for generation *speed*
-        # specifically (packages/ltx-pipelines/README.md: "reduce-overhead captures CUDA
-        # graphs — the main latency lever for the denoising loop"). Compilation is
-        # shape-polymorphic (sequence dim marked dynamic), so one compiled artifact is
-        # reused across every segment's generation call, not just the first. Real
-        # documented tradeoff: CUDA graph capture reserves additional static VRAM, so this
-        # trades memory for speed — watch actual memory headroom on the first real test
-        # now that segments are much smaller than the ~753-frame case that OOM'd earlier.
-        compilation_config = CompilationConfig(mode="reduce-overhead")
+        device = torch.device("cuda", torch.cuda.current_device()) if torch.cuda.is_available() else torch.device("cpu")
 
+        # FP8: matches Lightricks' own real default (LTX-Desktop's
+        # LTXFastVideoPipeline.__init__: `QuantizationPolicy.fp8_cast() if
+        # device_supports_fp8(device) else None` — device_supports_fp8 is just
+        # `device.type == "cuda"` in their own services_utils.py, which lives in their
+        # app code, not in ltx-core/ltx-pipelines, so inlined here rather than imported
+        # from a package we don't install). Applied unconditionally on any CUDA device.
+        # Confirmed via the real fp8_cast.py source that this only downcasts a narrow
+        # set of transformer-block Linear layers to fp8 storage and upcasts back to bf16
+        # on every forward pass (UPCAST_DURING_INFERENCE) — bf16-equivalent numerics, no
+        # peak-VRAM benefit for our checkpoint (confirmed empirically earlier against
+        # the same underlying behavior via a different, main-branch-only API), but zero
+        # downside either, so there's no reason to diverge from their unconditional
+        # default just because it doesn't move our VRAM ceiling.
+        quantization = QuantizationPolicy.fp8_cast() if device.type == "cuda" else None
+
+        # torch_compile=False: Lightricks' own real production server
+        # (backend/ltx2_server.py) never enables this at startup — compilation is a
+        # separate, deliberate, opt-in step there (LTXFastVideoPipeline.
+        # compile_transformer(), which *reconstructs* the pipeline with
+        # torch_compile=True), never paired with warmup unconditionally on arbitrary
+        # hardware. Enabling it here previously caused a 92GB+ CUDA OOM on a trivial
+        # 9-frame warmup call (CUDA graph capture reserves large static VRAM for a
+        # 22B-param model near-independent of input size) — this default (off) matches
+        # their real production behavior, not just a workaround for that crash.
         _pipeline = DistilledPipeline(
             distilled_checkpoint_path=DISTILLED_CHECKPOINT_PATH,
             gemma_root=GEMMA_ROOT,
             spatial_upsampler_path=SPATIAL_UPSAMPLER_PATH,
             loras=[],
-            compilation_config=compilation_config,
+            device=device,
+            quantization=quantization,
+            torch_compile=False,
         )
         durationMs = int((time.monotonic() - start) * 1000)
         # Real cold-start timing — the only source of this data since Phase 0's GPU

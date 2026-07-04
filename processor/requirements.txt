@@ -1,29 +1,38 @@
 httpx==0.28.1
 pydantic==2.10.4
 
-# transformers pinned to match Lightricks' own uv.lock exactly (confirmed via the real
-# lockfile at github.com/Lightricks/LTX-2/blob/main/uv.lock) rather than relying on
-# ltx-core's own loose `transformers>=4.52` constraint, which would otherwise resolve to
-# whatever's newest on PyPI at build time — same class of drift risk as the
-# torch/torchaudio/torchvision pins below, just for a different package.
+# transformers + triton pinned to match the exact tested lockfile for the commit below
+# (github.com/Lightricks/LTX-2/blob/a2c3f24078eb918171967f74b6f66b756b29ee45/uv.lock,
+# resolution group `python_full_version == '3.12.*' and sys_platform == 'linux'`) rather
+# than relying on ltx-core's own loose `transformers>=4.52` constraint or a transitive
+# triton resolution, both of which would otherwise resolve to whatever's newest on PyPI
+# at build time.
 transformers==4.57.6
+triton==3.5.1
 
-# LTX-2 (Lightricks/LTX-2) — confirmed real system requirements from the official repo:
-# Python >=3.12, CUDA >12.7, PyTorch ~=2.7 (loose declared constraint; see Dockerfile for
-# the exact tested version actually pinned). The repo's own setup uses `uv sync` against
-# its packages/ workspace (ltx-core, ltx-pipelines) rather than plain PyPI packages —
-# the git+subdirectory pip install below is a best-effort translation of that, not
-# confirmed working; verify against https://github.com/Lightricks/LTX-2's own setup
-# instructions once you have hands-on access, and prefer `uv sync` if pip install fails.
+# SageAttention: real, officially-declared dependency of Lightricks' own shipped product
+# (LTX-Desktop's backend/pyproject.toml: `sageattention>=1.0.0; sys_platform != 'darwin'`),
+# default-enabled in their production server (backend/ltx2_server.py) as a
+# scaled_dot_product_attention replacement — see inference/model.py for the matching
+# monkeypatch. No exact version is pinned in any upstream lockfile (it's not a dependency
+# of ltx-core/ltx-pipelines themselves, only of LTX-Desktop's own app), so this uses their
+# same loose bound. The monkeypatch has a graceful runtime/import fallback to plain SDPA,
+# so a build/compat failure on this specific GPU degrades gracefully rather than breaking.
+sageattention>=1.0.0
+
+# LTX-2 (Lightricks/LTX-2) — pinned to the exact commit Lightricks' own shipped product
+# (LTX-Desktop) uses (backend/pyproject.toml's [tool.uv.sources] rev), not `main`. `main`
+# has since diverged in ways that broke every API assumption sourced from LTX-Desktop's
+# code during earlier development (confirmed: DistilledPipeline gained a
+# compilation_config/CompilationConfig param on `main` that doesn't exist at all on this
+# commit, which only has a plain `torch_compile: bool` — see inference/model.py). Pinning
+# to this commit means our code's actual runtime API matches the API we're reading and
+# reasoning about.
 #
 # torch + torchaudio + torchvision are installed separately in the Dockerfile from
-# PyTorch's own cu128 index, not here from plain PyPI. ltx-core (this repo) depends on
-# `torch~=2.7` (pinned) and bare, unpinned `torchaudio`; torchvision isn't declared by
-# ltx-core at all but is required at runtime by transformers' AutoImageProcessor. None are
-# routed to a CUDA-specific index in ltx-core's own pyproject.toml — so installing them via
-# this file's plain-PyPI resolution either drifts to a mismatched CUDA build (confirmed:
-# CUDA 13 torchaudio next to a CUDA 12.8 torch, breaking `libcudart.so` loading) or is
-# missing entirely (torchvision). PyTorch's versioned cu128 index bundles a fixed, matching
-# set for all three.
-git+https://github.com/Lightricks/LTX-2.git#subdirectory=packages/ltx-core
-git+https://github.com/Lightricks/LTX-2.git#subdirectory=packages/ltx-pipelines
+# PyTorch's own cu128 index (see Dockerfile for the exact versions, matching this same
+# commit's uv.lock), not here from plain PyPI — ltx-core's own pyproject.toml doesn't
+# route them to a CUDA-specific index, so resolving them via this file's plain-PyPI
+# resolution drifts to a mismatched CUDA build or is missing entirely (torchvision).
+git+https://github.com/Lightricks/LTX-2.git@a2c3f24078eb918171967f74b6f66b756b29ee45#subdirectory=packages/ltx-core
+git+https://github.com/Lightricks/LTX-2.git@a2c3f24078eb918171967f74b6f66b756b29ee45#subdirectory=packages/ltx-pipelines

@@ -7,28 +7,31 @@ import time
 from ..logger import logger
 from .model import get_model
 
-# Confirmed real value from Lightricks/LTX-2's ltx-pipelines example.
-FRAME_RATE = 25.0
+# Real official default for the two-stage distilled pipeline — confirmed directly from
+# Lightricks/LTX-2@a2c3f24078eb918171967f74b6f66b756b29ee45 (the exact commit LTX-Desktop
+# itself pins), packages/ltx-pipelines/src/ltx_pipelines/utils/constants.py's
+# PipelineParams / LTX_2_3_PARAMS (frame_rate=24.0, unmodified by the LTX-2.3 override,
+# which only touches num_inference_steps/stg_blocks) and args.py's
+# default_2_stage_distilled_arg_parser, which sources its --frame-rate/--num-frames
+# argparse defaults from those same params. The old FRAME_RATE=25.0 here was never
+# actually verified against this source despite its comment claiming so.
+FRAME_RATE = 24.0
 
-# Matches Lightricks' own documented/tested default for the two-stage distilled pipeline
-# (~121 frames at 24fps in their reference example) — the widest safety margin against
-# the VRAM ceiling of any duration actually confirmed to work. A single un-segmented ~30s
-# call (753 frames) reliably OOMs on a 96GB GPU (confirmed via real deploys); this is why
-# generation is segmented at all — see script-generation.server.ts's SEGMENT_DURATION_SECONDS,
-# which this must stay in sync with.
-SEGMENT_DURATION_SECONDS = 5
-
-
-# LTX-2 hard constraint (confirmed): frame count must be 8n+1.
-def _round_to_valid_frame_count(target_duration: float) -> int:
-    raw_frames = round(target_duration * FRAME_RATE)
-    n = round((raw_frames - 1) / 8)
-    return max(8 * n + 1, 9)  # never below the smallest valid value (n=1 -> 9 frames)
+# Real official default num_frames for one generation call (LTX_2_3_PARAMS.num_frames,
+# same source as above) — 121 frames @ 24fps ≈ 5.04s. This directly validates ~5s/call as
+# the right instinct for segmenting the original ~30s (753-frame) call that reliably OOM'd
+# on a 96GB GPU, but uses the literal official frame count rather than re-deriving it via
+# our own duration→frames rounding math. See script-generation.server.ts's
+# SEGMENT_DURATION_SECONDS, which this must stay in sync with.
+NUM_FRAMES_PER_SEGMENT = 121
 
 
 def _dimensions_for_aspect_ratio(aspect_ratio: str) -> tuple[int, int]:
-    """Dimensions rounded to the nearest multiple of 32 (hard constraint) while staying
-    close to the original aspect-ratio targets.
+    """Dimensions rounded to the nearest multiple of 64 — the real two-stage-pipeline
+    hard constraint (confirmed via assert_resolution() in ltx_pipelines.utils.helpers:
+    two-stage pipelines require divisibility by 64, not 32 — 32 only applies to
+    one-stage pipelines, which DistilledPipeline is not) — while staying close to the
+    original aspect-ratio targets.
     """
     return {
         "16:9": (1280, 704),
@@ -42,11 +45,20 @@ async def _generate_segment(
     video_prompt: str,
     aspect_ratio: str,
 ) -> str:
-    """Runs one independent generation call (~5s, SEGMENT_DURATION_SECONDS) and encodes
-    it to a temp .mp4 file. Returns the file path — caller is responsible for cleanup.
+    """Runs one independent generation call (NUM_FRAMES_PER_SEGMENT frames, the real
+    official default, ~5.04s @ 24fps) and encodes it to a temp .mp4 file. Returns the
+    file path — caller is responsible for cleanup.
+
+    Seed is randomized per segment rather than fixed — confirmed via Lightricks' own
+    retake_pipeline.py that their real backend treats seed as caller-controlled,
+    randomizing only via an explicit sentinel (`seed < 0`) when unspecified, and that
+    their continuity mechanism for regenerated content is real video/audio latent
+    conditioning from prior content, never seed-matching. Since our continuity instead
+    comes from LLM-authored prompt consistency across segments (not frame-conditioning),
+    random per-segment seeds matches their own randomize-when-unspecified pattern.
     """
     width, height = _dimensions_for_aspect_ratio(aspect_ratio)
-    num_frames = _round_to_valid_frame_count(SEGMENT_DURATION_SECONDS)
+    num_frames = NUM_FRAMES_PER_SEGMENT
     seed = random.randint(0, 2**31 - 1)
 
     logger.info(
@@ -152,8 +164,8 @@ async def _concat_segments(segment_paths: list[str]) -> bytes:
 async def generate_video(
     *, video_prompts: list[str], aspect_ratio: str
 ) -> bytes:
-    """Generates each entry in `video_prompts` as its own independent model call (~5s
-    each — SEGMENT_DURATION_SECONDS, the model's own tested-safe default), then
+    """Generates each entry in `video_prompts` as its own independent model call
+    (NUM_FRAMES_PER_SEGMENT frames each, the real official per-call default), then
     concatenates the resulting clips into one final video. Replaces the old single-call
     approach, which reliably ran out of GPU memory for anything near a full ~30s target
     (confirmed via real deploys) — continuity across segments comes entirely from how
@@ -161,6 +173,13 @@ async def generate_video(
     from any shared technical state between these calls.
     """
     pipeline = await asyncio.to_thread(get_model)
+
+    # Real official memory-hygiene helper (ltx_pipelines.utils.helpers.cleanup_memory:
+    # gc.collect() + torch.cuda.empty_cache() + torch.cuda.synchronize()), used between
+    # calls here since we loop through several segments within one job execution —
+    # Lightricks' own service processes one request at a time so it doesn't need this
+    # between calls, but the underlying helper is theirs, not invented.
+    from ltx_pipelines.utils.helpers import cleanup_memory
 
     segment_paths: list[str] = []
     try:
@@ -171,6 +190,7 @@ async def generate_video(
             path = await _generate_segment(pipeline, prompt, aspect_ratio)
             segment_paths.append(path)
             logger.info("segment_complete", index=i, total=len(video_prompts))
+            await asyncio.to_thread(cleanup_memory)
 
         return await _concat_segments(segment_paths)
     finally:
