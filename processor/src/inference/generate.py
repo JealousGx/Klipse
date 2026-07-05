@@ -83,16 +83,22 @@ async def _generate_segment(
     # a real, missed memory-saving opportunity given how much of today was spent on VRAM.
     tiling_config = TilingConfig.default()
 
+    fd, path = tempfile.mkstemp(suffix=".mp4")
+    os.close(fd)
+
     # @torch.inference_mode() as a function decorator, applied the same way as every
     # real official call site (distilled.py's `@torch.inference_mode() def main()`,
-    # LTXFastVideoPipeline's `@torch.inference_mode() def generate(...)`) — not just an
-    # inline `with` around the raw pipeline call. Without it, PyTorch retains a full
-    # autograd graph (activations saved for a backward pass that never happens) across
-    # every transformer block and denoising step, which for a 22B-param model can
-    # silently consume tens of extra GB of VRAM.
+    # LTXFastVideoPipeline's `@torch.inference_mode() def generate(...)`) — and, just as
+    # importantly, wrapping the *entire* model-call-through-encode flow in one scope,
+    # not just the raw pipeline() call. Tensors produced under inference_mode can't be
+    # used in ops tracked by autograd once you leave that scope ("Inference tensors
+    # cannot be saved for backward" — confirmed via a real deploy, when encode_video()
+    # ran outside inference_mode on the video/audio tensors returned from inside it).
+    # LTX-Desktop's real generate() decorates the model call and encode_video_output()
+    # together for exactly this reason.
     @torch.inference_mode()
-    def _run_pipeline():
-        return pipeline(
+    def _run_pipeline_and_encode():
+        video, audio = pipeline(
             prompt=video_prompt,
             seed=seed,
             height=height,
@@ -102,23 +108,18 @@ async def _generate_segment(
             images=[],
             tiling_config=tiling_config,
         )
-
-    video, audio = await asyncio.to_thread(_run_pipeline)
-
-    durationMs = int((time.monotonic() - start) * 1000)
-    logger.info("segment_generation_complete", durationMs=durationMs)
-
-    fd, path = tempfile.mkstemp(suffix=".mp4")
-    os.close(fd)
-    await asyncio.to_thread(
-        lambda: encode_video(
+        encode_video(
             video=video,
             fps=FRAME_RATE,
             audio=audio,
             output_path=path,
             video_chunks_number=get_video_chunks_number(num_frames, tiling_config),
         )
-    )
+
+    await asyncio.to_thread(_run_pipeline_and_encode)
+
+    durationMs = int((time.monotonic() - start) * 1000)
+    logger.info("segment_generation_complete", durationMs=durationMs)
     return path
 
 
