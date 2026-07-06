@@ -1,0 +1,19 @@
+[
+  {
+    "name": "keep-most-recent-processor-images",
+    "action": { "type": "Keep" },
+    "mostRecentVersions": {
+      "packageNamePrefixes": ["processor"],
+      "keepCount": 1
+    }
+  },
+  {
+    "name": "delete-old-processor-images",
+    "action": { "type": "Delete" },
+    "condition": {
+      "tagState": "ANY",
+      "packageNamePrefixes": ["processor"],
+      "olderThan": "1728000s"
+    }
+  }
+]
