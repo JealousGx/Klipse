@@ -98,6 +98,13 @@ async def _generate_segment(
     # together for exactly this reason.
     @torch.inference_mode()
     def _run_pipeline_and_encode():
+        # enhance_prompt=True: real DistilledPipeline param (default False) that runs
+        # the prompt through the Gemma text encoder's enhance_t2v before generation
+        # (ltx_pipelines.utils.helpers.generate_enhanced_prompt) — internally flows into
+        # PromptEncoder(..., enhance_first_prompt=enhance_prompt). Previously left off
+        # to match the official default, since our own script-gen LLM already writes a
+        # detailed prompt per segment; revisiting now to see whether Gemma's own
+        # enhancement pass helps beyond that.
         video, audio = pipeline(
             prompt=video_prompt,
             seed=seed,
@@ -107,6 +114,7 @@ async def _generate_segment(
             frame_rate=FRAME_RATE,
             images=[],
             tiling_config=tiling_config,
+            enhance_prompt=True,
         )
         encode_video(
             video=video,
