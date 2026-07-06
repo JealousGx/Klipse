@@ -12,8 +12,6 @@ job_name     = "klipse-processor-job"
 # lifecycle.ignore_changes in main.tf).
 image = "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest"
 
-weights_bucket_name = "klipse-processor-weights"
-
 # Main app's public base URL — the Job fetches its own spec from here and calls back.
 app_base_url = "https://klipse.app"
 

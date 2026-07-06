@@ -42,10 +42,39 @@ def _dimensions_for_aspect_ratio(aspect_ratio: str) -> tuple[int, int]:
     }.get(aspect_ratio, (704, 1280))
 
 
+async def _extract_last_frame(video_path: str) -> str:
+    """Grabs the final frame of an already-encoded segment as a JPEG, for use as the
+    next segment's start-frame conditioning. Standard ffmpeg technique (-sseof seeks
+    from end-of-file).
+    """
+    fd, out_path = tempfile.mkstemp(suffix=".jpg")
+    os.close(fd)
+    proc = await asyncio.create_subprocess_exec(
+        "ffmpeg",
+        "-y",
+        "-sseof",
+        "-0.1",
+        "-i",
+        video_path,
+        "-frames:v",
+        "1",
+        out_path,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    _, stderr = await proc.communicate()
+    if proc.returncode != 0:
+        err = stderr.decode(errors="replace")[:500]
+        logger.error("last_frame_extract_failed", error=err, returncode=proc.returncode)
+        raise RuntimeError(f"ffmpeg_last_frame_failed:{err}")
+    return out_path
+
+
 async def _generate_segment(
     pipeline,
     video_prompt: str,
     aspect_ratio: str,
+    start_image_path: str | None = None,
 ) -> str:
     """Runs one independent generation call (NUM_FRAMES_PER_SEGMENT frames, the real
     official default, ~5.04s @ 24fps) and encodes it to a temp .mp4 file. Returns the
@@ -53,11 +82,15 @@ async def _generate_segment(
 
     Seed is randomized per segment rather than fixed — confirmed via Lightricks' own
     retake_pipeline.py that their real backend treats seed as caller-controlled,
-    randomizing only via an explicit sentinel (`seed < 0`) when unspecified, and that
-    their continuity mechanism for regenerated content is real video/audio latent
-    conditioning from prior content, never seed-matching. Since our continuity instead
-    comes from LLM-authored prompt consistency across segments (not frame-conditioning),
-    random per-segment seeds matches their own randomize-when-unspecified pattern.
+    randomizing only via an explicit sentinel (`seed < 0`) when unspecified.
+
+    `start_image_path`, when given, is the real last frame of the *previous* segment,
+    passed as start-frame conditioning (frame_idx=0) via DistilledPipeline's own
+    `images` parameter — this is real, officially-supported single-image conditioning,
+    not a repurposed/unverified mechanism (unlike the separate RetakePipeline's
+    multi-frame video conditioning, which isn't built for forward extension). Combined
+    with LLM-authored prompt consistency across segments, this anchors each cut to the
+    real previous frame instead of starting from pure independent noise.
     """
     width, height = _dimensions_for_aspect_ratio(aspect_ratio)
     num_frames = NUM_FRAMES_PER_SEGMENT
@@ -73,6 +106,7 @@ async def _generate_segment(
 
     from ltx_core.model.video_vae import TilingConfig, get_video_chunks_number
     from ltx_pipelines.utils.media_io import encode_video
+    from ltx_pipelines.utils.args import ImageConditioningInput
 
     # Passed into the actual pipeline call (not just used for the encoder's chunk-count
     # bookkeeping below) — confirmed via Lightricks' own LTX-Desktop reference
@@ -82,6 +116,19 @@ async def _generate_segment(
     # get_video_chunks_number's progress-bar math, never actually applied to generation —
     # a real, missed memory-saving opportunity given how much of today was spent on VRAM.
     tiling_config = TilingConfig.default()
+
+    # frame_idx=0 anchors the START of this segment to the real last frame of the
+    # previous one. strength=1.0 matches LTX-Desktop's own real default wherever an
+    # image-conditioning strength default exists (api_types.py's IcLoraImageInput/
+    # conditioning_strength) — the plain CLI --image action has no built-in default
+    # since it's a required argument there, so this is the closest real evidenced value
+    # rather than an invented one. crf omitted — defaults to DEFAULT_IMAGE_CRF (33),
+    # their own real constant.
+    images = (
+        [ImageConditioningInput(path=start_image_path, frame_idx=0, strength=1.0)]
+        if start_image_path
+        else []
+    )
 
     fd, path = tempfile.mkstemp(suffix=".mp4")
     os.close(fd)
@@ -98,13 +145,12 @@ async def _generate_segment(
     # together for exactly this reason.
     @torch.inference_mode()
     def _run_pipeline_and_encode():
-        # enhance_prompt=True: real DistilledPipeline param (default False) that runs
-        # the prompt through the Gemma text encoder's enhance_t2v before generation
-        # (ltx_pipelines.utils.helpers.generate_enhanced_prompt) — internally flows into
-        # PromptEncoder(..., enhance_first_prompt=enhance_prompt). Previously left off
-        # to match the official default, since our own script-gen LLM already writes a
-        # detailed prompt per segment; revisiting now to see whether Gemma's own
-        # enhancement pass helps beyond that.
+        # enhance_prompt left at its real default (False) — tried True earlier, but
+        # confirmed via a real deploy that Gemma's own enhance_t2v pass (up to 512 new
+        # tokens on top of the original) was what pushed the final encoded prompt past
+        # the encoder's hard 1024-token limit (LTXVGemmaTokenizer, truncation=True) —
+        # our own script-gen prompts alone measured only ~110-150 tokens per segment
+        # from a real generation, nowhere near that limit on their own.
         video, audio = pipeline(
             prompt=video_prompt,
             seed=seed,
@@ -112,9 +158,8 @@ async def _generate_segment(
             width=width,
             num_frames=num_frames,
             frame_rate=FRAME_RATE,
-            images=[],
+            images=images,
             tiling_config=tiling_config,
-            enhance_prompt=True,
         )
         encode_video(
             video=video,
@@ -188,9 +233,11 @@ async def generate_video(
     (NUM_FRAMES_PER_SEGMENT frames each, the real official per-call default), then
     concatenates the resulting clips into one final video. Replaces the old single-call
     approach, which reliably ran out of GPU memory for anything near a full ~30s target
-    (confirmed via real deploys) — continuity across segments comes entirely from how
-    consistently script_gen's prompts are written (see script-generation.server.ts), not
-    from any shared technical state between these calls.
+    (confirmed via real deploys). Continuity across segments now comes from two things
+    together: LLM-authored prompt consistency (see script-generation.server.ts) and real
+    start-frame conditioning — each segment after the first is anchored to the actual
+    last frame of the previous one (see _generate_segment's start_image_path), instead
+    of starting from pure independent noise.
     """
     pipeline = await asyncio.to_thread(get_model)
 
@@ -202,18 +249,26 @@ async def generate_video(
     from ltx_pipelines.utils.helpers import cleanup_memory
 
     segment_paths: list[str] = []
+    frame_paths: list[str] = []
     try:
+        start_image_path: str | None = None
         for i, prompt in enumerate(video_prompts):
             logger.info(
                 "segment_start", index=i, total=len(video_prompts)
             )
-            path = await _generate_segment(pipeline, prompt, aspect_ratio)
+            path = await _generate_segment(
+                pipeline, prompt, aspect_ratio, start_image_path=start_image_path
+            )
             segment_paths.append(path)
             logger.info("segment_complete", index=i, total=len(video_prompts))
             await asyncio.to_thread(cleanup_memory)
 
+            if i < len(video_prompts) - 1:
+                start_image_path = await _extract_last_frame(path)
+                frame_paths.append(start_image_path)
+
         return await _concat_segments(segment_paths)
     finally:
-        for path in segment_paths:
+        for path in segment_paths + frame_paths:
             if os.path.exists(path):
                 os.remove(path)

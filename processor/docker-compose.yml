@@ -2,11 +2,13 @@
 #   cp processor/.env.example processor/.env
 #   pnpm processor:docker:build
 #
-# No weights baked into this image at all (see processor/Dockerfile) — real model weights
-# are mounted from GCS at runtime, only available on the deployed Cloud Run Job. This
-# local build has an empty /app/weights, so it's for API/plumbing-only testing (script-gen,
-# callbacks, watermark, upload, credit flow) — real generation will fail predictably at
-# the model-load step.
+# Model weights ARE baked into this image (downloaded from Hugging Face during the build
+# — see processor/Dockerfile), so a local `docker compose build` really does download the
+# full ~67GB of weights (network + disk space required). Real generation still needs a
+# CUDA GPU with 32GB+ VRAM, though, which most local dev machines won't have — without
+# one, this is still mainly useful for API/plumbing testing (script-gen, callbacks,
+# watermark, upload, credit flow); real generation will fail predictably at the
+# model-forward-pass step without adequate GPU hardware.
 #
 # This runs as a Cloud Run Job (not a Service) — one execution processes one job then
 # exits, no long-lived HTTP server/port to publish. To test locally against a real

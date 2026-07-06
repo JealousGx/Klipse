@@ -20,14 +20,8 @@ variable "image" {
   type        = string
 }
 
-variable "weights_bucket_name" {
-  description = "GCS bucket the model weights are mounted from at /app/weights (read-only)."
-  type        = string
-  default     = "klipse-processor-weights"
-}
-
 variable "triton_cache_bucket_name" {
-  description = "GCS bucket mounted read-write at TRITON_CACHE_DIR/TORCHINDUCTOR_CACHE_DIR so compiled kernels survive across Cloud Run Job executions (each execution gets a fresh container otherwise, forcing a ~30min recompile on every single job). Created by this Terraform config, unlike the weights bucket which is populated out-of-band."
+  description = "GCS bucket mounted read-write at TRITON_CACHE_DIR/TORCHINDUCTOR_CACHE_DIR so compiled kernels survive across Cloud Run Job executions (each execution gets a fresh container otherwise, forcing recompilation on every single job). Created by this Terraform config."
   type        = string
   default     = "klipse-processor-triton-cache"
 }

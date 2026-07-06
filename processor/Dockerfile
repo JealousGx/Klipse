@@ -8,14 +8,17 @@
 # requirements.txt (a2c3f24078eb918171967f74b6f66b756b29ee45 — the same commit Lightricks'
 # own LTX-Desktop product pins), not the repo's own loose `torch~=2.7` declared constraint.
 #
-# Model weights are NOT baked into this image at all — they're mounted at runtime from a
-# GCS bucket (Cloud Run second-generation execution environment's native Cloud Storage
-# volume mount support), populated once via cloudbuild-weights-to-gcs.yaml. This replaces
-# the earlier baked-in-image approach (Dockerfile.weights + WEIGHTS_IMAGE build arg),
-# which required pulling and extracting a 56GB+ image layer on every single app-code
-# build — a real, recurring cost that a runtime mount avoids entirely. MODEL_WEIGHTS_PATH
-# below must match the container path the GCS volume is mounted at in the Cloud Run
-# console (Volumes + Volume mounts settings).
+# Model weights ARE baked into this image (downloaded directly from Hugging Face during
+# the build — see the weights RUN step below). This replaces an earlier runtime-mount
+# approach (GCS volume mount, populated via cloudbuild-weights-to-gcs.yaml): real deploys
+# confirmed the GCS FUSE mount was satisfying reads lazily/on-demand rather than eagerly
+# loading everything upfront, causing a ~30min stall on every single job's first forward
+# pass (Google's own docs confirm large sequential reads over Cloud Storage FUSE are
+# network-bandwidth-limited, and recommend baking models into the image instead — this
+# switches back to that recommendation). The weights RUN step is placed early (before
+# COPY src, after system deps) so it only re-executes when the weights step's own content
+# changes (i.e. when we bump the model version) — ordinary code-only pushes hit Docker's
+# layer cache and never re-download anything.
 
 
 # devel, not runtime: NVIDIA's own documented distinction is that "runtime" images only
@@ -50,8 +53,11 @@ FROM nvidia/cuda:12.8.0-devel-ubuntu24.04 AS runner
 # "fatal error: Python.h: No such file or directory" the moment Triton tries to build its
 # own native helper — confirmed via a real deploy, after the C-compiler and devel-image
 # fixes above were already in place (this is a separate, later blocker in the same chain).
+# curl + ca-certificates: needed for the weights download step below (HTTPS to
+# huggingface.co) — not required by anything else in this image.
 RUN apt-get update && apt-get install -y --no-install-recommends \
 	python3.12 python3.12-dev python3-pip ffmpeg fonts-dejavu-core git build-essential libomp-dev \
+	curl ca-certificates \
 	&& rm -rf /var/lib/apt/lists/* \
 	&& groupadd -g 65532 app \
 	&& useradd -u 65532 -g app -M app
@@ -60,6 +66,36 @@ WORKDIR /app
 
 ENV MODEL_WEIGHTS_PATH=/app/weights \
 	PYTHONUNBUFFERED=1
+
+# Real artifact filenames confirmed against the Lightricks/LTX-2.3 and
+# Lightricks/gemma-3-12b-it-qat-q4_0-unquantized Hugging Face repos' own file listings
+# (neither repo is gated — no HF token needed). Only the two LTX-2.3 files our code
+# actually references (DISTILLED_CHECKPOINT_PATH, SPATIAL_UPSAMPLER_PATH in
+# inference/model.py) are pulled — not the non-distilled/dev/LoRA/other-resolution
+# variants also in that repo. Every non-metadata file in the Gemma repo is pulled since
+# it's loaded as a real HF model directory (config.json, tokenizer files, processor
+# config, sharded safetensors + index) via AutoTokenizer/AutoImageProcessor/
+# Gemma3ForConditionalGeneration.from_pretrained, not a single standalone file.
+# -f: fail (non-zero exit) on HTTP errors instead of writing an error page as if it were
+# the file. -C -: resume a partially-downloaded file on retry instead of restarting from
+# byte zero — real value given these are multi-GB files over a real network.
+RUN set -eux; \
+	mkdir -p /app/weights/gemma-3-12b-it-qat-q4_0-unquantized; \
+	dl() { curl -fL --retry 5 --retry-delay 5 -C - -o "$1" "$2"; }; \
+	dl /app/weights/ltx-2.3-22b-distilled-1.1.safetensors \
+		https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-22b-distilled-1.1.safetensors; \
+	dl /app/weights/ltx-2.3-spatial-upscaler-x2-1.1.safetensors \
+		https://huggingface.co/Lightricks/LTX-2.3/resolve/main/ltx-2.3-spatial-upscaler-x2-1.1.safetensors; \
+	for f in added_tokens.json chat_template.json config.json generation_config.json \
+		model-00001-of-00005.safetensors model-00002-of-00005.safetensors \
+		model-00003-of-00005.safetensors model-00004-of-00005.safetensors \
+		model-00005-of-00005.safetensors model.safetensors.index.json \
+		preprocessor_config.json processor_config.json special_tokens_map.json \
+		tokenizer.json tokenizer.model tokenizer_config.json; do \
+		dl "/app/weights/gemma-3-12b-it-qat-q4_0-unquantized/$f" \
+			"https://huggingface.co/Lightricks/gemma-3-12b-it-qat-q4_0-unquantized/resolve/main/$f"; \
+	done; \
+	chown -R app:app /app/weights
 
 COPY requirements.txt ./requirements.txt
 # --default-timeout + --retries: torch's wheel is large and a plain pip install can hit
@@ -90,13 +126,6 @@ RUN pip3 install --no-cache-dir --default-timeout=300 --retries=5 --break-system
 
 COPY --chown=app:app src ./src
 
-# /app/weights is intentionally NOT created/populated here — it's an empty mount point
-# that Cloud Run's GCS volume mount fills at container start. Locally (docker-compose,
-# no volume mount available), this directory will be empty — real generation requires
-# either a local GCS FUSE mount or running against the deployed Cloud Run Job (see
-# docs/video-processor.md).
-RUN mkdir -p /app/weights && chown app:app /app/weights
-
 # $HOME needs to be a real, writable directory regardless of caching — the app user is
 # created with `useradd -M` (no home directory, deliberately — it's a single-purpose
 # service account) so $HOME resolves to a nonexistent /home/app otherwise, and some
@@ -108,16 +137,16 @@ RUN mkdir -p /app/weights && chown app:app /app/weights
 RUN mkdir -p /app/cache && chown app:app /app/cache
 ENV HOME=/app/cache
 
-# /app/triton-cache is an empty mount point (like /app/weights) — Cloud Run's GCS
-# volume mount fills it at container start, this time read-write (see
-# terraform/main.tf's triton_cache bucket + volume). Triton's compiled kernels
-# (SageAttention) and torch.compile's Inductor cache both write here by default when
-# these env vars are set, which is the whole point: Cloud Run Jobs give every execution
-# a brand-new container, so without a persisted cache directory, every single video
-# pays the full first-run kernel compilation cost (~30min, confirmed via a real
-# deploy — this is what was actually slow, not model loading) instead of only the
-# first job after this bucket starts empty. TORCHINDUCTOR_CACHE_DIR is kept set even
-# though torch.compile is off by default, in case it's ever enabled ad hoc for testing.
+# /app/triton-cache is an empty mount point — Cloud Run's GCS volume mount fills it at
+# container start, read-write (see terraform/main.tf's triton_cache bucket + volume).
+# This is separate from the weights-baking change above: Cloud Run Jobs give every
+# execution a brand-new container, so without a persisted cache directory, Triton's
+# compiled kernels (SageAttention) would need to recompile from scratch on every single
+# job. Confirmed via a real deploy that this cache mount itself works correctly (kernels
+# do persist and get reused across executions) — the ~30min stall turned out to be the
+# separate weights-loading issue above, not kernel compilation. TORCHINDUCTOR_CACHE_DIR
+# is kept set even though torch.compile is off by default, in case it's ever enabled ad
+# hoc for testing.
 RUN mkdir -p /app/triton-cache && chown app:app /app/triton-cache
 ENV TORCHINDUCTOR_CACHE_DIR=/app/triton-cache/torchinductor \
 	TRITON_CACHE_DIR=/app/triton-cache/triton

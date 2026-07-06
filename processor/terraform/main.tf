@@ -19,18 +19,15 @@ provider "google" {
 
 # ---------------------------------------------------------------------------
 # Runtime identity — what the Job's own container runs as. Needs read access to the
-# weights bucket (GCS volume mount) and the secrets it's configured with below.
+# secrets it's configured with below. Model weights are baked into the image itself
+# (see processor/Dockerfile) — no GCS read access needed for weights anymore; a real
+# deploy confirmed the GCS FUSE mount was satisfying weight reads lazily/on-demand
+# rather than eagerly, causing a ~30min stall on every job's first forward pass.
 # ---------------------------------------------------------------------------
 
 resource "google_service_account" "processor_runtime" {
   account_id   = "klipse-processor-runtime"
   display_name = "Klipse processor Job — runtime identity"
-}
-
-resource "google_storage_bucket_iam_member" "processor_runtime_weights_read" {
-  bucket = var.weights_bucket_name
-  role   = "roles/storage.objectViewer"
-  member = "serviceAccount:${google_service_account.processor_runtime.email}"
 }
 
 # Persists compiled Triton/SageAttention kernels (see TRITON_CACHE_DIR/
@@ -171,22 +168,11 @@ resource "google_cloud_run_v2_job" "processor" {
         # supplied by the main app's `jobs.run` API call, not a static Job config value.
 
         volume_mounts {
-          name       = "weights"
-          mount_path = "/app/weights"
-        }
-        volume_mounts {
           name       = "triton-cache"
           mount_path = "/app/triton-cache"
         }
       }
 
-      volumes {
-        name = "weights"
-        gcs {
-          bucket    = var.weights_bucket_name
-          read_only = true
-        }
-      }
       volumes {
         name = "triton-cache"
         gcs {
