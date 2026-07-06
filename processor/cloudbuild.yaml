@@ -1,28 +1,34 @@
 steps:
-  # Build + push in one step via buildx (docker-container driver), using a real
-  # registry-backed BuildKit cache (`:buildcache` manifest, mode=max — caches every
-  # layer, not just the final one). The old approach (`docker pull latest` +
-  # `docker build --cache-from=<tag>` + 2x `docker push`) looked like it was caching,
-  # but plain image-tag `--cache-from` doesn't reliably import BuildKit layer cache
-  # across separate build invocations — so every build was quietly re-running the
-  # apt/pip install layers (the expensive ones) and re-pushing the full image. This
-  # cuts a redundant full-image pull, redundant full-image push, and gets working
-  # layer cache for the unchanged apt/pip layers on code-only changes.
+  # Plain build + push, no registry-backed cache import/export. Deliberate choice: an
+  # earlier version used a `:buildcache` manifest (mode=max) to reuse unchanged layers
+  # (apt/pip installs, and now the ~67GB baked-in weights layer) across separate Cloud
+  # Build invocations — but that meant the weights layer also lived in the cache
+  # manifest, adding real complexity for a build that's now expected to just take a
+  # while regardless. Every build now re-runs every step from scratch (system packages,
+  # weights download, pip installs, SageAttention's from-source compile) — real cost is
+  # likely 45min-1hr+ per build, even for a one-line code change, not just when the
+  # model version changes. Accepted tradeoff: simpler build config over faster builds.
   - name: "gcr.io/cloud-builders/docker"
-    entrypoint: "bash"
     dir: "processor"
     args:
-      - "-c"
-      - |
-        docker buildx create --name cibuilder --driver=docker-container --use
-        docker buildx build \
-          --cache-from=type=registry,ref=us-central1-docker.pkg.dev/klipse-492407/klipse/processor:buildcache \
-          --cache-to=type=registry,ref=us-central1-docker.pkg.dev/klipse-492407/klipse/processor:buildcache,mode=max \
-          -t us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA \
-          -t us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest \
-          -f Dockerfile \
-          --push \
-          .
+      - "build"
+      - "-t"
+      - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA"
+      - "-t"
+      - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest"
+      - "-f"
+      - "Dockerfile"
+      - "."
+
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:$COMMIT_SHA"
+
+  - name: "gcr.io/cloud-builders/docker"
+    args:
+      - "push"
+      - "us-central1-docker.pkg.dev/klipse-492407/klipse/processor:latest"
 
   # Update the Cloud Run Job's image (klipse-processor-job). Image-only — everything else
   # (GPU, volume mount, secrets, IAM, timeout/retries) is Terraform-managed
@@ -44,6 +50,13 @@ steps:
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
   machineType: E2_HIGHCPU_8
+  # Default build-worker disk wasn't enough — a real build failed with "ResourceExhausted:
+  # no space left on device" while BuildKit was finalizing the weights layer (needs the raw
+  # ~67GB of downloaded weights AND a compressed diff of that same data on disk
+  # simultaneously to build the layer, on top of the base CUDA image + installed packages).
+  # 300GB is a generous ceiling given no precise real peak-usage number exists yet (max
+  # allowed is 4000GB) — tune down once a real build's actual peak disk usage is known.
+  diskSizeGb: "300"
 
 # Cloud Build's own default is 60 minutes ("context deadline exceeded" on a real build —
 # confirmed this is exactly what was hit) — too short now that the Dockerfile downloads
