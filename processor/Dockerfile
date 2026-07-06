@@ -137,19 +137,14 @@ COPY --chown=app:app src ./src
 RUN mkdir -p /app/cache && chown app:app /app/cache
 ENV HOME=/app/cache
 
-# /app/triton-cache is an empty mount point — Cloud Run's GCS volume mount fills it at
-# container start, read-write (see terraform/main.tf's triton_cache bucket + volume).
-# This is separate from the weights-baking change above: Cloud Run Jobs give every
-# execution a brand-new container, so without a persisted cache directory, Triton's
-# compiled kernels (SageAttention) would need to recompile from scratch on every single
-# job. Confirmed via a real deploy that this cache mount itself works correctly (kernels
-# do persist and get reused across executions) — the ~30min stall turned out to be the
-# separate weights-loading issue above, not kernel compilation. TORCHINDUCTOR_CACHE_DIR
-# is kept set even though torch.compile is off by default, in case it's ever enabled ad
-# hoc for testing.
-RUN mkdir -p /app/triton-cache && chown app:app /app/triton-cache
-ENV TORCHINDUCTOR_CACHE_DIR=/app/triton-cache/torchinductor \
-	TRITON_CACHE_DIR=/app/triton-cache/triton
+# A persisted, GCS-mounted Triton/Torchinductor cache was tried and removed: it did work
+# correctly (compiled kernels genuinely persisted and got reused across separate Job
+# executions, confirmed via a real deploy), but the ~30min stall this was meant to fix
+# turned out to be the separate weights-loading issue above, not kernel compilation —
+# once that was fixed, the cache bucket wasn't providing enough value to justify its
+# upkeep. Triton/Inductor now just use their own default cache location under $HOME
+# (ephemeral, container-lifetime only) — still gives within-a-single-job reuse (warmup
+# compiles once, real segments reuse it), just not persisted across separate executions.
 
 USER app:app
 

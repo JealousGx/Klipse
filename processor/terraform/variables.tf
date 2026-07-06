@@ -20,12 +20,6 @@ variable "image" {
   type        = string
 }
 
-variable "triton_cache_bucket_name" {
-  description = "GCS bucket mounted read-write at TRITON_CACHE_DIR/TORCHINDUCTOR_CACHE_DIR so compiled kernels survive across Cloud Run Job executions (each execution gets a fresh container otherwise, forcing recompilation on every single job). Created by this Terraform config."
-  type        = string
-  default     = "klipse-processor-triton-cache"
-}
-
 variable "app_base_url" {
   description = "Main app base URL — the Job container fetches its own spec from here and calls back progress/completion (KLIPSE_APP_BASE_URL env var)."
   type        = string

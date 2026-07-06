@@ -30,26 +30,6 @@ resource "google_service_account" "processor_runtime" {
   display_name = "Klipse processor Job — runtime identity"
 }
 
-# Persists compiled Triton/SageAttention kernels (see TRITON_CACHE_DIR/
-# TORCHINDUCTOR_CACHE_DIR in the Job's env below) across separate Job executions.
-# Cloud Run Jobs give every execution a brand-new container with an empty local
-# filesystem, so without this, every single video pays the full first-run kernel
-# compilation cost (~30min, confirmed via real deploys) instead of just the first one
-# after this bucket starts empty.
-resource "google_storage_bucket" "triton_cache" {
-  name                        = var.triton_cache_bucket_name
-  location                    = var.region
-  storage_class               = "STANDARD"
-  uniform_bucket_level_access = true
-  force_destroy               = true # cache-only content, safe to wipe/recreate
-}
-
-resource "google_storage_bucket_iam_member" "processor_runtime_triton_cache_readwrite" {
-  bucket = google_storage_bucket.triton_cache.name
-  role   = "roles/storage.objectAdmin"
-  member = "serviceAccount:${google_service_account.processor_runtime.email}"
-}
-
 resource "google_secret_manager_secret_iam_member" "processor_runtime_webhook_secret" {
   secret_id = var.webhook_secret_id
   role      = "roles/secretmanager.secretAccessor"
@@ -166,19 +146,6 @@ resource "google_cloud_run_v2_job" "processor" {
         }
         # KLIPSE_JOB_ID is intentionally not set here — it's a per-execution override
         # supplied by the main app's `jobs.run` API call, not a static Job config value.
-
-        volume_mounts {
-          name       = "triton-cache"
-          mount_path = "/app/triton-cache"
-        }
-      }
-
-      volumes {
-        name = "triton-cache"
-        gcs {
-          bucket    = google_storage_bucket.triton_cache.name
-          read_only = false
-        }
       }
     }
   }
