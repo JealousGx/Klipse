@@ -97,20 +97,30 @@ COPY --chown=app:app src ./src
 # docs/video-processor.md).
 RUN mkdir -p /app/weights && chown app:app /app/weights
 
-# Triton's kernel cache (used by SageAttention and any Triton JIT compilation
-# independent of torch.compile) writes under $HOME by default. The app user is created
-# with `useradd -M` (no home directory, deliberately — it's a single-purpose service
-# account) so $HOME resolves to a nonexistent /home/app, and those writes fail with a
-# permission error partway through generation (confirmed via a real deploy). Point HOME
-# at a real, explicitly-owned directory instead — set here (not earlier, alongside
-# MODEL_WEIGHTS_PATH) so it only affects the runtime container process, not the earlier
-# root-run pip/git build steps above, which would otherwise see a $HOME that doesn't
-# exist yet at that point in the build. TORCHINDUCTOR_CACHE_DIR is kept set even though
-# torch.compile is off by default, in case it's ever enabled ad hoc for testing.
+# $HOME needs to be a real, writable directory regardless of caching — the app user is
+# created with `useradd -M` (no home directory, deliberately — it's a single-purpose
+# service account) so $HOME resolves to a nonexistent /home/app otherwise, and some
+# writes under it fail with a permission error partway through generation (confirmed
+# via a real deploy). Set here (not earlier, alongside MODEL_WEIGHTS_PATH) so it only
+# affects the runtime container process, not the earlier root-run pip/git build steps
+# above, which would otherwise see a $HOME that doesn't exist yet at that point in the
+# build.
 RUN mkdir -p /app/cache && chown app:app /app/cache
-ENV HOME=/app/cache \
-	TORCHINDUCTOR_CACHE_DIR=/app/cache/torchinductor \
-	TRITON_CACHE_DIR=/app/cache/triton
+ENV HOME=/app/cache
+
+# /app/triton-cache is an empty mount point (like /app/weights) — Cloud Run's GCS
+# volume mount fills it at container start, this time read-write (see
+# terraform/main.tf's triton_cache bucket + volume). Triton's compiled kernels
+# (SageAttention) and torch.compile's Inductor cache both write here by default when
+# these env vars are set, which is the whole point: Cloud Run Jobs give every execution
+# a brand-new container, so without a persisted cache directory, every single video
+# pays the full first-run kernel compilation cost (~30min, confirmed via a real
+# deploy — this is what was actually slow, not model loading) instead of only the
+# first job after this bucket starts empty. TORCHINDUCTOR_CACHE_DIR is kept set even
+# though torch.compile is off by default, in case it's ever enabled ad hoc for testing.
+RUN mkdir -p /app/triton-cache && chown app:app /app/triton-cache
+ENV TORCHINDUCTOR_CACHE_DIR=/app/triton-cache/torchinductor \
+	TRITON_CACHE_DIR=/app/triton-cache/triton
 
 USER app:app
 
