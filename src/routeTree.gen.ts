@@ -43,6 +43,7 @@ import { Route as ApiTiktokOauthCallbackRouteImport } from './routes/api/tiktok/
 import { Route as ApiInternalVideoProcessorAssemblyCompleteRouteImport } from './routes/api/internal/video-processor/assembly-complete'
 import { Route as ApiInternalProcessorProgressRouteImport } from './routes/api/internal/processor/progress'
 import { Route as ApiInternalProcessorKeyFailureRouteImport } from './routes/api/internal/processor/key-failure'
+import { Route as ApiInternalProcessorJobSpecRouteImport } from './routes/api/internal/processor/job-spec'
 import { Route as AuthedDashboardPublishingDestinationIdRouteImport } from './routes/_authed/dashboard/publishing.$destinationId'
 
 const TermsRoute = TermsRouteImport.update({
@@ -223,6 +224,12 @@ const ApiInternalProcessorKeyFailureRoute =
     path: '/api/internal/processor/key-failure',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiInternalProcessorJobSpecRoute =
+  ApiInternalProcessorJobSpecRouteImport.update({
+    id: '/api/internal/processor/job-spec',
+    path: '/api/internal/processor/job-spec',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AuthedDashboardPublishingDestinationIdRoute =
   AuthedDashboardPublishingDestinationIdRouteImport.update({
     id: '/$destinationId',
@@ -257,6 +264,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AuthedAdminIndexRoute
   '/dashboard/': typeof AuthedDashboardIndexRoute
   '/dashboard/publishing/$destinationId': typeof AuthedDashboardPublishingDestinationIdRoute
+  '/api/internal/processor/job-spec': typeof ApiInternalProcessorJobSpecRoute
   '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
   '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -290,6 +298,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AuthedAdminIndexRoute
   '/dashboard': typeof AuthedDashboardIndexRoute
   '/dashboard/publishing/$destinationId': typeof AuthedDashboardPublishingDestinationIdRoute
+  '/api/internal/processor/job-spec': typeof ApiInternalProcessorJobSpecRoute
   '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
   '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -328,6 +337,7 @@ export interface FileRoutesById {
   '/_authed/admin/': typeof AuthedAdminIndexRoute
   '/_authed/dashboard/': typeof AuthedDashboardIndexRoute
   '/_authed/dashboard/publishing/$destinationId': typeof AuthedDashboardPublishingDestinationIdRoute
+  '/api/internal/processor/job-spec': typeof ApiInternalProcessorJobSpecRoute
   '/api/internal/processor/key-failure': typeof ApiInternalProcessorKeyFailureRoute
   '/api/internal/processor/progress': typeof ApiInternalProcessorProgressRoute
   '/api/internal/video-processor/assembly-complete': typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -366,6 +376,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/dashboard/'
     | '/dashboard/publishing/$destinationId'
+    | '/api/internal/processor/job-spec'
     | '/api/internal/processor/key-failure'
     | '/api/internal/processor/progress'
     | '/api/internal/video-processor/assembly-complete'
@@ -399,6 +410,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/dashboard'
     | '/dashboard/publishing/$destinationId'
+    | '/api/internal/processor/job-spec'
     | '/api/internal/processor/key-failure'
     | '/api/internal/processor/progress'
     | '/api/internal/video-processor/assembly-complete'
@@ -436,6 +448,7 @@ export interface FileRouteTypes {
     | '/_authed/admin/'
     | '/_authed/dashboard/'
     | '/_authed/dashboard/publishing/$destinationId'
+    | '/api/internal/processor/job-spec'
     | '/api/internal/processor/key-failure'
     | '/api/internal/processor/progress'
     | '/api/internal/video-processor/assembly-complete'
@@ -458,6 +471,7 @@ export interface RootRouteChildren {
   ApiCronDispatchQueuedJobsRoute: typeof ApiCronDispatchQueuedJobsRoute
   ApiCronPurgeExpiringAssetsRoute: typeof ApiCronPurgeExpiringAssetsRoute
   ApiCronTriggerScheduledJobsRoute: typeof ApiCronTriggerScheduledJobsRoute
+  ApiInternalProcessorJobSpecRoute: typeof ApiInternalProcessorJobSpecRoute
   ApiInternalProcessorKeyFailureRoute: typeof ApiInternalProcessorKeyFailureRoute
   ApiInternalProcessorProgressRoute: typeof ApiInternalProcessorProgressRoute
   ApiInternalVideoProcessorAssemblyCompleteRoute: typeof ApiInternalVideoProcessorAssemblyCompleteRoute
@@ -707,6 +721,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiInternalProcessorKeyFailureRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/internal/processor/job-spec': {
+      id: '/api/internal/processor/job-spec'
+      path: '/api/internal/processor/job-spec'
+      fullPath: '/api/internal/processor/job-spec'
+      preLoaderRoute: typeof ApiInternalProcessorJobSpecRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/_authed/dashboard/publishing/$destinationId': {
       id: '/_authed/dashboard/publishing/$destinationId'
       path: '/$destinationId'
@@ -804,6 +825,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCronDispatchQueuedJobsRoute: ApiCronDispatchQueuedJobsRoute,
   ApiCronPurgeExpiringAssetsRoute: ApiCronPurgeExpiringAssetsRoute,
   ApiCronTriggerScheduledJobsRoute: ApiCronTriggerScheduledJobsRoute,
+  ApiInternalProcessorJobSpecRoute: ApiInternalProcessorJobSpecRoute,
   ApiInternalProcessorKeyFailureRoute: ApiInternalProcessorKeyFailureRoute,
   ApiInternalProcessorProgressRoute: ApiInternalProcessorProgressRoute,
   ApiInternalVideoProcessorAssemblyCompleteRoute:
