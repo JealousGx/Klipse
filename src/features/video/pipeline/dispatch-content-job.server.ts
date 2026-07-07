@@ -69,10 +69,14 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 		return
 	}
 
+	let executionName: string | null = null
 	try {
-		await withPerfTiming("dispatch.processor_job_run", { jobId: id }, () =>
-			runProcessorJob(id),
+		const result = await withPerfTiming(
+			"dispatch.processor_job_run",
+			{ jobId: id },
+			() => runProcessorJob(id),
 		)
+		executionName = result.executionName
 	} catch (e) {
 		logger.error("[dispatch-content-job] processor job trigger failed", {
 			jobId: id,
@@ -92,6 +96,7 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 			status: "processing",
 			progress: 10,
 			currentStage: PIPELINE_STAGE.SCRIPT,
+			processorExecutionName: executionName,
 			updatedAt: new Date(),
 		})
 		.where(and(eq(videoJobs.id, id), eq(videoJobs.status, "dispatched")))
