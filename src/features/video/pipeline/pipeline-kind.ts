@@ -14,7 +14,7 @@ export type PipelineKind = (typeof PIPELINE_KIND)[keyof typeof PIPELINE_KIND]
 
 export const PIPELINE_STAGE = {
 	QUEUED: "queued",
-	/** External processor handoff in progress (Hono not yet accepted). */
+	/** Cloud Run Job execution triggered, not yet picked up by the processor. */
 	DISPATCH_PENDING: "dispatch_pending",
 	/** AI script generation — produces the single comprehensive video_prompt. */
 	SCRIPT: "script",
