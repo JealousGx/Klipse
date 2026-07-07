@@ -89,7 +89,9 @@ export const videoJobs = mysqlTable(
 		 * without this, marking the row `failed` wouldn't stop the GPU from still running
 		 * (and billing) until GCP's own `task_timeout` kills it.
 		 */
-		processorExecutionName: varchar("processor_execution_name", { length: 255 }),
+		processorExecutionName: varchar("processor_execution_name", {
+			length: 255,
+		}),
 		costCredits: int("cost_credits").notNull().default(0),
 		outputUrl: text("output_url"),
 		errorMessage: text("error_message"),
