@@ -1,6 +1,6 @@
 # Klipse
 
-AI-powered video creation and publishing SaaS. Turns a user's text idea into a fully produced short-form video — AI script, TTS narration, generated images, FFmpeg encode — and auto-publishes to YouTube (with TikTok/Instagram on the roadmap).
+AI-powered video creation and publishing SaaS. Turns a user's text idea into a fully produced short-form video — AI script (one comprehensive multi-scene prompt) → self-hosted LTX-2.3 single-call video+audio generation — and auto-publishes to YouTube (with TikTok/Instagram on the roadmap).
 
 ---
 
@@ -29,9 +29,9 @@ AI-powered video creation and publishing SaaS. Turns a user's text idea into a f
 ## What it does
 
 1. User submits a video idea (e.g. "10 facts about black holes")
-2. Klipse generates an AI script (Gemini 2.5 Flash → fallback chain)
-3. Processor generates images (Replicate SDXL), TTS narration (Google Cloud TTS → Unreal Speech fallback), and optional sound (ElevenLabs) — all locally in `/tmp/`
-4. Processor encodes `output.mp4` via FFmpeg, uploads only the final video to Cloudflare R2
+2. Klipse generates one comprehensive multi-scene video prompt (Gemini 2.5 Flash → OpenRouter fallback chain) — no separate spoken script; narration/dialogue/audio are described directly in the prompt
+3. Processor runs a single call to the self-hosted LTX-2.3 model, which generates the full multi-scene video with synchronized audio directly (no image generation, no TTS, no per-segment encoding)
+4. Processor applies a watermark (free tier only) via FFmpeg, uploads only the final video to Cloudflare R2
 5. Processor calls webhook back to main app
 6. App marks job complete, triggers YouTube publish (auto-post or pending-approval per channel config)
 
@@ -48,11 +48,10 @@ AI-powered video creation and publishing SaaS. Turns a user's text idea into a f
 | Database       | MySQL (TiDB serverless in prod) + Drizzle ORM                       |
 | Auth           | Better Auth (Email OTP + Google OAuth + Polar plugin)               |
 | Storage        | Cloudflare R2 (S3-compatible)                                       |
-| AI — Script    | Gemini 2.5 Flash (primary) → OpenRouter (fallback)                  |
-| AI — Images    | Replicate SDXL (default) — processor-side                           |
-| AI — TTS       | Google Cloud TTS (primary) → Unreal Speech / ElevenLabs (fallbacks) |
-| Job Dispatch   | Cron polling (`/api/cron/dispatch-queued-jobs`, ~1min interval)     |
-| Video Encoding | External Hono/Node service (Docker, FFmpeg)                         |
+| AI — Script       | Gemini 2.5 Flash (primary) → OpenRouter (fallback) — produces one comprehensive multi-scene `video_prompt` |
+| AI — Video+Audio  | Self-hosted LTX-2.3 (single-call multi-scene generation w/ native audio) — GCP Cloud Run GPU  |
+| Job Dispatch      | Cron polling (`/api/cron/dispatch-queued-jobs`, ~1min interval)     |
+| Video Generation  | External Python/FastAPI service (Docker, GPU)                       |
 | Billing        | Polar (subscriptions + usage metering)                              |
 | Email          | Resend                                                              |
 | Error Tracking | Sentry                                                              |
@@ -82,15 +81,17 @@ Two runtime services:
                │ POST /v1/process-spec
                ▼
 ┌─────────────────────────────────────┐
-│  External Video Processor           │  :8790 (dev) / Cloud Run (prod)
+│  External Video Processor           │  :8790 (dev) / GCP Cloud Run GPU (prod)
 │  packages/external-video-processor/ │
-│  Hono + FFmpeg — Docker container   │
-│  Script → Assets → Encode → R2      │
+│  Python (FastAPI) + self-hosted     │
+│  LTX-2.3 + FFmpeg (watermark only)  │
+│  Script → single-call video+audio   │
+│  gen → watermark (free tier) → R2   │
 │  → POST callback back to main app   │
 └─────────────────────────────────────┘
 ```
 
-Main app deploys as a **Cloudflare Worker** (`wrangler deploy`). Job dispatch is cron-driven — no separate CF Worker/Queue consumer. The video processor runs separately as a Docker container (local) or GCP Cloud Run service (prod).
+Main app deploys as a **Cloudflare Worker** (`wrangler deploy`). Job dispatch is cron-driven — no separate CF Worker/Queue consumer. The video processor runs separately as a Docker container (local, CPU-only for non-GPU testing) or GCP Cloud Run GPU service (prod).
 
 ---
 
@@ -127,7 +128,7 @@ pnpm dev
 
 ### Optional: Video Processor
 
-FFmpeg encoder for full content pipeline jobs.
+Self-hosted video+audio generation service for full content pipeline jobs. Real generation needs a GPU (see [docs/video-processor.md](docs/video-processor.md)); the container itself will build and run without one for API/plumbing testing.
 
 ```bash
 pnpm processor:docker:setup    # Build + start Docker container on :8790
@@ -183,18 +184,12 @@ Copy `.env.example` → `.env.local`. Variables marked **required** must be set 
 
 ### AI Providers
 
-| Variable                 | Description                                                        |
-| ------------------------ | ------------------------------------------------------------------ |
-| `GEMINI_API_KEYS`        | Comma-separated Google AI Studio keys (script generation, primary) |
-| `GEMINI_SCRIPT_MODEL`    | Model override (default: `gemini-2.5-flash`)                       |
-| `OPENROUTER_API_KEYS`    | Comma-separated OpenRouter keys (script fallback)                  |
-| `GOOGLE_TTS_API_KEYS`    | Comma-separated Google Cloud TTS keys (TTS primary)                |
-| `GOOGLE_TTS_VOICE_NAME`  | Voice override (default: `en-US-Wavenet-G`)                        |
-| `UNREAL_SPEECH_API_KEYS` | Comma-separated Unreal Speech keys (TTS fallback)                  |
-| `ELEVENLABS_API_KEYS`    | Comma-separated ElevenLabs keys (sound effects)                    |
-| `REPLICATE_API_KEYS`     | Comma-separated Replicate keys (image generation)                  |
+| Variable              | Description                                                        |
+| ---------------------- | ------------------------------------------------------------------ |
+| `GEMINI_API_KEYS`      | Comma-separated Google AI Studio keys (script generation, primary) |
+| `OPENROUTER_API_KEYS`  | Comma-separated OpenRouter keys (script fallback)                  |
 
-> All AI provider keys are stored in `provider_api_keys` DB table with cooldown/failure tracking. Env vars are materialized into the table on first use if no rows exist for that provider.
+> Script-gen keys are stored in `provider_api_keys` DB table with cooldown/failure tracking. Env vars are materialized into the table on first use if no rows exist for that provider. Image/TTS/sound provider keys (`google_tts`, `replicate`, `unreal_speech`, `elevenlabs`) are retired — the self-hosted video model generates video+audio in one call, no separate providers needed.
 
 ### Billing (Polar)
 
@@ -299,7 +294,6 @@ pnpm db:studio            # Drizzle Studio GUI at :4983
 pnpm processor:docker:setup   # Build + start processor container (:8790)
 pnpm processor:docker:down    # Stop processor container
 pnpm processor:docker:logs    # Stream processor logs
-pnpm processor:typecheck      # Type-check processor package
 ```
 
 ---
@@ -349,7 +343,7 @@ klipse/
 │   ├── components/                # Reusable UI components
 │   └── env.ts                     # T3Env schema (type-safe env vars)
 ├── packages/
-│   ├── external-video-processor/  # FFmpeg encoding service (Hono)
+│   ├── external-video-processor/  # Self-hosted video+audio generation service (Python/FastAPI)
 │   └── video-assembly-shared/     # Shared types: main app ↔ processor
 ├── docker/
 │   └── external-video-processor/  # Docker Compose + Dockerfile
@@ -407,9 +401,9 @@ content-pipeline-execute.server.ts
               │
               ▼
          External Video Processor (:8790)
-              ├── Stage 1: Script (Gemini → OpenRouter fallback)
-              ├── Stage 2: Prepare (images + TTS + sound)
-              ├── Stage 3: Assemble (FFmpeg encode)
+              ├── Stage 1: Script (Gemini → OpenRouter fallback) → one comprehensive video_prompt
+              ├── Stage 2: Video gen (single call to self-hosted LTX-2.3 — video + native audio)
+              ├── Stage 3: Watermark (FFmpeg drawtext, free tier only)
               └── Stage 4: Upload (output.mp4 → R2 presigned PUT)
                    │
                    ▼
@@ -443,16 +437,14 @@ All AI provider credentials live in `provider_api_keys` DB table, not hardcoded.
 
 **Cooldown system:** failed keys enter cooldown with exponential backoff. Active keys (no cooldown) are preferred; if all keys are cooled down, all keys are tried anyway.
 
-| Provider        | Usage                      | Fallback        |
-| --------------- | -------------------------- | --------------- |
-| `gemini`        | Script generation (LLM)    | `openrouter`    |
-| `openrouter`    | Script generation fallback | —               |
-| `google_tts`    | Text-to-Speech             | `unreal_speech` |
-| `unreal_speech` | TTS fallback               | `elevenlabs`    |
-| `elevenlabs`    | Sound effects              | —               |
-| `replicate`     | Image generation (FLUX)    | —               |
+| Provider     | Usage                      | Fallback     |
+| ------------ | -------------------------- | ------------ |
+| `gemini`     | Script generation (LLM)    | `openrouter` |
+| `openrouter` | Script generation fallback | —            |
 
-Keys can be pinned to specific pipeline tasks via `taskType` (`any` / `script` / `tts` / `images`).
+`google_tts` / `unreal_speech` / `elevenlabs` / `replicate` are legacy DB enum values, no longer consumed — the self-hosted LTX-2.3 model generates video+audio in one call, so image/TTS/sound providers are retired.
+
+Keys can be pinned to specific pipeline tasks via `taskType` (`any` / `script`).
 
 ---
 
@@ -460,14 +452,14 @@ Keys can be pinned to specific pipeline tasks via `taskType` (`any` / `script` /
 
 Billing via **Polar** — subscriptions + credit-based usage metering.
 
-| Tier    | Key limits                                              |
-| ------- | ------------------------------------------------------- |
-| Free    | Limited videos/month, no sound effects, no auto-publish |
-| Starter | More videos, basic publishing                           |
-| Creator | Higher limits, sound effects, full publishing           |
-| Empire  | Max limits, all features                                |
+| Tier    | Key limits                             |
+| ------- | --------------------------------------- |
+| Free    | Limited videos/month, no auto-publish  |
+| Starter | More videos, basic publishing          |
+| Creator | Higher limits, full publishing         |
+| Empire  | Max limits, all features               |
 
-**Credits:** Each generation stage costs credits deducted at job creation. One-time credit packs (1k / 3k) available as add-ons. Usage is reported to Polar's usage meter (`klipse.usage`) after each job.
+**Credits:** Script generation + AI video generation (per second) cost credits deducted at job creation — one model call now covers what used to be three separate provider calls (image/TTS/assembly). One-time credit packs (1k / 3k) available as add-ons. Usage is reported to Polar's usage meter (`klipse.usage`) after each job.
 
 **Publishing destinations:** Paid tiers can connect multiple publishing channels. Destination replacement quota limits how many times a free user can swap their connected channel.
 
@@ -542,14 +534,14 @@ wrangler secret put BETTER_AUTH_SECRET
 # ... etc
 ```
 
-### Video Processor (GCP Cloud Run)
+### Video Processor (GCP Cloud Run GPU)
 
-Build and push the Docker image, then deploy to Cloud Run. Set `VIDEO_PROCESSOR_URL` in the main app to the Cloud Run service URL.
+Model weights **are baked into the image** — downloaded directly from Hugging Face inside `processor/Dockerfile` as an early, cacheable layer (before `COPY src`). A GCS-volume-mount approach was tried in between, but a real deploy confirmed the mount was satisfying weight reads lazily/on-demand rather than eagerly, causing a ~30min stall on every job's first forward pass — baking weights into the image avoids that. Ordinary code-only pushes hit Docker's layer cache and never re-download anything; only bumping the model version re-triggers that layer. Deploy to a **GPU-enabled** Cloud Run Job (RTX Pro 6000 tier — LTX-2.3 needs 32GB+ VRAM, which rules out the cheaper L4 tier). GPU tier, timeout, concurrency, scale-to-zero, and cost guardrails are managed via Terraform (`processor/terraform/`) — see [docs/video-processor.md](docs/video-processor.md) and [docs/deployment.md](docs/deployment.md).
 
 ```bash
-pnpm processor:docker:build
-docker tag klipse-external-video-processor:latest gcr.io/<project>/<image>
-docker push gcr.io/<project>/<image>
+docker build -f processor/Dockerfile -t klipse-external-video-processor:latest processor/
+docker tag klipse-external-video-processor:latest us-central1-docker.pkg.dev/<project>/klipse/processor:latest
+docker push us-central1-docker.pkg.dev/<project>/klipse/processor:latest
 ```
 
 ### Database Migrations
