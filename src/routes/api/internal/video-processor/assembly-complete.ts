@@ -10,9 +10,15 @@ const bodySchema = z.object({
 	status: z.enum(["completed", "failed"]),
 	error: z.string().max(4000).optional(),
 	scriptText: z.string().max(50000).optional(),
-	title: z.string().max(100).optional(),
+	// script-generation.server.ts's prompt targets "60-100 chars" as guidance, not a
+	// hard ceiling — a small margin above 100 avoids rejecting a good generation over a
+	// minor LLM overshoot.
+	title: z.string().max(120).optional(),
 	description: z.string().max(2000).optional(),
-	tags: z.array(z.string().max(50)).max(100).optional(),
+	// script-generation.server.ts's prompt instructs the LLM to produce a *minimum* of
+	// 100 tags — this cap must stay comfortably above that floor or every successful
+	// generation that follows its own instructions gets rejected here.
+	tags: z.array(z.string().max(50)).max(150).optional(),
 	/** Actual encoded video duration in whole seconds, probed by the processor. */
 	durationSec: z.number().int().positive().optional(),
 })
