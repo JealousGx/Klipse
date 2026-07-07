@@ -1,59 +1,39 @@
 import "@tanstack/react-start/server-only"
 
-import type { ProcessorJobSpec } from "@klipse/video-assembly-shared"
 import { and, eq, or } from "drizzle-orm"
 import { getDb } from "@/db"
 import { videoJobs } from "@/db/schema/video-jobs"
-import { env } from "@/env"
 import { mysqlAffectedRowsFromUpdateResult } from "@/lib/db/mysql-affected-rows.server"
 import { logger } from "@/lib/logger"
 import { withPerfTiming } from "@/lib/perf-timing"
+import {
+	isProcessorJobConfigured,
+	runProcessorJob,
+} from "@/lib/video-processor/trigger-processor-job.server"
 
-import { buildProcessorJobSpec } from "./build-processor-job-spec.server"
 import { PIPELINE_STAGE } from "./pipeline-kind"
 import { markVideoJobFailed } from "./process-stub-pipeline.server"
 
-function requireProcessorEnv(): {
-	processorBaseUrl: string
-	clientSecret: string
-} {
-	const url = env.VIDEO_PROCESSOR_URL?.trim()
-	const clientSecret = env.VIDEO_PROCESSOR_CLIENT_SECRET?.trim()
-	const webhookSecret = env.VIDEO_PROCESSOR_WEBHOOK_SECRET?.trim()
-	if (!url || !clientSecret || !webhookSecret) {
-		throw new Error(
-			"VIDEO_PROCESSOR_URL, VIDEO_PROCESSOR_CLIENT_SECRET, and VIDEO_PROCESSOR_WEBHOOK_SECRET required",
-		)
-	}
-	return { processorBaseUrl: url.replace(/\/$/, ""), clientSecret }
-}
-
-export function isContentProcessorConfigured(): boolean {
-	const publicBase = (env.APP_PUBLIC_URL ?? env.SERVER_URL)?.trim()
-	return Boolean(
-		env.VIDEO_PROCESSOR_URL?.trim() &&
-			env.VIDEO_PROCESSOR_CLIENT_SECRET?.trim() &&
-			env.VIDEO_PROCESSOR_WEBHOOK_SECRET?.trim() &&
-			publicBase,
-	)
-}
+export const isContentProcessorConfigured = isProcessorJobConfigured
 
 /**
- * Dispatches a content_pipeline_v1 job to the external processor (Cloud Run).
- * Transitions: queued → dispatched (status) / dispatch_pending (stage) → builds
- * ProcessorJobSpec → POSTs to processor → processing / script.
- * The processor handles: script → TTS + images + sound → FFmpeg → R2 upload → callback.
+ * Dispatches a content_pipeline_v1 job to the external processor (Cloud Run Job).
+ * Transitions: queued → dispatched (status) / dispatch_pending (stage) → triggers a
+ * Cloud Run Job execution (jobId only — the Job container pulls its own full spec from
+ * `/api/internal/processor/job-spec`) → processing / script.
+ * The processor handles: script → single-call video+audio generation → watermark →
+ * R2 upload → callback.
  *
  * Also re-dispatches if job is stuck in dispatched + dispatch_pending (crash between
- * the CAS claim and the fetch to the processor).
+ * the CAS claim and triggering the Job execution).
  */
 export async function dispatchContentJob(jobId: string): Promise<void> {
 	const db = getDb()
 	const id = jobId.trim()
 
 	// Claim: queued → dispatched/dispatch_pending.
-	// Also covers the crash-recovery case: dispatched + dispatch_pending (spec POST
-	// never reached the processor) — re-sets updatedAt so the row appears active.
+	// Also covers the crash-recovery case: dispatched + dispatch_pending (the Job trigger
+	// call never reached GCP) — re-sets updatedAt so the row appears active.
 	const claim = await db
 		.update(videoJobs)
 		.set({
@@ -83,55 +63,25 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 		return
 	}
 
-	const { processorBaseUrl, clientSecret } = requireProcessorEnv()
-
-	let spec: ProcessorJobSpec
-	try {
-		spec = await withPerfTiming("dispatch.spec_build", { jobId: id }, () =>
-			buildProcessorJobSpec(id),
-		)
-	} catch (e) {
-		const msg =
-			e instanceof Error ? e.message.slice(0, 500) : "spec_build_failed"
-		logger.error("[dispatch-content-job] spec build failed", {
-			jobId: id,
-			error: e instanceof Error ? e.message : String(e),
-		})
-		await markVideoJobFailed({ jobId: id, message: msg })
+	if (!isProcessorJobConfigured()) {
+		logger.error("[dispatch-content-job] processor job not configured", { jobId: id })
+		await markVideoJobFailed({ jobId: id, message: "processor_job_not_configured" })
 		return
 	}
 
-	let res: Response
 	try {
-		res = await withPerfTiming("dispatch.processor_post", { jobId: id }, () =>
-			fetch(`${processorBaseUrl}/v1/process-spec`, {
-				method: "POST",
-				headers: {
-					Authorization: `Bearer ${clientSecret}`,
-					"Content-Type": "application/json",
-				},
-				body: JSON.stringify(spec),
-				signal: AbortSignal.timeout(30_000),
-			}),
+		await withPerfTiming("dispatch.processor_job_run", { jobId: id }, () =>
+			runProcessorJob(id),
 		)
 	} catch (e) {
-		logger.error("[dispatch-content-job] processor unreachable", {
+		logger.error("[dispatch-content-job] processor job trigger failed", {
 			jobId: id,
 			error: e instanceof Error ? e.message : String(e),
 		})
 		await markVideoJobFailed({
 			jobId: id,
 			message:
-				e instanceof Error ? e.message.slice(0, 500) : "processor_unreachable",
-		})
-		return
-	}
-
-	if (res.status !== 202) {
-		const text = await res.text().catch(() => "")
-		await markVideoJobFailed({
-			jobId: id,
-			message: `processor_dispatch_${res.status}:${text.slice(0, 400)}`,
+				e instanceof Error ? e.message.slice(0, 500) : "processor_job_trigger_failed",
 		})
 		return
 	}

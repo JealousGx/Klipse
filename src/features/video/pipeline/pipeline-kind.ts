@@ -5,7 +5,7 @@
  */
 export const PIPELINE_KIND = {
 	/**
-	 * Script → prepare (media + voice URLs) → assemble (external processor) → `done`.
+	 * Script → single-call self-hosted video+audio generation (external processor) → `done`.
 	 */
 	CONTENT_PIPELINE_V1: "content_pipeline_v1",
 } as const
@@ -16,11 +16,10 @@ export const PIPELINE_STAGE = {
 	QUEUED: "queued",
 	/** External processor handoff in progress (Hono not yet accepted). */
 	DISPATCH_PENDING: "dispatch_pending",
-	/** AI script generation (content pipeline). */
+	/** AI script generation — produces the single comprehensive video_prompt. */
 	SCRIPT: "script",
-	/** Resolve parallel media + TTS URLs (no blob persistence; refs only). */
-	PREPARE: "prepare",
-	ASSEMBLE: "assemble",
+	/** Self-hosted model call: single-pass multi-scene video+audio generation, watermark, upload. */
+	VIDEO_GEN: "video_gen",
 	DONE: "done",
 } as const
 
@@ -47,10 +46,8 @@ export function labelForPipelineStage(
 			return "Preparing"
 		case PIPELINE_STAGE.SCRIPT:
 			return "Writing script"
-		case PIPELINE_STAGE.PREPARE:
-			return "Generating media"
-		case PIPELINE_STAGE.ASSEMBLE:
-			return "Encoding video"
+		case PIPELINE_STAGE.VIDEO_GEN:
+			return "Generating video"
 		case PIPELINE_STAGE.DONE:
 			return "Done"
 		default:

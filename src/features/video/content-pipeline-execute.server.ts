@@ -21,6 +21,7 @@ import {
 import { getChannelForUser } from "@/features/channels/channels.service.server"
 import {
 	assertFreeTierAssemblyQuotaAllowed,
+	clampTargetDuration,
 	selectUserEntitlementSnapshotForUpdate,
 } from "@/features/entitlements"
 import { jobRowId, usageIdempotencyRowId } from "@/lib/id"
@@ -58,8 +59,6 @@ export async function executeContentPipelineWithIdempotency(input: {
 	const channelId = input.channelId.trim()
 	const idea = input.idea.trim()
 
-	const credits = estimateContentPipelineCredits({ idea })
-
 	const db = getDb()
 
 	const channel = await getChannelForUser(input.userId, channelId)
@@ -96,6 +95,12 @@ export async function executeContentPipelineWithIdempotency(input: {
 			throw new Error("USER_NOT_FOUND")
 		}
 		assertFreeTierAssemblyQuotaAllowed(snapshot)
+
+		const targetDuration = clampTargetDuration(
+			channel.config.target_duration,
+			snapshot.plan,
+		)
+		const credits = estimateContentPipelineCredits({ targetDuration })
 
 		// Free plan: first video is complimentary — bypass credit deduction entirely.
 		const isFreeTrialVideo =

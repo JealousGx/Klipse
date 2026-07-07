@@ -11,7 +11,6 @@ import { videoJobs } from "@/db/schema/video-jobs"
 import { buildOpenRouterModelChain } from "@/features/ai/config/model-routing"
 import { bundleProviderKeysForProcessor } from "@/features/ai/lib/provider-key-bundle.server"
 import { channelToCreativeBrief } from "@/features/ai/prompts/channel-brief.server"
-import { selectVoiceForChannelTone } from "@/features/ai/prompts/voiceover-prompt.server"
 import { buildScriptPrompts } from "@/features/ai/script-generation.server"
 import { parseChannelConfig } from "@/features/channels/channel-config.schema"
 import { clampTargetDuration } from "@/features/entitlements"
@@ -20,22 +19,6 @@ import { logger } from "@/lib/logger"
 import { withPerfTiming } from "@/lib/perf-timing"
 import { generateJobPresignedUrls } from "@/lib/storage/r2-presigned.server"
 import { getAppPublicBaseUrl } from "@/lib/video-processor/app-base-url.server"
-
-const SOUND_ALLOWED_PLANS: MeResponse["plan"][] = ["creator", "empire"]
-
-function buildSoundPrompt(
-	niche: string,
-	tone: string,
-	hint: string | null,
-): string {
-	if (hint?.trim()) return hint.trim()
-	const t = tone.toLowerCase()
-	if (t === "dark")
-		return `dark atmospheric ambient sound for ${niche} video background`
-	if (t === "fun")
-		return `upbeat energetic background sound effect for ${niche} video`
-	return `calm focused ambient music for ${niche} educational video`
-}
 
 /** Fetches all job/channel/user data from DB and builds a complete ProcessorJobSpec. */
 export async function buildProcessorJobSpec(
@@ -54,8 +37,6 @@ export async function buildProcessorJobSpec(
 			channelName: channels.name,
 			channelNiche: channels.niche,
 			channelConfig: channels.config,
-			channelSoundEnabled: channels.soundEnabled,
-			channelSoundPromptHint: channels.soundPromptHint,
 		})
 		.from(videoJobs)
 		.innerJoin(users, eq(videoJobs.userId, users.id))
@@ -85,8 +66,6 @@ export async function buildProcessorJobSpec(
 		externalChannelThumbnailUrl: null,
 		oauthConnected: false,
 		boundExternalAccountId: null,
-		soundEnabled: job.channelSoundEnabled,
-		soundPromptHint: job.channelSoundPromptHint,
 		createdAt: new Date(),
 		updatedAt: new Date(),
 	})
@@ -98,15 +77,6 @@ export async function buildProcessorJobSpec(
 		})
 
 	const targetDuration = clampTargetDuration(config.target_duration, plan)
-	const isSoundEligible =
-		job.channelSoundEnabled && SOUND_ALLOWED_PLANS.includes(plan)
-	const soundPrompt = isSoundEligible
-		? buildSoundPrompt(
-				job.channelNiche,
-				config.tone,
-				job.channelSoundPromptHint,
-			)
-		: null
 
 	const [providerKeys, presignedUrls] = await withPerfTiming(
 		"spec_build.io",
@@ -128,11 +98,8 @@ export async function buildProcessorJobSpec(
 		scriptSystemPrompt,
 		scriptUserPrompt,
 		openrouterScriptModels: buildOpenRouterModelChain(),
-		ttsVoice: selectVoiceForChannelTone(config.tone),
 		targetDuration,
 		aspectRatio: config.aspect_ratio ?? "9:16",
-		soundPrompt,
-		soundDurationSeconds: Math.min(targetDuration, 22),
 		freeTierWatermark: plan === "free",
 		watermarkLabel: siteConfig.name.trim().slice(0, 128) || "Klipse",
 		providerKeys,
@@ -146,9 +113,7 @@ export async function buildProcessorJobSpec(
 		userId: job.userId,
 		targetDuration,
 		plan,
-		isSoundEligible,
 		modelChain: spec.openrouterScriptModels,
-		ttsVoice: spec.ttsVoice,
 	})
 
 	return spec

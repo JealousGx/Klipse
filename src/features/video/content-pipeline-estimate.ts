@@ -1,25 +1,18 @@
 import {
 	CREDIT_COSTS,
-	creditsForImages,
-	creditsForTtsChars,
+	creditsForAiVideoSeconds,
 } from "@/features/billing/credit-costs"
 
-/** Matches {@link resolvePrepareRefs}: three Pollinations image URLs. */
-const PREPARE_IMAGE_COUNT = 3
-
 /**
- * Script + prepare (images + TTS URLs) + assembly (§10.2).
- * `idea` length scales the TTS credit estimate (rough upper bound on spoken length).
+ * Script generation + single-call self-hosted video+audio generation (FEATURE_DOC §10.2).
+ * Replaces the old image/TTS/assembly line items — one model call now covers everything
+ * that used to be three separate provider calls.
  */
-export function estimateContentPipelineCredits(input?: {
-	idea?: string
+export function estimateContentPipelineCredits(input: {
+	targetDuration: number
 }): number {
-	const ideaLen = input?.idea?.trim().length ?? 0
-	const ttsChars = Math.min(Math.max(ideaLen * 4, 400), 12_000)
 	return (
 		CREDIT_COSTS.scriptGeneration +
-		creditsForImages(PREPARE_IMAGE_COUNT) +
-		creditsForTtsChars(ttsChars) +
-		CREDIT_COSTS.videoAssembly
+		creditsForAiVideoSeconds(input.targetDuration)
 	)
 }
