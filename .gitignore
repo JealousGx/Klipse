@@ -13,3 +13,16 @@ dist-ssr
 __unconfig*
 todos.json
 .pnpm-store
+__pycache__/
+*.pyc
+.venv
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log
+crash.*.log
+klipse-job-trigger-key.json
