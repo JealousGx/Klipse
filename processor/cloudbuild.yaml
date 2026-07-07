@@ -49,7 +49,16 @@ steps:
 
 options:
   defaultLogsBucketBehavior: REGIONAL_USER_OWNED_BUCKET
-  machineType: E2_HIGHCPU_8
+  # machineType intentionally omitted (not set to any explicit value, including a literal
+  # "E2_STANDARD_2" string, which isn't actually a valid MachineType enum value — confirmed
+  # via the real cloudbuild proto: only UNSPECIFIED, N1_HIGHCPU_8/32, E2_HIGHCPU_8/32,
+  # E2_MEDIUM exist). Omitting it falls back to the true default (e2-standard-2), which is
+  # the ONLY machine type covered by Cloud Build's 2500 free build-minutes/month — the
+  # E2_HIGHCPU_8 this used to be set to is not covered by that free tier at all and would
+  # have billed real money on every single build, undermining the whole reason for
+  # accepting longer, uncached builds in the first place. The build is now dominated by a
+  # network-bound weights download anyway, where HIGHCPU's extra vCPU power wouldn't have
+  # helped much regardless.
   # Default build-worker disk wasn't enough — a real build failed with "ResourceExhausted:
   # no space left on device" while BuildKit was finalizing the weights layer (needs the raw
   # ~67GB of downloaded weights AND a compressed diff of that same data on disk
