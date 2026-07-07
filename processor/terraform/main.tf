@@ -18,6 +18,48 @@ provider "google" {
 }
 
 # ---------------------------------------------------------------------------
+# Artifact Registry repository holding the processor image. Brought under Terraform via
+# `terraform import` (it was created out-of-band, before this project's IaC existed) —
+# every field below matches its real current config, confirmed via a real
+# `gcloud artifacts repositories describe klipse ...` before writing this, specifically
+# to avoid Terraform trying to "correct" a guessed field and force-recreate a live
+# repository. cleanup_policies matches exactly what was already set via
+# `gcloud artifacts repositories set-cleanup-policies` (see
+# processor/artifact-registry-cleanup-policy.json) — kept in sync here now instead of a
+# separate imperative command.
+# ---------------------------------------------------------------------------
+
+resource "google_artifact_registry_repository" "klipse" {
+  project       = var.project_id
+  location      = var.region
+  repository_id = "klipse"
+  format        = "DOCKER"
+  mode          = "STANDARD_REPOSITORY"
+  description   = "Klipse processor Docker images"
+
+  cleanup_policy_dry_run = false
+
+  cleanup_policies {
+    id     = "delete-old-processor-images"
+    action = "DELETE"
+    condition {
+      tag_state             = "ANY"
+      package_name_prefixes = ["processor"]
+      older_than            = "1728000s"
+    }
+  }
+
+  cleanup_policies {
+    id     = "keep-most-recent-processor-images"
+    action = "KEEP"
+    most_recent_versions {
+      package_name_prefixes = ["processor"]
+      keep_count            = 1
+    }
+  }
+}
+
+# ---------------------------------------------------------------------------
 # Runtime identity — what the Job's own container runs as. Needs read access to the
 # secrets it's configured with below. Model weights are baked into the image itself
 # (see processor/Dockerfile) — no GCS read access needed for weights anymore; a real
