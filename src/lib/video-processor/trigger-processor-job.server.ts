@@ -70,7 +70,9 @@ export async function runProcessorJob(
 
 	if (!res.ok) {
 		const text = await res.text().catch(() => "")
-		throw new Error(`processor_job_run_failed:${res.status}:${text.slice(0, 400)}`)
+		throw new Error(
+			`processor_job_run_failed:${res.status}:${text.slice(0, 400)}`,
+		)
 	}
 
 	const operation = (await res.json().catch(() => null)) as {
