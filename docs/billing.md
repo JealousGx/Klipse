@@ -6,12 +6,14 @@ Klipse uses **Polar** for subscription management and usage-based billing. Credi
 
 ## Subscription Tiers
 
-| Tier | Monthly Credits | Channels | Sound Effects | Publishing |
-|---|---|---|---|---|
-| Free | — (no recurring credits) | 1 | ❌ | ❌ (generate only) |
-| Starter | 1,500 | 1 | ❌ | ✅ |
-| Creator | 5,000 | 3 | ✅ | ✅ |
-| Empire | 15,000 | 20 | ✅ | ✅ |
+| Tier | Monthly Credits | Channels | Publishing |
+|---|---|---|---|
+| Free | — (no recurring credits) | 1 | ❌ (generate only) |
+| Starter | 1,500 | 1 | ✅ |
+| Creator | 5,000 | 3 | ✅ |
+| Empire | 15,000 | 20 | ✅ |
+
+(The "AI background sound" Creator+ perk was removed — the self-hosted video model generates audio natively for every job now, it was never a separate toggleable add-on.)
 
 **Destination replacements per billing cycle** (how many times a user can swap the connected publishing account on an existing channel slot):
 
@@ -31,12 +33,9 @@ Defined in `src/features/billing/credit-costs.ts`:
 | Operation | Cost |
 |---|---|
 | Script generation | 5 credits |
-| Image (per image) | 2 credits |
-| TTS (per 1,000 chars) | 4 credits |
-| Video assembly | 3 credits |
 | AI video (per second) | 3 credits |
 
-Credits are deducted **at job creation** (not on completion). If a job fails, credits are not automatically refunded — manual admin action required.
+One self-hosted model call now covers what used to be three separate line items (image/TTS/assembly), which are retired. Credits are deducted **at job creation** (not on completion), based on the resolved `targetDuration`, not the actual generated duration. If a job fails, credits are not automatically refunded — manual admin action required.
 
 ---
 
@@ -160,6 +159,5 @@ Directly update `users.credits` and insert a `credit_transactions` row for audit
 `src/features/entitlements/` — gating functions used throughout the app:
 
 - `planAllowsPaidPublishingConnections(plan)` — free tier cannot connect YouTube/TikTok
-- `planAllowsSoundGeneration(plan)` — Creator+ only
 - `planAllowsScheduleFastForward(plan)` — Creator+ only
 - `clampTargetDuration(duration, plan)` — caps video length per plan

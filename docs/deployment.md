@@ -5,7 +5,7 @@ Klipse has three deployable services:
 | Service | Platform | Command |
 |---|---|---|
 | Main app | Cloudflare Workers | `pnpm deploy` |
-| Video processor | GCP Cloud Run (Docker) | Manual push + Cloud Run deploy |
+| Video processor | GCP Cloud Run **GPU** (Docker, self-hosted LTX-2.3) | Manual push + Cloud Run console config |
 | Database | TiDB Cloud serverless | Managed — run `pnpm db:migrate` |
 
 ---
@@ -127,44 +127,53 @@ Destination names must match exactly what's in `wrangler.jsonc` `observability` 
 
 ---
 
-## Video Processor (GCP Cloud Run)
+## Video Processor (GCP Cloud Run **Job**, with GPU)
 
-### 1. Build and Push
+A self-hosted LTX-2.3 Python service, run as a Cloud Run **Job** (not a Service) — every execution is triggered on-demand by the main app via the Cloud Run Admin API (`jobs.run`), processes exactly one `video_jobs` row, and exits. There is no long-lived HTTP server, no `VIDEO_PROCESSOR_URL`, no console-configured concurrency/scaling — an earlier Service-based version of this doc described that architecture, which no longer exists.
 
-```bash
-# Build image
-pnpm processor:docker:build
-# tag: klipse-external-video-processor:latest
+Model weights **are baked into the image**, downloaded directly from Hugging Face inside `processor/Dockerfile` as an early layer (before `COPY src`). A GCS-volume-mount approach was tried in between (weights baked into a separate image, then a GCS-mounted runtime approach) but a real deploy confirmed the GCS FUSE mount satisfied weight reads lazily/on-demand rather than eagerly, causing a ~30min stall on every job's first forward pass — baking weights directly into the image avoids that entirely. See [docs/video-processor.md](video-processor.md#model-weights-baked-into-the-image--downloaded-from-hugging-face-at-build-time) for the full setup.
 
-# Tag for GCR
-docker tag klipse-external-video-processor:latest \
-  gcr.io/<PROJECT_ID>/klipse-video-processor:latest
+> **Note:** this deployment skipped the standalone GPU validation step (Phase 0 in the implementation plan) and staged rollout — by explicit decision, this went straight to production configuration and testing. Real generation quality/timing/VRAM headroom were not independently verified before go-live.
 
-# Push
-docker push gcr.io/<PROJECT_ID>/klipse-video-processor:latest
-```
+### 1. Build and push the app image (routine — every code change)
 
-### 2. Deploy to Cloud Run
+`processor/cloudbuild.yaml` (repo root, wired to an auto-trigger on push) handles this automatically:
 
 ```bash
-gcloud run deploy klipse-video-processor \
-  --image gcr.io/<PROJECT_ID>/klipse-video-processor:latest \
-  --region us-central1 \
-  --platform managed \
-  --memory 2Gi \
-  --cpu 2 \
-  --timeout 900 \
-  --set-env-vars "VIDEO_PROCESSOR_CLIENT_SECRET=...,VIDEO_PROCESSOR_WEBHOOK_SECRET=..."
+docker build -f processor/Dockerfile -t us-central1-docker.pkg.dev/<PROJECT_ID>/klipse/processor:latest processor/
+docker push us-central1-docker.pkg.dev/<PROJECT_ID>/klipse/processor:latest
+gcloud run jobs deploy klipse-processor-job --image=us-central1-docker.pkg.dev/<PROJECT_ID>/klipse/processor:latest --region=us-central1
 ```
 
-Key Cloud Run settings:
-- **Memory:** 2Gi+ (FFmpeg encode is memory-intensive)
-- **Timeout:** 900s (15 min) — long jobs need this
-- **Concurrency:** 1 per instance (FFmpeg is CPU-bound)
+No registry-backed BuildKit cache is used (deliberately removed — see `processor/cloudbuild.yaml`'s own comments) — every build re-runs every step from scratch (system packages, the ~67GB weights download, pip installs, SageAttention's from-source compile), realistically 45min–1hr+ per build. Accepted tradeoff for a simpler build config, given infrequent pushes once the processor stabilizes. `options.machineType` is deliberately left unset (not explicitly `E2_STANDARD_2`, which isn't a valid enum value — omitting it is what actually gets the default `e2-standard-2` machine) since that's the **only** machine type covered by Cloud Build's 2500 free-minutes/month tier — the previous `E2_HIGHCPU_8` setting billed real money on every build and wasn't worth it once the build became network-download-bound rather than CPU-bound. `options.diskSizeGb: "300"` and top-level `timeout: "10800s"` are both real fixes for real failures hit deploying this (`ResourceExhausted: no space left on device` finalizing the weights layer, and Cloud Build's 60-minute default timeout).
 
-### 3. Update Main App
+### 2. Deploy the underlying infrastructure — Terraform (`processor/terraform/`)
 
-Set `VIDEO_PROCESSOR_URL` to the Cloud Run service URL in Wrangler secrets/vars.
+GPU/timeout/IAM/the Artifact Registry repository are all Terraform-managed:
+
+```bash
+cd processor/terraform
+terraform init
+terraform plan
+terraform apply
+```
+
+Resources managed: `google_artifact_registry_repository.klipse` (the processor image repo, including its cleanup policy — keeps the most recent 1 version indefinitely, deletes anything else older than 20 days), `google_service_account.processor_runtime` (the Job's own runtime identity) and `google_service_account.job_trigger` (what the main app authenticates as to call `jobs.run`), the IAM bindings between them, Secret Manager access grants, and `google_cloud_run_v2_job.processor` itself — GPU type (`nvidia-rtx-pro-6000`, no zonal redundancy), 20 CPU / 80Gi memory (GCP's enforced minimum for that GPU tier), 3600s timeout, `max_retries = 0` (retries go through the app's own `retryFailedJobForUser`, not silent auto-retry of a failed GPU job).
+
+Routine image bumps (step 1's `gcloud run jobs deploy --image=...`) are excluded from Terraform's management via `lifecycle.ignore_changes`, so they don't fight each other.
+
+### 3. What's still manual (not Terraform-managed, by choice or by real limitation)
+
+- **Secret values** (`VIDEO_PROCESSOR_WEBHOOK_SECRET`, `AXIOM_API_TOKEN`) — only *access* to these is Terraform-managed; their actual values are created out-of-band (`gcloud secrets create` / `versions add`), deliberately, so secret material never lives in Terraform state.
+- **The `job_trigger` service account's key** — generated out-of-band (`gcloud iam service-accounts keys create`) and stored as Cloudflare secrets (`GCP_SERVICE_ACCOUNT_EMAIL`/`GCP_SERVICE_ACCOUNT_PRIVATE_KEY`), same reasoning.
+- **The Cloud Build trigger itself** (watching the GitHub repo, firing `cloudbuild.yaml` on push) — set up manually, not yet a `google_cloudbuild_trigger` Terraform resource.
+- **The Cloud Build trigger's own service account IAM roles** — including `roles/logging.logWriter`, which was missing and caused a real build failure ("does not have permission to write logs to Cloud Logging") the first time a build ran without BuildKit's separate log-handling path. Not yet Terraform-managed.
+- **GPU quota** in the target region — a genuine limitation, not a choice: quota increases for GPUs typically require a request/review process Terraform can't reliably automate.
+- **Enabling required GCP APIs** (Cloud Run, Artifact Registry, Cloud Build, Secret Manager, IAM) for a brand-new project — currently assumed pre-enabled.
+
+### 4. Update Main App
+
+Set `GCP_PROJECT_ID`, `GCP_RUN_REGION`, `GCP_RUN_JOB_NAME`, `GCP_SERVICE_ACCOUNT_EMAIL`, `GCP_SERVICE_ACCOUNT_PRIVATE_KEY` in Wrangler secrets/vars — not `VIDEO_PROCESSOR_URL` (that env var belonged to the old Service architecture and no longer exists).
 
 ---
 
@@ -214,7 +223,7 @@ TiDB is MySQL 8-compatible. Drizzle ORM targets `provider: "mysql"`.
 [ ] wrangler.jsonc vars updated for production domain
 [ ] R2 bucket CORS configured
 [ ] db:migrate run against production DB
-[ ] Video processor deployed, VIDEO_PROCESSOR_URL set
+[ ] Video processor deployed with RTX Pro 6000 GPU tier, scale-to-zero, max_instance_count cap + budget alert, GCS weights volume mount, VIDEO_PROCESSOR_URL set
 [ ] Google OAuth redirect URIs registered
 [ ] Polar products created, webhook URL registered
 [ ] Axiom log/trace destinations configured in CF dashboard

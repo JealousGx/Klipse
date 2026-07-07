@@ -8,7 +8,7 @@ End-to-end flow from user idea submission to published video.
 
 | Kind | Description |
 |---|---|
-| `content_pipeline_v1` | Full pipeline: script → assets → FFmpeg encode → publish |
+| `content_pipeline_v1` | Full pipeline: script → single-call self-hosted video+audio generation → publish |
 | `stub_pipeline_v1` | Stub jobs (no encode) — used for testing/demo |
 | `publish_only_v1` | Re-publish an existing `output_url` to a new channel |
 
@@ -68,13 +68,16 @@ queued → dispatched → processing → completed
 
 3. External Video Processor (:8790)
    ├── Stage 1: Script
-   │    └── Gemini 2.5 Flash → OpenRouter fallback chain
-   ├── Stage 2: Prepare
-   │    ├── Generate images (Replicate SDXL — local /tmp/)
-   │    ├── Generate TTS narration (Google Cloud TTS → Unreal Speech fallback)
-   │    └── Generate sound effect if eligible (ElevenLabs, Creator+ only)
-   ├── Stage 3: Assemble
-   │    └── FFmpeg: images + TTS audio + sound → output.mp4
+   │    └── Gemini 2.5 Flash → OpenRouter fallback chain — produces one
+   │        comprehensive multi-scene `video_prompt` (LTX-2.3 prompt-guide
+   │        structured), not a separate spoken script/voiceover
+   ├── Stage 2: Video generation (single call)
+   │    └── Self-hosted LTX-2.3 distilled pipeline generates the full
+   │        multi-scene video WITH synchronized native audio in one call —
+   │        no image generation, no TTS, no sound-effect stage, no ffmpeg
+   │        concat/assembly of separate segments
+   ├── Stage 3: Watermark (free tier only)
+   │    └── FFmpeg drawtext overlay on the generated video
    └── Stage 4: Upload
         ├── PUT output.mp4 → R2 presigned URL
         └── POST /api/internal/video-processor/assembly-complete
@@ -103,13 +106,12 @@ queued → dispatched → processing → completed
   userId: string;
   channelId: string;
 
-  // Script generation
+  // Script generation — produces ONE comprehensive video_prompt, not a
+  // separate spoken script; no TTS-related fields exist anymore
   scriptSystemPrompt: string;
   scriptUserPrompt: string;
   openrouterScriptModels: string[];   // model chain for fallback
 
-  // TTS
-  ttsVoice: string;                   // e.g. "en-US-Wavenet-G"
   targetDuration: number;             // seconds, clamped by plan
 
   // Video config
@@ -117,12 +119,8 @@ queued → dispatched → processing → completed
   freeTierWatermark: boolean;
   watermarkLabel: string;
 
-  // Sound (optional, Creator+)
-  soundPrompt: string | null;
-  soundDurationSeconds: number;
-
-  // Provider keys (all 6 providers, bundled)
-  providerKeys: Record<AiProviderKind, ProviderApiKeyCredential[]>;
+  // Provider keys — script-gen only (no image/TTS/sound providers anymore)
+  providerKeys: { openrouter: ProviderApiKeyCredential[]; gemini: ProviderApiKeyCredential[] };
 
   // Storage
   presignedUrls: { outputVideo: string };
@@ -132,6 +130,8 @@ queued → dispatched → processing → completed
   callbackSecret: string;
 }
 ```
+
+Removed versus the old pipeline: `ttsVoice`, `soundPrompt`, `soundDurationSeconds`, and the `googleTts`/`replicate`/`unrealSpeech`/`elevenlabs` provider key arrays.
 
 ---
 
@@ -215,10 +215,8 @@ Defined in `PIPELINE_STAGE`:
 | Stage | Meaning |
 |---|---|
 | `dispatch_pending` | CAS done, POST to processor in-flight |
-| `script` | Processor generating script |
-| `prepare` | Processor fetching/generating assets |
-| `assemble` | FFmpeg encoding |
-| `upload` | Uploading to R2 |
+| `script` | Processor generating the video_prompt |
+| `video_gen` | Self-hosted model generating video+audio, watermarking, uploading |
 | `done` | Complete |
 
 ---
@@ -236,10 +234,8 @@ Defined in `PIPELINE_STAGE`:
 
 ## Credit Deduction Timing
 
-Credits deducted **before** job starts. Calculated from:
+Credits deducted **before** job starts, calculated from `targetDuration` (resolved from channel config + plan cap):
 - Script generation: fixed 5 credits
-- Images: `imageCount × 2` credits
-- TTS: `ceil(charEstimate / 1000) × 4` credits
-- Assembly: 3 credits
+- AI video generation: `ceil(targetDuration) × 3` credits (covers video + native audio in one model call)
 
-Estimate is based on target duration and average script density. If actual TTS is longer than estimated, no additional deduction — estimation is conservative.
+Replaces the old image/TTS/assembly line items — one self-hosted model call now covers what used to be three separate provider calls. Charged pre-dispatch on `targetDuration`, not post-hoc on the actual generated duration.

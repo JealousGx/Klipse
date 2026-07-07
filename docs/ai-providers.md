@@ -6,14 +6,14 @@ Klipse uses a DB-backed key pool for all AI providers. Keys live in `provider_ap
 
 ## Providers
 
+The video processor was rewritten to a single self-hosted LTX-2.3 model call that generates video+audio together — image/TTS/sound provider keys are no longer consumed by anything. Only script-gen providers are actively used:
+
 | Provider | Use | Env fallback var |
 |---|---|---|
 | `gemini` | Script generation (LLM) — primary | `GEMINI_API_KEYS` |
 | `openrouter` | Script generation — fallback | `OPENROUTER_API_KEYS` |
-| `google_tts` | Text-to-Speech — primary | `GOOGLE_TTS_API_KEYS` |
-| `unreal_speech` | TTS fallback | `UNREAL_SPEECH_API_KEYS` |
-| `elevenlabs` | Sound effects (Creator+ only) | `ELEVENLABS_API_KEYS` |
-| `replicate` | Image generation (SDXL default; FLUX supported) | `REPLICATE_API_KEYS` |
+
+`google_tts` / `unreal_speech` / `elevenlabs` / `replicate` remain valid DB enum values (kept for compat, same as the existing `pollinations` legacy entry) but nothing in the codebase fetches or consumes them anymore.
 
 ---
 

@@ -110,18 +110,38 @@ CF Workers kill pending fetches after the response is sent. A bare `fetch()` in 
 
 ## External Processor: Direct Axiom Drain
 
-`packages/external-video-processor/src/utils/logger.ts` — processor logger.
+`packages/external-video-processor/src/logger.py` — Python reimplementation of the old `logger.ts`, same shape: structured JSON logs printed to stdout (captured by Cloud Run's own logging regardless) **and** a fire-and-forget HTTP POST to Axiom's ingest API (`POST https://api.axiom.co/v1/ingest/<dataset>`, confirmed against Axiom's real REST API docs) when `AXIOM_API_TOKEN` is set. Every module that logs imports this shared `logger` instance — no bare `print`/stdlib `logging` calls anywhere in the processor.
 
-Runs on Node.js (Cloud Run), so fire-and-forget `fetch()` works. Set env vars in Cloud Run:
+Same level gating as the main app's `src/lib/logger.ts`: `error`/`warn` always emitted, `info` only when `KLIPSE_PERF_LOG=1` or `ENVIRONMENT` is non-production, `debug` only in `local`/`development`.
+
+Set env vars in Cloud Run:
 
 ```
 AXIOM_API_TOKEN=<token>
 AXIOM_DATASET=klipse
+ENVIRONMENT=production
 ```
 
 Logs from both main app and processor land in the same Axiom dataset, distinguished by `service` field:
 - Main app: `"service": "klipse-main"`
 - Processor: `"service": "klipse-processor"`
+
+**Key log events:**
+
+| Message | Level | Fields |
+| --- | --- | --- |
+| `job_start` | info | jobId, channelId, userId |
+| `job_complete` | info | jobId, durationMs |
+| `job_error` | error | jobId, durationMs, error |
+| `job_error_callback_failed` | error | jobId, error |
+| `script_generation_complete` | info | jobId, provider, model |
+| `script_generation_exhausted` | error | jobId, error |
+| `model_load_start` / `model_load_complete` | info | weightsRoot / durationMs — the real cold-start timing, since Phase 0's GPU validation was skipped, this is the actual source of that data now |
+| `video_generation_start` / `video_generation_complete` | info | targetDuration, aspectRatio, numFrames, seed / durationMs |
+| `watermark_failed` | error | error, returncode |
+| `r2_upload_complete` | info | sizeBytes |
+| `unauthorized_request` | warn | (auth failures on `/v1/process-spec`) |
+| `retry_attempt_failed` / `retry_exhausted` | warn | label, attempt(s), delayMs, error |
 
 ---
 
