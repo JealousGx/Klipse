@@ -1,17 +1,12 @@
 /** Processor → main app: pipeline stage progress update. */
 export type ProcessorProgressPayload = {
 	jobId: string
-	stage: "script" | "prepare" | "assemble"
+	stage: "script" | "video_gen"
 	/** Progress percentage 0–100 within this stage. */
 	progress: number
 }
 
-export type ProcessorKeyFailureProvider =
-	| "openrouter"
-	| "google_tts"
-	| "replicate"
-	| "unreal_speech"
-	| "elevenlabs"
+export type ProcessorKeyFailureProvider = "openrouter" | "gemini"
 
 /**
  * Processor → main app: a provider key failed.

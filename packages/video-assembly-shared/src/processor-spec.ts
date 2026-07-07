@@ -7,13 +7,9 @@ export type ProcessorProviderKey = {
 	modelId: string | null
 }
 
-/** All provider key sets included in a ProcessorJobSpec. */
+/** Provider key sets included in a ProcessorJobSpec — script generation only. */
 export type ProcessorProviderKeys = {
 	openrouter: ProcessorProviderKey[]
-	googleTts: ProcessorProviderKey[]
-	replicate: ProcessorProviderKey[]
-	unrealSpeech: ProcessorProviderKey[]
-	elevenlabs: ProcessorProviderKey[]
 	/** Gemini keys — used as script generation fallback when OpenRouter exhausted. */
 	gemini: ProcessorProviderKey[]
 }
@@ -25,27 +21,21 @@ export type ProcessorPresignedUrls = {
 
 /**
  * Full job spec sent from the main app to the external processor (Cloud Run).
- * Contains pre-built prompts, provider credentials, and presigned R2 upload URLs.
- * The processor does: script → TTS + images + sound → FFmpeg → R2 upload → callback.
+ * Contains a pre-built script-gen prompt, provider credentials, and a presigned R2 upload URL.
+ * The processor does: script → single-call video+audio generation → watermark (free tier) → R2 upload → callback.
  */
 export type ProcessorJobSpec = {
 	jobId: string
 	userId: string
 	channelId: string
-	/** Pre-built OpenRouter system prompt (from main app prompt builder). */
+	/** Pre-built OpenRouter system prompt (from main app prompt builder). Instructs the LLM to output a single comprehensive multi-scene video_prompt per the LTX-2.3 prompt guide. */
 	scriptSystemPrompt: string
 	/** Pre-built OpenRouter user prompt (from main app prompt builder). */
 	scriptUserPrompt: string
 	/** Model chain for OpenRouter text completions (primary + fallbacks in order). */
 	openrouterScriptModels: string[]
-	/** Unreal Speech voice ID (Google TTS uses env default on processor). */
-	ttsVoice: string
 	targetDuration: number
 	aspectRatio: "16:9" | "9:16" | "1:1"
-	/** Non-null = generate sound with this prompt; null = skip sound entirely. */
-	soundPrompt: string | null
-	/** Duration to pass to ElevenLabs (capped at 22s). */
-	soundDurationSeconds: number
 	freeTierWatermark: boolean
 	watermarkLabel: string
 	providerKeys: ProcessorProviderKeys
