@@ -17,17 +17,13 @@ export function usePublishingDestinationMutations(
 	{
 		displayName,
 		niche,
-		soundPromptHint,
 		setAutoPost,
 		setFrequency,
-		setSoundEnabled,
 	}: {
 		displayName: string
 		niche: string
-		soundPromptHint: string
 		setAutoPost: (v: boolean) => void
 		setFrequency: (v: ChannelConfig["posting_frequency"]) => void
-		setSoundEnabled: (v: boolean) => void
 	},
 ) {
 	const navigate = useNavigate()
@@ -154,50 +150,6 @@ export function usePublishingDestinationMutations(
 		},
 	})
 
-	const updateSoundEnabledMutation = useMutation({
-		mutationFn: async (next: boolean) => {
-			return updateChannelFn({
-				data: { channelId: destinationId, soundEnabled: next },
-			})
-		},
-		onSuccess: (r, next) => {
-			if (r.ok) {
-				setSoundEnabled(next)
-				toast.success(
-					next ? "Background sound enabled" : "Background sound disabled",
-				)
-				void queryClient.invalidateQueries({
-					queryKey: ["channel", destinationId],
-				})
-				return
-			}
-			toast.error(r.message ?? "Could not save")
-		},
-		onError: () => toast.error("Could not save"),
-	})
-
-	const updateSoundPromptHintMutation = useMutation({
-		mutationFn: async () => {
-			return updateChannelFn({
-				data: {
-					channelId: destinationId,
-					soundPromptHint: soundPromptHint.trim() || null,
-				},
-			})
-		},
-		onSuccess: (r) => {
-			if (r.ok) {
-				toast.success("Sound prompt hint saved")
-				void queryClient.invalidateQueries({
-					queryKey: ["channel", destinationId],
-				})
-				return
-			}
-			toast.error(r.message ?? "Could not save")
-		},
-		onError: () => toast.error("Could not save"),
-	})
-
 	const oauthDisconnectMutation = useMutation({
 		mutationFn: async () =>
 			disconnectChannelFn({ data: { channelId: destinationId } }),
@@ -244,8 +196,6 @@ export function usePublishingDestinationMutations(
 		updateProfileMutation,
 		updateAutoPostMutation,
 		updateFrequencyMutation,
-		updateSoundEnabledMutation,
-		updateSoundPromptHintMutation,
 		oauthDisconnectMutation,
 		...scheduleMutations,
 		handleDisconnect,

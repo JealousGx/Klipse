@@ -14,7 +14,6 @@ import { DestinationConnectionFields } from "./destination-connection-section"
 import { DestinationDetailsFields } from "./destination-details-card"
 import { DestinationExternalChannelFields } from "./destination-external-channel-card"
 import { DestinationScheduleFields } from "./destination-schedule-fields"
-import { DestinationSoundFields } from "./destination-sound-fields"
 import { DestinationTermsFields } from "./destination-terms-fields"
 import { DestinationTiktokDefaultsFields } from "./destination-tiktok-defaults-fields"
 import type { PublishingDestinationChannel } from "./publishing-destination-channel.types"
@@ -54,14 +53,6 @@ export type PublishingDestinationViewProps = {
 	canTriggerNow: boolean
 	onTriggerNow: () => void
 	isTriggeringNow: boolean
-	soundEnabled: boolean
-	onSoundEnabledChange: (next: boolean) => void
-	isSavingSoundEnabled: boolean
-	soundPromptHint: string
-	onSoundPromptHintChange: (next: string) => void
-	onSaveSoundPromptHint: () => void
-	isSavingSoundPromptHint: boolean
-	canUseSoundGeneration: boolean
 	/** Terms already confirmed by the user for this destination's platform. */
 	confirmedTerms: PlatformConfirmedTerm[]
 	/** Called when user ticks/unticks a required platform term checkbox (auto-saves). */
@@ -108,14 +99,6 @@ export function PublishingDestinationView({
 	canTriggerNow,
 	onTriggerNow,
 	isTriggeringNow,
-	soundEnabled,
-	onSoundEnabledChange,
-	isSavingSoundEnabled,
-	soundPromptHint,
-	onSoundPromptHintChange,
-	onSaveSoundPromptHint,
-	isSavingSoundPromptHint,
-	canUseSoundGeneration,
 	confirmedTerms,
 	onConfirmTerm,
 	isConfirmingTerm,
@@ -297,26 +280,6 @@ export function PublishingDestinationView({
 								oauthConnected={channel.oauthConnected}
 								onTriggerNow={onTriggerNow}
 								isTriggeringNow={isTriggeringNow}
-							/>
-						</DashboardPanel>
-					</DashboardSection>
-
-					<DashboardSection
-						id="sound-generation"
-						titleId="sound-generation-heading"
-						title="Background sound"
-						description="Optionally layer a short AI-generated ambient sound effect under the voiceover (Creator+ only)."
-					>
-						<DashboardPanel>
-							<DestinationSoundFields
-								soundEnabled={soundEnabled}
-								onSoundEnabledChange={onSoundEnabledChange}
-								soundPromptHint={soundPromptHint}
-								onSoundPromptHintChange={onSoundPromptHintChange}
-								onSavePromptHint={onSaveSoundPromptHint}
-								isSavingEnabled={isSavingSoundEnabled}
-								isSavingHint={isSavingSoundPromptHint}
-								canUseSoundGeneration={canUseSoundGeneration}
 							/>
 						</DashboardPanel>
 					</DashboardSection>

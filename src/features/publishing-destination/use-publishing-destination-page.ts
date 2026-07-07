@@ -7,7 +7,6 @@ import { useDashboardRouteContext } from "@/context/useDashboardRouteContext"
 import {
 	planAllowsPaidPublishingConnections,
 	planAllowsScheduleFastForward,
-	planAllowsSoundGeneration,
 } from "@/features/billing/tier-config"
 import type {
 	ChannelConfig,
@@ -42,7 +41,6 @@ export function usePublishingDestinationPage(
 	const userPlan = (session.user.plan ?? "free") as MeResponse["plan"]
 	const canConnectPublishing = planAllowsPaidPublishingConnections(userPlan)
 	const canTriggerNow = planAllowsScheduleFastForward(userPlan)
-	const canUseSoundGeneration = planAllowsSoundGeneration(userPlan)
 
 	const channelQuery = useQuery(channelQueryOptions(destinationId))
 	const scheduleQuery = useQuery(schedulingQueryOptions(destinationId))
@@ -55,8 +53,6 @@ export function usePublishingDestinationPage(
 	const [autoPost, setAutoPost] = useState(false)
 	const [frequency, setFrequency] =
 		useState<ChannelConfig["posting_frequency"]>("weekly")
-	const [soundEnabled, setSoundEnabled] = useState(true)
-	const [soundPromptHint, setSoundPromptHint] = useState("")
 
 	useEffect(() => {
 		let cancelled = false
@@ -116,8 +112,6 @@ export function usePublishingDestinationPage(
 		updateProfileMutation,
 		updateAutoPostMutation,
 		updateFrequencyMutation,
-		updateSoundEnabledMutation,
-		updateSoundPromptHintMutation,
 		oauthDisconnectMutation,
 		pauseScheduleMutation,
 		resumeScheduleMutation,
@@ -129,10 +123,8 @@ export function usePublishingDestinationPage(
 	} = usePublishingDestinationMutations(destinationId, {
 		displayName,
 		niche,
-		soundPromptHint,
 		setAutoPost,
 		setFrequency,
-		setSoundEnabled,
 	})
 
 	const ch = channelQuery.data
@@ -145,8 +137,6 @@ export function usePublishingDestinationPage(
 		setNiche(ch.niche)
 		setAutoPost(ch.config.auto_post)
 		setFrequency(ch.config.posting_frequency)
-		setSoundEnabled(ch.soundEnabled)
-		setSoundPromptHint(ch.soundPromptHint ?? "")
 	}, [ch])
 
 	const handleCopyChannelId = useCallback(() => {
@@ -201,14 +191,6 @@ export function usePublishingDestinationPage(
 		canTriggerNow,
 		onTriggerNow: () => triggerNowMutation.mutate(),
 		isTriggeringNow: triggerNowMutation.isPending,
-		soundEnabled,
-		onSoundEnabledChange: (next) => updateSoundEnabledMutation.mutate(next),
-		isSavingSoundEnabled: updateSoundEnabledMutation.isPending,
-		soundPromptHint,
-		onSoundPromptHintChange: setSoundPromptHint,
-		onSaveSoundPromptHint: () => updateSoundPromptHintMutation.mutate(),
-		isSavingSoundPromptHint: updateSoundPromptHintMutation.isPending,
-		canUseSoundGeneration,
 		confirmedTerms: ch.config.confirmed_terms,
 		onConfirmTerm: (term: PlatformConfirmedTerm, checked: boolean) => {
 			const current = ch.config.confirmed_terms
