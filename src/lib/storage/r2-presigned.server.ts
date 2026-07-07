@@ -4,7 +4,7 @@ import type { ProcessorPresignedUrls } from "@klipse/video-assembly-shared"
 
 import { getSignedUrlForUpload } from "./r2.server"
 
-const PRESIGN_TTL_S = 3600 // 1h — generous window for script + prepare + assemble
+const PRESIGN_TTL_S = 3600 // 1h — generous window for script + video generation
 
 /**
  * Generates the presigned PUT URL for the final output video of a content pipeline job.
