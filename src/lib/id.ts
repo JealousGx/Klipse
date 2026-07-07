@@ -121,11 +121,6 @@ export function providerApiKeyRowId() {
 	return prefixedId(ID_PREFIXES.providerKey)
 }
 
-/** @deprecated Use `providerApiKeyRowId`. */
-export function rekaApiKeyRowId() {
-	return providerApiKeyRowId()
-}
-
 /** `user_upload_targets` table PK. */
 export function userUploadTargetRowId() {
 	return prefixedId(ID_PREFIXES.uploadTarget)
