@@ -76,10 +76,14 @@ function TermsPage() {
 						is&quot; and &quot;as available&quot; basis and may include:
 					</p>
 					<ul>
-						<li>AI script generation from user-provided ideas.</li>
-						<li>AI image generation for video scenes.</li>
-						<li>Text-to-speech voiceover synthesis.</li>
-						<li>Automated video assembly and encoding.</li>
+						<li>
+							AI generation of a video description/prompt from user-provided
+							ideas.
+						</li>
+						<li>
+							AI-generated video, including narration, dialogue, and audio,
+							produced from that prompt.
+						</li>
 						<li>
 							Multi-platform video publishing (YouTube, TikTok, Instagram, and
 							others).
@@ -119,8 +123,9 @@ function TermsPage() {
 
 					<h2>5. AI-Generated Content — No Guarantees</h2>
 					<p>
-						THE SERVICE USES THIRD-PARTY AI MODELS TO GENERATE SCRIPTS, IMAGES,
-						VOICEOVERS, AND VIDEO METADATA. YOU EXPRESSLY ACKNOWLEDGE AND AGREE
+						THE SERVICE USES THIRD-PARTY AI MODELS TO GENERATE VIDEO PROMPTS AND
+						METADATA, AND A SELF-HOSTED AI MODEL TO GENERATE VIDEOS (INCLUDING
+						NARRATION, DIALOGUE, AND AUDIO). YOU EXPRESSLY ACKNOWLEDGE AND AGREE
 						THAT:
 					</p>
 					<ul>

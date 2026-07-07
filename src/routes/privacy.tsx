@@ -86,8 +86,8 @@ function PrivacyPage() {
 					<ul>
 						<li>To provide, operate, maintain, and improve the Service.</li>
 						<li>
-							To generate AI-powered video scripts, images, voiceovers, and
-							metadata based on your input.
+							To generate AI-powered video prompts, videos (including narration,
+							dialogue, and audio), and metadata based on your input.
 						</li>
 						<li>
 							To publish videos to your connected third-party platform accounts
@@ -116,9 +116,12 @@ function PrivacyPage() {
 						<li>
 							<strong>AI providers:</strong> Your video ideas and channel
 							configuration are sent to third-party AI model providers (e.g.,
-							Google Gemini, ElevenLabs, OpenRouter) to generate content. These
-							providers have their own privacy policies and data practices, and
-							we are not responsible for how they process data once transmitted.
+							Google Gemini, OpenRouter) to generate a video prompt. The video
+							itself, including narration, dialogue, and audio, is generated
+							using a self-hosted AI model on our own infrastructure.
+							Third-party providers have their own privacy policies and data
+							practices, and we are not responsible for how they process data
+							once transmitted.
 						</li>
 						<li>
 							<strong>Publishing platforms:</strong> When you connect a
