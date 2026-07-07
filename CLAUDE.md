@@ -25,12 +25,9 @@ Klipse is an AI-powered video creation and publishing SaaS. Users submit a text 
 | Database | MySQL (TiDB serverless in prod) + Drizzle ORM |
 | Auth | Better Auth (Email OTP + Google OAuth + Polar plugin) |
 | Storage | Cloudflare R2 — final video only |
-| AI — Script | Gemini 2.5 Flash (primary) → OpenRouter (fallback) |
-| AI — Images | Replicate SDXL (processor-side, local `/tmp/`) |
-| AI — TTS | Google Cloud TTS (primary) → Unreal Speech → ElevenLabs |
-| AI — Sound | ElevenLabs (Creator+ only, processor-side) |
+| AI — Script | Gemini 2.5 Flash (primary) → OpenRouter (fallback) — produces an array of `video_prompts`, one per ~5s segment, not a spoken script |
+| AI — Video+Audio | Self-hosted LTX-2.3 — segmented generation (~5s/121-frame independent calls, start-frame conditioned, concatenated) w/ native audio |
 | Job Dispatch | Cron polling — `/api/cron/dispatch-queued-jobs` ~1 min |
-| Video Encoding | External Hono/Node service — `packages/external-video-processor/` |
 | Billing | Polar (subscriptions + credit-based usage metering) |
 | Email | Resend |
 | Error Tracking | Sentry (server + client) |
@@ -53,14 +50,16 @@ Two runtime services:
 │  Cloudflare R2 (final video only)   │
 │  Cron: dispatch-queued-jobs ~1/min  │
 └──────────────┬──────────────────────┘
-               │ POST /v1/process-spec
+               │ Cloud Run Admin API: jobs.run
                ▼
 ┌─────────────────────────────────────┐
-│  External Video Processor           │  :8790 (dev) / GCP Cloud Run (prod)
-│  packages/external-video-processor/ │
-│  Hono + FFmpeg                      │
-│  Script → Images + TTS + Sound      │
-│  → FFmpeg encode → R2 PUT           │
+│  External Video Processor           │  GCP Cloud Run Job (GPU) — triggered
+│  processor/                          │  on-demand via jobs.run, no HTTP
+│  Python + self-hosted LTX-2.3        │  server, no port — one execution
+│  + ffmpeg (concat + watermark)      │  processes one job then exits
+│  Fetches own spec (GET) → script →  │
+│  segmented video+audio gen → concat │
+│  → watermark (free tier) → R2       │
 │  → POST callback to main app        │
 └─────────────────────────────────────┘
 ```
@@ -72,12 +71,11 @@ Two runtime services:
    - Create `video_jobs` row (`status=queued`)
    - Report usage to Polar meter
 2. Cron fires → `dispatch-queued-jobs.server.ts` picks up queued jobs (max 10/tick)
-3. CAS update: `queued → dispatched`; `buildProcessorJobSpec` constructs full spec
-4. `POST /v1/process-spec` to processor with `ProcessorJobSpec`
+3. CAS update: `queued → dispatched`; app triggers a Cloud Run **Job** execution via the Cloud Run Admin API (`jobs.run`, JWT-bearer OAuth2 auth), passing `KLIPSE_JOB_ID` as a per-execution container override — no direct HTTP call to the processor, no `VIDEO_PROCESSOR_URL`
+4. Processor's `job_main.py` fetches its own full spec via `GET /api/internal/processor/job-spec?jobId=...`, then runs the job
 5. Processor runs stages:
-   - **Script:** Gemini → OpenRouter fallback chain → JSON `{ voiceover, imagePrompts[], title, description, tags }`
-   - **Prepare:** SDXL images (sequential, Replicate burst=1) + Google TTS (concurrent) + ElevenLabs sound (optional, Creator+) — all to local `/tmp/`
-   - **Assemble:** FFmpeg encode → watermark (free tier) → presigned PUT to R2
+   - **Script:** Gemini → OpenRouter fallback chain → JSON `{ video_prompts: string[], title, description, tags }` — an *array* of LTX-2.3-prompt-guide-structured prompts, one per ~5s segment, describing a continuous multi-scene story (narration/dialogue/audio woven into each); there is no separate voiceover/TTS text
+   - **Video gen:** each `video_prompts` entry is generated as its own independent ~5s call (121 frames @ 24fps, the real official per-call default — a single un-segmented ~30s call reliably OOMs on a 96GB GPU), then concatenated via ffmpeg. Continuity across segments comes from two things: LLM-authored prompt consistency, and real start-frame conditioning (each segment after the first is anchored to the actual last frame of the one before it, via `DistilledPipeline`'s own `images` conditioning parameter) → watermark (free tier only, ffmpeg `drawtext`) → presigned PUT to R2
 6. Processor POSTs complete callback → `assembly-complete` webhook
 7. Main app: marks job `completed`, saves artifacts (`scriptText`, `title`, `description`, `tags`), triggers YouTube publish
 
@@ -111,14 +109,18 @@ pnpm db:migrate
 # 5. Start main app (:3000)
 pnpm dev
 
-# 6. (Optional) Start video processor (:8790)
-pnpm processor:docker:up
-pnpm processor:docker:logs
+# 6. (Optional) Run video processor against a local job (needs a CUDA GPU for real
+# generation — otherwise useful for API/plumbing testing only; one execution processes
+# one job then exits, no long-lived server/port)
+cp processor/.env.example processor/.env
+pnpm processor:docker:build
+docker compose -f processor/docker-compose.yml \
+  run --rm -e KLIPSE_JOB_ID=<job-id-from-your-local-db> external-video-processor
 ```
 
 **Local OTP:** hardcoded to `123456` when `ENVIRONMENT=local` or `development`.
 
-**Docker → host networking:** set `APP_PUBLIC_URL=http://host.docker.internal:3000` so processor callbacks reach main app.
+**Docker → host networking:** set `KLIPSE_APP_BASE_URL=http://host.docker.internal:3000` in `processor/.env` so processor callbacks reach main app.
 
 ---
 
@@ -147,11 +149,9 @@ pnpm db:studio            # Drizzle Studio GUI
 
 ### Video Processor
 ```bash
-pnpm processor:docker:up      # Build + start container (:8790)
-pnpm processor:docker:down    # Stop container
-pnpm processor:docker:logs    # Stream logs
-pnpm processor:docker:setup   # Down + up (full restart)
-pnpm processor:typecheck      # Type-check processor package
+pnpm processor:docker:build   # Build image (bakes in ~67GB weights from Hugging Face)
+docker compose -f processor/docker-compose.yml \
+  run --rm -e KLIPSE_JOB_ID=<job-id> external-video-processor   # Run one job, then exits
 ```
 
 ---
@@ -211,25 +211,24 @@ klipse/
 │   ├── config/site.ts              # Site metadata (name, URLs)
 │   └── env.ts                      # T3Env + Zod env schema
 ├── packages/
-│   ├── video-assembly-shared/      # Shared types: ProcessorJobSpec, callbacks, etc.
-│   └── external-video-processor/   # FFmpeg encoding service (Hono/Node)
-│       └── src/
-│           ├── index.ts            # Hono server — /health, /v1/process, /v1/process-spec
-│           ├── pipeline/
-│           │   ├── executor.ts     # executeJob — orchestrates all stages
-│           │   ├── stages/
-│           │   │   ├── script.ts   # Stage 1: LLM script gen + JSON parse
-│           │   │   ├── prepare.ts  # Stage 2: images + TTS + sound → /tmp/
-│           │   │   └── assemble.ts # Stage 3: FFmpeg + watermark + R2 upload
-│           │   └── runner.ts       # Job queue (in-memory, dedup)
-│           ├── providers/          # script-gen, image-gen, tts-gen, sound-gen
-│           ├── utils/
-│           │   ├── callbacks.ts    # reportProgress, reportKeyFailure, reportComplete
-│           │   ├── logger.ts       # Processor structured logger (direct Axiom drain)
-│           │   └── retry.ts        # withRetries helper
-│           └── ffmpeg/             # concat, mux, probe, segment helpers
-├── docker/
-│   └── external-video-processor/   # Dockerfile + docker-compose.yml
+│   └── video-assembly-shared/      # Shared types: ProcessorJobSpec, callbacks, etc.
+├── processor/                       # Python video processor — Cloud Run Job (GPU)
+│   ├── Dockerfile                   # CUDA image, weights baked in via HF download
+│   ├── cloudbuild.yaml              # Build + push + `gcloud run jobs deploy`
+│   ├── requirements.txt             # Pinned ltx-core/ltx-pipelines commit, sageattention
+│   ├── terraform/                   # Job, service accounts, IAM, Artifact Registry repo
+│   └── src/
+│       ├── job_main.py              # Entrypoint — fetches own spec via GET, runs job
+│       ├── job.py                   # Job orchestration
+│       ├── script_gen.py            # LLM script gen (Gemini → OpenRouter) + JSON parse
+│       ├── inference/
+│       │   ├── model.py             # DistilledPipeline load (fp8, SageAttention, warmup)
+│       │   └── generate.py          # Segmented generation + start-frame conditioning + concat
+│       ├── watermark.py             # ffmpeg drawtext (free tier)
+│       ├── r2_upload.py             # Presigned PUT to R2
+│       ├── callbacks.py             # reportProgress, reportKeyFailure, reportComplete
+│       ├── logger.py                # Structured logger (direct Axiom drain)
+│       └── retry.py                 # withRetries helper
 ├── drizzle/                         # Generated migration files (commit these)
 ├── wrangler.jsonc                   # CF Worker config (observability, routes, vars)
 ├── .env.example                     # Env template
@@ -303,15 +302,18 @@ R2_PUBLIC_BASE_URL
 
 ### Video Processor
 ```
-VIDEO_PROCESSOR_URL              http://localhost:8790
-VIDEO_PROCESSOR_CLIENT_SECRET    # app → processor (openssl rand -hex 32)
-VIDEO_PROCESSOR_WEBHOOK_SECRET   # processor → app (openssl rand -hex 32)
+VIDEO_PROCESSOR_WEBHOOK_SECRET     # processor → app callbacks (openssl rand -hex 32)
+VIDEO_PROCESSOR_CALLBACK_URL       # optional override, local dev via tunnel only
+GCP_PROJECT_ID                     # project the processor Job is deployed in
+GCP_RUN_REGION                     # default: us-central1
+GCP_RUN_JOB_NAME                   # Cloud Run Job resource name
+GCP_SERVICE_ACCOUNT_EMAIL          # mints OAuth token for Cloud Run Admin API (jobs.run)
+GCP_SERVICE_ACCOUNT_PRIVATE_KEY    # PEM RSA key, JWT-bearer assertion signing
 ```
 
 ### AI Providers (comma-separated keys; materialized into DB on first use)
 ```
-GEMINI_API_KEYS
-GEMINI_SCRIPT_MODEL        # default: gemini-2.5-flash
+GEMINI_API_KEYS            # model not env-configurable — hardcoded in processor/src/script_gen.py, per-key override via DB model_id
 OPENROUTER_API_KEYS
 GOOGLE_TTS_API_KEYS
 GOOGLE_TTS_VOICE_NAME      # default: en-US-Wavenet-G
@@ -399,10 +401,9 @@ Keys in `provider_api_keys` table. Env vars materialized into DB on first use (w
 
 **Credit costs:**
 - Script generation: 5
-- Image (per image): 2
-- TTS (per 1k chars): 4
-- Video assembly: 3
 - AI video (per second): 3
+
+(Image/TTS/video-assembly line items are retired — the self-hosted model generates video+audio in one call.)
 
 Credits deducted at **job creation**, not completion. Polar meter receives `{ event: "klipse.usage", metadata: { credits: N } }` per job.
 
@@ -429,7 +430,7 @@ Better Auth with:
 
 ## Logging
 
-Structured JSON-line logger: `src/lib/logger.ts` (main app), `packages/external-video-processor/src/utils/logger.ts` (processor).
+Structured JSON-line logger: `src/lib/logger.ts` (main app), `processor/src/logger.py` (processor).
 
 ```ts
 import { logger } from "@/lib/logger";
@@ -447,7 +448,7 @@ logger.error("webhook_failed", { jobId, status: 500 });
 
 **Production delivery:** Logger calls `console.*` → CF Observability Logs → Axiom OTLP destination (`main-app-logs`). Configured in `wrangler.jsonc` + CF dashboard destination pointing to `https://api.axiom.co/v1/logs`.
 
-**Processor:** Direct Axiom HTTP drain (fire-and-forget fetch — safe on Node.js/Cloud Run, not safe on CF Workers). Service field: `"service": "klipse-processor"`.
+**Processor:** Direct Axiom HTTP drain (fire-and-forget request — Cloud Run Job, not a CF Worker, so no fetch-lifetime restriction). Service field: `"service": "klipse-processor"`.
 
 **`LogContext.status`** is typed as `number` (HTTP code). Use `jobStatus` (not `status`) for string job statuses to avoid type conflict.
 
@@ -485,7 +486,7 @@ Key `wrangler.jsonc` config:
 ```
 All secrets via `wrangler secret put <NAME>` (not in `vars`).
 
-**Video processor:** Docker image → GCP Cloud Run. Memory: 2Gi+, timeout: 900s, concurrency: 1.
+**Video processor:** Python Docker image → GCP Cloud Run Job **with GPU** (self-hosted LTX-2.3). Model weights **are baked into the image** — downloaded directly from Hugging Face inside `processor/Dockerfile` as an early, cacheable layer, not mounted from GCS at runtime (a GCS-mount approach was tried and abandoned: a real deploy confirmed the mount satisfied weight reads lazily/on-demand, causing a ~30min stall on every job's first forward pass). GPU tier confirmed as **RTX Pro 6000 (96GB)** — LTX-2.3 requires 32GB+ VRAM and 100GB+ disk, which rules out Cloud Run's cheaper L4 (24GB) tier. GPU/timeout/concurrency/scale-to-zero/cost-guardrails are managed via Terraform (`processor/terraform/`) — see `docs/deployment.md` for confirmed working values (Phase 0's standalone GPU validation was skipped by explicit decision; production traffic is the first real test).
 
 **Database:** `pnpm db:migrate` (runs automatically in `prebuild`).
 
