@@ -15,6 +15,8 @@ import {
 } from "@/components/ui/select"
 
 import { useDashboardRouteContext } from "@/context/useDashboardRouteContext"
+import { clampTargetDuration } from "@/features/entitlements/duration-limit"
+import type { MeResponse } from "@/features/user/types/me"
 import {
 	estimateContentPipelineCredits,
 	runContentPipeline,
@@ -51,9 +53,14 @@ function GeneratePage() {
 	const [channelId, setChannelId] = useState<string>("")
 	const [idea, setIdea] = useState("")
 
-	const creditEstimate = estimateContentPipelineCredits({ idea })
 	const channelsQuery = useQuery(channelsQueryOptions)
 	const channels = channelsQuery.data ?? []
+	const selectedChannel = channels.find((c) => c.id === channelId)
+	const targetDuration = clampTargetDuration(
+		selectedChannel?.config.target_duration ?? 30,
+		(user.plan as MeResponse["plan"]) ?? "free",
+	)
+	const creditEstimate = estimateContentPipelineCredits({ targetDuration })
 
 	const handleGenerate = async () => {
 		const trimmed = idea.trim()
