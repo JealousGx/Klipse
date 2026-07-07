@@ -26,12 +26,7 @@
     "format": "biome format",
     "lint": "biome lint",
     "check": "biome check",
-    "processor:typecheck": "pnpm --filter @klipse/external-video-processor typecheck",
-    "processor:docker:build": "docker build -f docker/external-video-processor/Dockerfile -t klipse-external-video-processor:latest .",
-    "processor:docker:up": "pnpm processor:docker:down && docker compose -p klipse-processor -f docker/external-video-processor/docker-compose.yml up -d --build",
-    "processor:docker:down": "docker compose -p klipse-processor -f docker/external-video-processor/docker-compose.yml down",
-    "processor:docker:setup": "pnpm processor:docker:down && pnpm processor:docker:up",
-    "processor:docker:logs": "docker compose -p klipse-processor -f docker/external-video-processor/docker-compose.yml logs -f"
+    "processor:docker:build": "docker build -f processor/Dockerfile -t klipse-external-video-processor:latest processor/"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1024.0",
