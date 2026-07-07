@@ -32,8 +32,9 @@ wrangler secret put YOUTUBE_OAUTH_STATE_SECRET
 wrangler secret put INTERNAL_CRON_SECRET
 wrangler secret put R2_ACCESS_KEY_ID
 wrangler secret put R2_SECRET_ACCESS_KEY
-wrangler secret put VIDEO_PROCESSOR_CLIENT_SECRET
 wrangler secret put VIDEO_PROCESSOR_WEBHOOK_SECRET
+wrangler secret put GCP_SERVICE_ACCOUNT_EMAIL
+wrangler secret put GCP_SERVICE_ACCOUNT_PRIVATE_KEY
 wrangler secret put POLAR_ACCESS_TOKEN
 wrangler secret put POLAR_WEBHOOK_SECRET
 wrangler secret put RESEND_API_KEY
@@ -55,7 +56,9 @@ Public/non-sensitive vars go in `wrangler.jsonc`:
   "R2_ACCOUNT_ID": "...",
   "R2_BUCKET_NAME": "...",
   "R2_PUBLIC_BASE_URL": "https://...",
-  "VIDEO_PROCESSOR_URL": "https://...",
+  "GCP_PROJECT_ID": "klipse-492407",
+  "GCP_RUN_REGION": "us-central1",
+  "GCP_RUN_JOB_NAME": "klipse-processor-job",
   "GOOGLE_CLIENT_ID": "...",
   "POLAR_SERVER": "production",
   "POLAR_PRODUCT_STARTER": "...",
@@ -68,6 +71,7 @@ Public/non-sensitive vars go in `wrangler.jsonc`:
   "VITE_APP_TITLE": "Klipse",
   "VITE_APP_URL": "https://klipse.app",
   "VITE_APP_SUPPORT_EMAIL": "...",
+  "VITE_APP_R2_PUBLIC_BASE_URL": "https://...",
 }
 ```
 
