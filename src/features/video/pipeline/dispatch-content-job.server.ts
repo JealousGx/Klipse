@@ -64,8 +64,13 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 	}
 
 	if (!isProcessorJobConfigured()) {
-		logger.error("[dispatch-content-job] processor job not configured", { jobId: id })
-		await markVideoJobFailed({ jobId: id, message: "processor_job_not_configured" })
+		logger.error("[dispatch-content-job] processor job not configured", {
+			jobId: id,
+		})
+		await markVideoJobFailed({
+			jobId: id,
+			message: "processor_job_not_configured",
+		})
 		return
 	}
 
@@ -85,7 +90,9 @@ export async function dispatchContentJob(jobId: string): Promise<void> {
 		await markVideoJobFailed({
 			jobId: id,
 			message:
-				e instanceof Error ? e.message.slice(0, 500) : "processor_job_trigger_failed",
+				e instanceof Error
+					? e.message.slice(0, 500)
+					: "processor_job_trigger_failed",
 		})
 		return
 	}
