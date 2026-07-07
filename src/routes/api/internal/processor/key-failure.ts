@@ -12,13 +12,7 @@ import { videoProcessorAuthMiddleware } from "@/middleware/server-route-auth"
 
 const bodySchema = z.object({
 	jobId: z.string().trim().min(1).max(64),
-	provider: z.enum([
-		"openrouter",
-		"google_tts",
-		"replicate",
-		"unreal_speech",
-		"elevenlabs",
-	]),
+	provider: z.enum(["openrouter", "gemini"]),
 	keyId: z.string().trim().min(1).max(64),
 	httpStatus: z.number().int().min(100).max(599),
 	bodySnippet: z.string().max(800).default(""),

@@ -9,14 +9,13 @@ import { videoProcessorAuthMiddleware } from "@/middleware/server-route-auth"
 
 const bodySchema = z.object({
 	jobId: z.string().trim().min(1).max(64),
-	stage: z.enum(["script", "prepare", "assemble"]),
+	stage: z.enum(["script", "video_gen"]),
 	progress: z.number().int().min(0).max(100),
 })
 
 const STAGE_MAP: Record<string, string> = {
 	script: PIPELINE_STAGE.SCRIPT,
-	prepare: PIPELINE_STAGE.PREPARE,
-	assemble: PIPELINE_STAGE.ASSEMBLE,
+	video_gen: PIPELINE_STAGE.VIDEO_GEN,
 }
 
 /** Processor → app: update job progress during pipeline execution. */
