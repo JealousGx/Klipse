@@ -46,19 +46,40 @@ export const env = createEnv({
 		/** Bearer token for all cron endpoints (cron-job.org or CF Cron Triggers). */
 		INTERNAL_CRON_SECRET: z.string().min(1),
 
-		/**
-		 * External encoder service (FFmpeg lives here only). Required for any assembly job;
-		 * the main app never encodes video.
-		 */
-		VIDEO_PROCESSOR_URL: z.url().optional(),
-		/** App → processor: `Authorization` bearer the processor verifies. */
-		VIDEO_PROCESSOR_CLIENT_SECRET: z.string().min(16).optional(),
-		/** Processor → app webhook: `Authorization` bearer for `/api/internal/video-processor/assembly-complete`. */
+		/** Processor → app webhook: `Authorization` bearer for progress/key-failure/job-spec/assembly-complete callbacks. */
 		VIDEO_PROCESSOR_WEBHOOK_SECRET: z.string().min(16).optional(),
 		/**
 		 * Public base URL of this app (webhook + handoff). Falls back to `SERVER_URL` when unset.
 		 */
 		APP_PUBLIC_URL: z.url().optional(),
+		/**
+		 * Overrides the base URL used ONLY for video-processor dispatch/callbacks (not
+		 * TikTok OAuth or anything else that also reads APP_PUBLIC_URL) — for local dev
+		 * against a real deployed processor via a tunnel (ngrok/Cloudflare Tunnel/etc.),
+		 * without redirecting other flows through the tunnel too. Falls back to
+		 * APP_PUBLIC_URL / SERVER_URL when unset.
+		 */
+		VIDEO_PROCESSOR_CALLBACK_URL: z.url().optional(),
+
+		// -------------------------------------------------------------------------
+		// GCP — triggering klipse-processor Cloud Run Job executions (video generation
+		// runs as a Job, not a long-lived Service — see docs/video-processor.md).
+		// -------------------------------------------------------------------------
+
+		/** GCP project the processor Job is deployed in. */
+		GCP_PROJECT_ID: z.string().min(1).optional(),
+		/** Region the processor Job is deployed in. @default us-central1 */
+		GCP_RUN_REGION: z.string().min(1).default("us-central1"),
+		/** Cloud Run Job resource name (`gcloud run jobs deploy <name>`). */
+		GCP_RUN_JOB_NAME: z.string().min(1).optional(),
+		/** Service account email used to mint an OAuth token for the Cloud Run Admin API (`run.jobs.run`). */
+		GCP_SERVICE_ACCOUNT_EMAIL: z.email().optional(),
+		/**
+		 * Service account private key (PEM, RSA) for signing the JWT-bearer OAuth
+		 * assertion — see src/lib/video-processor/gcp-auth.server.ts. Stored with
+		 * literal `\n` escapes (standard for single-line env vars); unescaped at use time.
+		 */
+		GCP_SERVICE_ACCOUNT_PRIVATE_KEY: z.string().min(1).optional(),
 
 		// -------------------------------------------------------------------------
 		// OpenRouter — script (LLM) + images (FLUX.2)
