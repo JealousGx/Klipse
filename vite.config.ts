@@ -31,7 +31,7 @@ const config = defineConfig({
 	server: {
 		host: true,
 		// Processor container uses Host: host.docker.internal when calling webhooks.
-		allowedHosts: ["localhost", "host.docker.internal"],
+		allowedHosts: ["localhost", "host.docker.internal", ".trycloudflare.com"],
 	},
 	plugins: [
 		devtools(),
