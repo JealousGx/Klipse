@@ -82,6 +82,14 @@ export const videoJobs = mysqlTable(
 			.default("queued"),
 		progress: int("progress").notNull().default(0),
 		currentStage: varchar("current_stage", { length: 64 }),
+		/**
+		 * Full Cloud Run Execution resource name returned by `jobs.run`
+		 * (`projects/{p}/locations/{l}/jobs/{j}/executions/{e}`). Used to cancel the actual
+		 * GPU execution if the job gets stuck in `processing` past the stall timeout —
+		 * without this, marking the row `failed` wouldn't stop the GPU from still running
+		 * (and billing) until GCP's own `task_timeout` kills it.
+		 */
+		processorExecutionName: varchar("processor_execution_name", { length: 255 }),
 		costCredits: int("cost_credits").notNull().default(0),
 		outputUrl: text("output_url"),
 		errorMessage: text("error_message"),

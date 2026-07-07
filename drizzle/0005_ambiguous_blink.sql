@@ -1,0 +1,1 @@
+ALTER TABLE `video_jobs` ADD `processor_execution_name` varchar(255);
