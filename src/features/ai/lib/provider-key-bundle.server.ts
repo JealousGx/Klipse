@@ -5,8 +5,9 @@ import type { ProcessorProviderKeys } from "@klipse/video-assembly-shared"
 import { listAllProcessorProviderKeyCredentials } from "./provider-api-keys.server"
 
 /**
- * Fetches all active provider keys from DB in two queries (grouped count + bulk SELECT)
- * and bundles them for `ProcessorJobSpec`. Previously made five parallel DB calls.
+ * Fetches active script-gen provider keys (openrouter + gemini fallback) from DB
+ * and bundles them for `ProcessorJobSpec`. The processor only does script-gen + self-hosted
+ * video generation now, so no image/TTS/sound provider keys are needed.
  */
 export async function bundleProviderKeysForProcessor(): Promise<ProcessorProviderKeys> {
 	const all = await listAllProcessorProviderKeyCredentials()
@@ -18,26 +19,6 @@ export async function bundleProviderKeysForProcessor(): Promise<ProcessorProvide
 			modelId: k.modelId,
 		})),
 		gemini: all.gemini.map((k) => ({
-			id: k.id,
-			secret: k.secret,
-			modelId: k.modelId,
-		})),
-		googleTts: all.google_tts.map((k) => ({
-			id: k.id,
-			secret: k.secret,
-			modelId: k.modelId,
-		})),
-		replicate: all.replicate.map((k) => ({
-			id: k.id,
-			secret: k.secret,
-			modelId: k.modelId,
-		})),
-		unrealSpeech: all.unreal_speech.map((k) => ({
-			id: k.id,
-			secret: k.secret,
-			modelId: k.modelId,
-		})),
-		elevenlabs: all.elevenlabs.map((k) => ({
 			id: k.id,
 			secret: k.secret,
 			modelId: k.modelId,

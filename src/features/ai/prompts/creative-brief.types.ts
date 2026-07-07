@@ -1,5 +1,5 @@
 /**
- * Shared context for Klipse media prompts (script, image, voiceover, sound).
+ * Shared context for Klipse's video prompt generation.
  * Align with `ScriptGenerationContext` / channel row + `channel.config`.
  */
 export type ChannelCreativeBrief = {
