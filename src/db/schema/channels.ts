@@ -1,6 +1,5 @@
 import { sql } from "drizzle-orm"
 import {
-	boolean,
 	index,
 	json,
 	mysqlEnum,
@@ -58,18 +57,6 @@ export const channels = mysqlTable(
 		boundExternalAccountId: varchar("bound_external_account_id", {
 			length: 64,
 		}),
-		/**
-		 * Whether to generate AI background sound effects for videos on this channel.
-		 * Requires Creator+ plan. Generated via ElevenLabs Sound Generation API.
-		 * When false (default), no sound is generated and videos are voiceover-only.
-		 */
-		soundEnabled: boolean("sound_enabled").default(true).notNull(),
-		/**
-		 * Optional prompt hint for sound effect generation on this channel.
-		 * e.g. "calm ambient music", "upbeat electronic background"
-		 * When null, a prompt is auto-generated from the channel brief.
-		 */
-		soundPromptHint: varchar("sound_prompt_hint", { length: 255 }),
 		createdAt: timestamp("created_at", { fsp: 3 })
 			.default(sql`CURRENT_TIMESTAMP(3)`)
 			.notNull(),
