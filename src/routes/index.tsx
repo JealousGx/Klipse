@@ -130,21 +130,21 @@ const differentiation = [
 const pipeline = [
 	{
 		phase: "Input",
-		title: "Script or idea",
-		body: "Drop a brief or full script—your channel blueprint drives tone and structure.",
+		title: "Idea or script",
+		body: "Drop a one-line idea or a full script—your channel blueprint drives tone and structure.",
 		status: "Queued → accepted",
 	},
 	{
-		phase: "Generation",
-		title: "Scenes, voice, visuals",
-		body: "Staged renders with fallbacks so a bad asset does not kill the whole job.",
+		phase: "Script",
+		title: "AI writes the story",
+		body: "One model call turns your idea into a scene-by-scene shot list for the whole video.",
 		status: "Processing with retries",
 	},
 	{
-		phase: "Assembly",
-		title: "Timing + hooks",
-		body: "Cut to length, punchy openers, and CTA beats for vertical feeds.",
-		status: "Review or auto-merge",
+		phase: "Generation",
+		title: "Video + voice, together",
+		body: "AI generates the video and audio in one pass per scene, each anchored to the last so it plays as one continuous clip.",
+		status: "Rendering with retries",
 	},
 	{
 		phase: "Publish",
@@ -258,24 +258,24 @@ function LandingPage() {
 									variant="outline"
 									className="w-fit border-primary/30 bg-primary/6 text-xs font-semibold uppercase tracking-[0.18em] text-primary shadow-sm shadow-primary/5"
 								>
-									Content infrastructure for operators
+									AI video generator for YouTube Shorts
 								</Badge>
 								<CardTitle className="font-heading mt-5 text-balance text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-[3.35rem] lg:leading-[1.06]">
-									Build and run{" "}
+									Turn a text idea into a{" "}
 									<span className="bg-linear-to-r from-primary via-primary to-chart-2 bg-clip-text text-transparent">
-										AI video channels
+										finished YouTube Short
 									</span>
-									—end to end.
+									.
 								</CardTitle>
 								<CardDescription className="mt-6 max-w-2xl text-pretty text-lg leading-relaxed text-muted-foreground sm:text-xl">
-									Script → generate → schedule → publish. Queue-driven pipelines
-									that don&apos;t break at scale—so you replace the whole
-									content machine, not just the generator.
+									Type a sentence. Klipse writes the script, generates the
+									video and voiceover with AI, and publishes it to your
+									channel—no filming, no editing, no camera.
 								</CardDescription>
 							</CardHeader>
 							<CardContent className="p-0 pt-7">
 								<p className="text-sm font-medium text-foreground/90">
-									Built for operators running multi-platform content systems.
+									Built for creators who want a channel without a camera crew.
 								</p>
 								<div className="mt-10 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
 									<GetStartedButton variant="hero" />
